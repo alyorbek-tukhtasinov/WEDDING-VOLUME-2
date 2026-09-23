@@ -17,6 +17,8 @@ function backend() {
 
   // Qo'shtirnoq yoki bo'sh joy bilan nusxalangan bo'lsa ham qabul qilamiz
   const redisUrl = (process.env.REDIS_URL || process.env.KV_URL || '').replace(/\s+/g, '').replace(/^["']|["']$/g, '');
+  // Upstash faqat TLS qabul qiladi: redis:// bilan nusxalangan bo'lsa rediss:// ga o'tkazamiz
+  if (/^redis:\/\/[^/]*\.upstash\.io/i.test(redisUrl)) return { type: 'tcp', url: redisUrl.replace(/^redis:/i, 'rediss:') };
   if (/^rediss?:\/\//.test(redisUrl)) return { type: 'tcp', url: redisUrl };
   return null;
 }
