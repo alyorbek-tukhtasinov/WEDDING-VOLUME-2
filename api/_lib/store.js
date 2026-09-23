@@ -16,12 +16,24 @@ function backend() {
   if (restUrl && restToken) return { type: 'rest', url: restUrl.replace(/\/+$/, ''), token: restToken };
 
   // Qo'shtirnoq yoki bo'sh joy bilan nusxalangan bo'lsa ham qabul qilamiz
-  const redisUrl = (process.env.REDIS_URL || process.env.KV_URL || '').trim().replace(/^["']|["']$/g, '');
+  const redisUrl = (process.env.REDIS_URL || process.env.KV_URL || '').replace(/\s+/g, '').replace(/^["']|["']$/g, '');
   if (/^rediss?:\/\//.test(redisUrl)) return { type: 'tcp', url: redisUrl };
   return null;
 }
 
 export const storeReady = () => Boolean(backend());
+
+/** Qaysi serverga ulanilayotgani (parolsiz) — tekshiruv sahifasi uchun. */
+export function storeHost() {
+  const be = backend();
+  if (!be) return null;
+  try {
+    const u = new URL(be.url);
+    return `${be.type === 'tcp' ? 'REDIS_URL' : 'REST'} → ${u.hostname}${u.port ? ':' + u.port : ''}`;
+  } catch {
+    return "manzilni o'qib bo'lmadi";
+  }
+}
 
 // Issiq (warm) funksiya chaqiruvlari orasida ulanish qayta ishlatiladi
 let tcpClient = null;
