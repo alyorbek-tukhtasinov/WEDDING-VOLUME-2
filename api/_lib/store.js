@@ -1,62 +1,101 @@
-// Mehmon javoblarini Upstash Redis'da saqlash (Vercel -> Storage -> Upstash for Redis).
-// Quyidagilardan istalgan biri bo'lsa ishlaydi (Vercel integratsiyasi o'zi qo'shadi):
-//   KV_REST_API_URL + KV_REST_API_TOKEN
-//   UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
-//   REDIS_URL yoki KV_URL  (rediss://default:PAROL@xxx.upstash.io:6379)
+// Mehmon javoblarini Redis'da saqlash (Vercel -> Storage -> Upstash for Redis).
+// Quyidagilardan istalgan biri bo'lsa ishlaydi:
+//   REDIS_URL yoki KV_URL                              — rediss://default:PAROL@xxx.upstash.io:6379
+//   KV_REST_API_URL + KV_REST_API_TOKEN                — Upstash REST
+//   UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN  — Upstash REST
 // Har bir mijoz javoblari alohida kalitda saqlanadi, bitta bazani bir nechta sayt ishlatishi mumkin.
+import { createClient } from 'redis';
 import { weddingSlug } from './http.js';
 
 const MAX_ENTRIES = 3000;
+const TIMEOUT = 8000;
 
-function credentials() {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
-  if (url && token) return { url: url.replace(/\/+$/, ''), token };
+function backend() {
+  const restUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
+  const restToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
+  if (restUrl && restToken) return { type: 'rest', url: restUrl.replace(/\/+$/, ''), token: restToken };
 
-  // Upstash'da REST manzili — https://<host>, REST kaliti — baza paroli
-  const redisUrl = process.env.REDIS_URL || process.env.KV_URL || '';
-  try {
-    const u = new URL(redisUrl);
-    if (/^rediss?:$/.test(u.protocol) && u.hostname.endsWith('.upstash.io') && u.password) {
-      return { url: `https://${u.hostname}`, token: decodeURIComponent(u.password) };
-    }
-  } catch {
-    /* noto'g'ri yoki bo'sh */
-  }
+  // Qo'shtirnoq yoki bo'sh joy bilan nusxalangan bo'lsa ham qabul qilamiz
+  const redisUrl = (process.env.REDIS_URL || process.env.KV_URL || '').trim().replace(/^["']|["']$/g, '');
+  if (/^rediss?:\/\//.test(redisUrl)) return { type: 'tcp', url: redisUrl };
   return null;
 }
 
-export const storeReady = () => Boolean(credentials());
+export const storeReady = () => Boolean(backend());
+
+// Issiq (warm) funksiya chaqiruvlari orasida ulanish qayta ishlatiladi
+let tcpClient = null;
+
+async function getTcpClient(url) {
+  if (tcpClient?.isReady) return tcpClient;
+  const client = createClient({
+    url,
+    socket: { connectTimeout: TIMEOUT, reconnectStrategy: false },
+  });
+  client.on('error', () => {
+    /* xato buyruq natijasida qaytariladi; bu yerda jarayon yiqilmasligi uchun */
+  });
+  await client.connect();
+  tcpClient = client;
+  return client;
+}
+
+function describe(err) {
+  const code = err?.cause?.code || err?.code;
+  const msg = err?.message || String(err);
+  if (/WRONGPASS|NOAUTH|invalid password|invalid username/i.test(msg)) return "parol noto'g'ri";
+  if (code === 'ENOTFOUND' || /ENOTFOUND/.test(msg)) return 'server topilmadi (manzilni tekshiring)';
+  if (/timeout/i.test(msg)) return 'ulanish vaqti tugadi';
+  return code ? `${code}: ${msg}` : msg;
+}
 
 async function redis(...command) {
-  const cred = credentials();
-  if (!cred) throw new Error('store_not_configured');
-  const res = await fetch(cred.url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${cred.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(command),
-    signal: AbortSignal.timeout(8000),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || json.error) throw new Error(`redis: ${json.error || res.status}`);
-  return json.result;
+  const be = backend();
+  if (!be) throw new Error('store_not_configured');
+  try {
+    if (be.type === 'tcp') {
+      const client = await getTcpClient(be.url);
+      return await client.sendCommand(command.map(String));
+    }
+    const res = await fetch(be.url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${be.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(command),
+      signal: AbortSignal.timeout(TIMEOUT),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.error) throw new Error(json.error || `HTTP ${res.status}`);
+    return json.result;
+  } catch (err) {
+    if (be.type === 'tcp') {
+      tcpClient?.destroy?.();
+      tcpClient = null;
+    }
+    throw new Error(describe(err));
+  }
 }
 
 const key = () => `taklifnoma:${weddingSlug()}:rsvp`;
 
 /** Javobni saqlaydi. Bir mehmon (id) qayta yuborsa — eski javobi yangilanadi. */
 export async function saveEntry(entry) {
-  const exists = await redis('HEXISTS', key(), entry.id);
-  if (!exists && (await redis('HLEN', key())) >= MAX_ENTRIES) throw new Error('store_full');
+  const exists = Number(await redis('HEXISTS', key(), entry.id));
+  if (!exists && Number(await redis('HLEN', key())) >= MAX_ENTRIES) throw new Error('store_full');
   await redis('HSET', key(), entry.id, JSON.stringify(entry));
 }
 
 export async function listEntries() {
-  const flat = (await redis('HGETALL', key())) || [];
+  const raw = (await redis('HGETALL', key())) || [];
+  // RESP2 tekis massiv qaytaradi, RESP3 esa obyekt/Map
+  const values = Array.isArray(raw)
+    ? raw.filter((_, i) => i % 2 === 1)
+    : raw instanceof Map
+      ? [...raw.values()]
+      : Object.values(raw);
   const out = [];
-  for (let i = 1; i < flat.length; i += 2) {
+  for (const v of values) {
     try {
-      out.push(JSON.parse(flat[i]));
+      out.push(JSON.parse(String(v)));
     } catch {
       /* buzilgan yozuv — o'tkazib yuboramiz */
     }
