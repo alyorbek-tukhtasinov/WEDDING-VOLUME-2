@@ -1,0 +1,20 @@
+{
+  "name": "wedding-invitation",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Sozlanadigan onlayn to'y taklifnomasi — har bir mijoz uchun alohida Vercel deploy",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node scripts/check-config.js",
+    "new": "node scripts/new-client.js"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}
