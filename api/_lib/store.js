@@ -26,7 +26,15 @@ function envValue(...names) {
 
 function backend() {
   const restUrl = envValue('KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL');
-  const restToken = envValue('KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN');
+  let restToken = envValue('KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN');
+  // Token o'rniga butun rediss://default:TOKEN@host:6379 qatori qo'yilgan bo'lsa — tokenni ajratamiz
+  if (/^rediss?:\/\//i.test(restToken)) {
+    try {
+      restToken = decodeURIComponent(new URL(restToken).password) || restToken;
+    } catch {
+      /* o'zgarishsiz qoldiramiz */
+    }
+  }
   if (restUrl && restToken) {
     const url = (/^https?:\/\//i.test(restUrl) ? restUrl : `https://${restUrl}`).replace(/\/+$/, '');
     return { type: 'rest', url, token: restToken };
