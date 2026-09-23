@@ -8,8 +8,8 @@
 export default {
   // Kelin va kuyov
   couple: {
-    groom: 'Jasur',
-    bride: 'Madina',
+    groom: 'Yusuf',
+    bride: 'Zulayho',
     // Konvert muhridagi bosh harflar. Bo'sh qoldirilsa ismlardan olinadi.
     initials: '',
   },
@@ -29,7 +29,7 @@ export default {
     heroCaption: 'Nikoh to‘yiga taklifnoma',
     greeting: 'Hurmatli mehmonimiz!',
     invitation:
-      'Sizni farzandlarimiz Jasur va Madinaning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.',
+      'Sizni farzandlarimiz Yusuf va Zulayhoning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.',
     closing: 'Tashrifingiz biz uchun katta sharaf!',
   },
 
@@ -60,8 +60,8 @@ export default {
   // Galereya: media/ dagi rasmlar nomlari (bo'sh bo'lsa ko'rsatilmaydi)
   gallery: [],
 
-  // Fon musiqasi: media/ dagi fayl nomi (mp3). Bo'sh bo'lsa tugma chiqmaydi.
-  music: '',
+  // Fon musiqasi: media/ dagi fayl nomi (mp3 yoki m4a). Bo'sh bo'lsa tugma chiqmaydi.
+  music: 'music.m4a',
 
   // Qatnashishni tasdiqlash (RSVP)
   rsvp: {
@@ -80,7 +80,7 @@ export default {
 
   // Havola ulashilganda (Telegram, Instagram) ko'rinadigan ma'lumotlar
   seo: {
-    title: '', // bo'sh bo'lsa: "Jasur & Madina — Taklifnoma"
+    title: '', // bo'sh bo'lsa: "Yusuf & Zulayho — Taklifnoma"
     description: '', // bo'sh bo'lsa avtomatik yoziladi
     ogImage: '', // media/ dagi rasm (1200x630 tavsiya). Bo'sh bo'lsa standart rasm
   },

@@ -20,7 +20,8 @@ if (fs.existsSync(target)) {
 
 fs.mkdirSync(path.join(target, 'media'), { recursive: true });
 fs.copyFileSync(path.join(CLIENTS_DIR, 'demo', 'config.js'), path.join(target, 'config.js'));
-fs.writeFileSync(path.join(target, 'media', '.gitkeep'), '');
+// Demo media (masalan, standart musiqa) ham nusxalanadi — keyin o'zingiznikiga almashtiring
+fs.cpSync(path.join(CLIENTS_DIR, 'demo', 'media'), path.join(target, 'media'), { recursive: true });
 
 console.log(`✔ clients/${slug} yaratildi.
 

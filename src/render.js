@@ -26,6 +26,7 @@ function hero(c, d) {
   return html`
     <header class="hero" id="top">
       <img class="hero__bg" src="${img('hero-arch.webp')}" alt="" fetchpriority="high" />
+      <div class="petals" id="petals" aria-hidden="true"></div>
       <div class="hero__content">
         <p class="hero__caption">${c.texts?.heroCaption || 'To‘yga taklifnoma'}</p>
         <h1 class="hero__names">
@@ -297,7 +298,6 @@ function musicButton(c) {
 export function renderPage(c, d, brand) {
   return html`
     ${envelope(c, d)}
-    <div class="petals" id="petals" aria-hidden="true"></div>
     <div class="page">
       ${hero(c, d)}
       <main>

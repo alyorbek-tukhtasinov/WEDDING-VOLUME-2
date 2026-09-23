@@ -1032,6 +1032,15 @@ a {
   min-height: 80px;
 }
 
+/* Brauzer avtoto'ldirishining ko'k fonini yo'qotish */
+.field input:-webkit-autofill,
+.field input:-webkit-autofill:hover,
+.field input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px var(--paper) inset;
+  -webkit-text-fill-color: var(--navy);
+  caret-color: var(--navy);
+}
+
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
@@ -1296,14 +1305,13 @@ a {
 }
 
 /* --------------------------- Gul barglari ---------------------------- */
+/* Faqat bosh sahifada — forma va matnlarga xalaqit bermaydi */
 .petals {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 40;
+  z-index: 2;
   pointer-events: none;
   overflow: hidden;
-  max-width: var(--page-w);
-  margin: 0 auto;
 }
 
 .petal {
@@ -1315,7 +1323,7 @@ a {
 
 @keyframes fall {
   to {
-    transform: translate(var(--drift), 110vh) rotate(var(--spin));
+    transform: translate(var(--drift), 1000px) rotate(var(--spin));
   }
 }
 
