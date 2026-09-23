@@ -68,11 +68,8 @@ export default {
     enabled: true,
     deadline: '2026-10-01', // shu sanadan keyin forma yopiladi (bo'sh = cheklovsiz)
     maxGuests: 5,
-    // Telegram bot (Vercel'da TELEGRAM_BOT_TOKEN) ulanmagan bo'lsa, mehmon javobini
-    // tayyor matn bilan shu WhatsApp raqamiga yuboradi. Bo'sh bo'lsa contacts dagi birinchi raqam.
-    whatsapp: '',
-    // Yoki boshqa forma havolasi (masalan Google Forms) — berilsa, shu ochiladi
-    fallbackUrl: '',
+    // Mehmonlar tilaklarini saytda "Tilaklar" bo'limida ko'rsatish (ism + tilak, telefonsiz)
+    showWishes: true,
   },
 
   // Bog'lanish uchun (ixtiyoriy)

@@ -75,8 +75,6 @@ export function validateConfig(c, mediaFiles = null) {
     }
     const mg = c.rsvp.maxGuests ?? 5;
     need(Number.isInteger(mg) && mg >= 1 && mg <= 20, 'rsvp.maxGuests 1 dan 20 gacha butun son bo\'lishi kerak');
-    need(!c.rsvp.fallbackUrl || isUrl(c.rsvp.fallbackUrl), `rsvp.fallbackUrl to'g'ri havola emas`);
-    need(!c.rsvp.whatsapp || /^\+?\d[\d\s()-]{6,}$/.test(c.rsvp.whatsapp), `rsvp.whatsapp raqami noto'g'ri: "${c.rsvp.whatsapp}"`);
   }
 
   (c.contacts || []).forEach((ct, i) => {

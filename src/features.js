@@ -218,13 +218,34 @@ export function initGallery() {
 }
 
 /* ------------------------------- RSVP -------------------------------- */
-export function initRsvp(c, d) {
+export function initRsvp(c, d, { onSaved } = {}) {
   const form = $('#rsvp-form');
   if (!form) return;
   const status = $('#rsvp-status');
   const doneBox = $('#rsvp-done');
   const guestsField = $('#guests-field');
   const storageKey = `rsvp:${d.names}:${c.event.date}`;
+
+  const store = {
+    get() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey) || 'null');
+      } catch {
+        return null;
+      }
+    },
+    set(v) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(v));
+      } catch {
+        /* localStorage mavjud emas */
+      }
+    },
+  };
+
+  // Har bir mehmonga doimiy ID: javobini o'zgartirsa, bazada yangi yozuv emas, eskisi yangilanadi
+  let saved = store.get();
+  const guestId = saved?.id || newId();
 
   const showDone = (text) => {
     form.hidden = true;
@@ -243,20 +264,11 @@ export function initRsvp(c, d) {
     );
   }
 
-  let saved = null;
-  try {
-    saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
-  } catch {
-    /* localStorage mavjud emas */
-  }
-  if (saved) {
-    showDone(thanks(saved.attending, saved.name));
-    appendResend();
-    return;
-  }
-
+  const syncGuests = () => {
+    guestsField.hidden = form.elements.namedItem('attending').value !== 'yes';
+  };
   form.addEventListener('change', (e) => {
-    if (e.target.name === 'attending') guestsField.hidden = e.target.value !== 'yes';
+    if (e.target.name === 'attending') syncGuests();
   });
 
   form.addEventListener('submit', async (e) => {
@@ -277,24 +289,25 @@ export function initRsvp(c, d) {
       const res = await fetch('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, couple: d.names }),
+        body: JSON.stringify({ ...data, id: guestId, couple: d.names }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.ok) {
-        try {
-          localStorage.setItem(storageKey, JSON.stringify({ name: data.name, attending: data.attending }));
-        } catch {
-          /* e'tiborsiz */
-        }
+        const { website, ...answer } = data;
+        saved = { ...answer, id: guestId };
+        store.set(saved);
+        setStatus('');
         showDone(thanks(data.attending, data.name));
         appendResend();
+        onSaved?.();
         return;
       }
-      if (json.error === 'not_configured') {
-        showMessengerFallback(data);
-        return;
-      }
-      setStatus('Xatolik yuz berdi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.', true);
+      setStatus(
+        json.error === 'not_configured'
+          ? 'Javoblarni saqlash hali sozlanmagan (sayt egasi uchun: README → “Javoblarni saqlash”).'
+          : 'Xatolik yuz berdi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.',
+        true,
+      );
     } catch {
       setStatus('Internet aloqasini tekshirib, qayta urinib ko‘ring.', true);
     } finally {
@@ -302,34 +315,9 @@ export function initRsvp(c, d) {
     }
   });
 
-  // Telegram bot ulanmagan bo'lsa: javob tayyor matn bilan messenjer orqali yuboriladi
-  function showMessengerFallback(data) {
-    if (c.rsvp.fallbackUrl) {
-      setStatus('');
-      status.append(linkTo(c.rsvp.fallbackUrl, 'Javobni shu yerda qoldiring →'));
-      return;
-    }
-    const text = rsvpText(data, d);
-    const phone = (c.rsvp.whatsapp || c.contacts?.[0]?.phone || '').replace(/\D/g, '');
-    const links = [];
-    if (phone) links.push(['WhatsApp orqali yuborish', `https://wa.me/${phone}?text=${encodeURIComponent(text)}`]);
-    links.push([
-      'Telegram orqali yuborish',
-      `https://t.me/share/url?url=${encodeURIComponent(location.origin)}&text=${encodeURIComponent(text)}`,
-    ]);
-
-    // Bu yerda javob saqlanmaydi: mehmon messenjerda yubormasligi mumkin
-    setStatus('');
-    form.hidden = true;
-    doneBox.hidden = false;
-    doneBox.textContent = 'Javobingiz tayyor! Uni yuborish uchun quyidagi tugmani bosing:';
-    const box = Object.assign(document.createElement('div'), { className: 'rsvp__send' });
-    for (const [label, href] of links) {
-      const link = linkTo(href, label);
-      link.className = 'btn btn--solid';
-      box.append(link);
-    }
-    doneBox.append(box);
+  // Oldin javob bergan mehmon: "Rahmat" ko'rsatiladi, xohlasa o'zgartiradi
+  if (saved?.name && saved?.attending) {
+    showDone(thanks(saved.attending, saved.name));
     appendResend();
   }
 
@@ -339,6 +327,18 @@ export function initRsvp(c, d) {
     focusEl?.focus();
   }
 
+  function fillForm(v) {
+    for (const k of ['name', 'phone', 'message', 'guests']) {
+      const el = form.elements.namedItem(k);
+      if (el && v?.[k] != null) el.value = v[k];
+    }
+    if (v?.attending) {
+      const radio = form.querySelector(`input[name="attending"][value="${v.attending}"]`);
+      if (radio) radio.checked = true;
+    }
+    syncGuests();
+  }
+
   function appendResend() {
     const btn = Object.assign(document.createElement('button'), {
       type: 'button',
@@ -346,37 +346,52 @@ export function initRsvp(c, d) {
       textContent: 'Javobni o‘zgartirish',
     });
     btn.addEventListener('click', () => {
-      try {
-        localStorage.removeItem(storageKey);
-      } catch {
-        /* e'tiborsiz */
-      }
+      fillForm(saved);
       doneBox.hidden = true;
       form.hidden = false;
       setStatus('');
+      form.elements.namedItem('name').focus();
     });
     doneBox.append(document.createElement('br'), btn);
   }
 }
 
-function rsvpText(data, d) {
-  const lines = [
-    `💍 ${d.names} to‘yi`,
-    data.attending === 'yes' ? '✅ Albatta kelaman' : '❌ Afsuski, kela olmayman',
-    `👤 ${data.name}`,
-  ];
-  if (data.phone?.trim()) lines.push(`📞 ${data.phone.trim()}`);
-  if (data.attending === 'yes') lines.push(`👥 Mehmonlar soni: ${data.guests || 1}`);
-  if (data.message?.trim()) lines.push(`💬 ${data.message.trim()}`);
-  return lines.join('\n');
+function newId() {
+  if (window.crypto?.randomUUID) return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+/* ----------------------------- Tilaklar ------------------------------ */
+export async function loadWishes() {
+  const section = $('#wishes');
+  if (!section) return;
+  let json;
+  try {
+    const res = await fetch('/api/wishes', { cache: 'no-store' });
+    json = await res.json();
+  } catch {
+    return;
+  }
+  const list = $('#wishes-list', section);
+  if (!json?.ok || !json.enabled || !json.wishes?.length) {
+    section.hidden = true;
+    return;
+  }
+  list.replaceChildren(
+    ...json.wishes.map((w) => {
+      const li = document.createElement('li');
+      li.className = 'wish';
+      const msg = Object.assign(document.createElement('p'), { className: 'wish__msg', textContent: w.message });
+      const who = Object.assign(document.createElement('p'), { className: 'wish__name', textContent: `— ${w.name}` });
+      li.append(msg, who);
+      return li;
+    }),
+  );
+  section.hidden = false;
 }
 
 function thanks(attending, name) {
   return attending === 'yes'
     ? `Rahmat, ${name}! Sizni to‘yimizda intizorlik bilan kutamiz.`
     : `Rahmat, ${name}! Javobingiz uchun minnatdormiz.`;
-}
-
-function linkTo(href, text) {
-  return Object.assign(document.createElement('a'), { href, textContent: text, target: '_blank', rel: 'noopener' });
 }

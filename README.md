@@ -11,7 +11,8 @@ alohida deploy qilinadigan to'y taklifnomasi.
 - manzil va xarita tugmalari;
 - to'y dasturi, dress-kod va galereya;
 - fon musiqasi;
-- RSVP: mehmonlar javobi to'g'ridan-to'g'ri **Telegram**'ga keladi;
+- RSVP: mehmonlar javoblari saytda saqlanadi, yopiq **`/admin`** sahifasida ko'rinadi;
+- mehmonlar tilaklari devori ("Tilaklar" bo'limi);
 - "Taqvimga qo'shish" tugmasi;
 - Telegram va Instagram'da havola chiroyli ko'rinishi uchun OG teglar.
 
@@ -31,7 +32,7 @@ clients/
     media/
 brand.config.js         ← sizning brendingiz (sayt pastidagi havola)
 public/images/          ← dizayn rasmlari (barcha mijozlar uchun umumiy)
-api/rsvp.js             ← RSVP javoblarini Telegram'ga yuboruvchi funksiya
+api/                    ← javoblarni saqlash (rsvp), tilaklar (wishes), admin
 src/                    ← sahifa kodi
 ```
 
@@ -114,12 +115,12 @@ Windows PowerShell'da buni to'g'ridan-to'g'ri ham berish mumkin:
    | Nomi | Qiymati | Izoh |
    |---|---|---|
    | `WEDDING` | `jasur-madina` | **majburiy.** `clients/` dagi papka nomi |
-   | `TELEGRAM_BOT_TOKEN` | `123456:ABC...` | RSVP uchun |
-   | `TELEGRAM_CHAT_ID` | `-1001234567890` | javoblar keladigan chat. Bir nechta bo'lsa vergul bilan |
+   | `ADMIN_PASSWORD` | o'zingiz o'ylagan parol | `/admin` sahifasi uchun |
    | `SITE_URL` | `https://jasur-madina.uz` | ixtiyoriy, faqat o'z domeningiz bo'lsa |
 
 4. **Deploy** tugmasini bosing. Framework, build buyrug'i va papka
    `vercel.json` da allaqachon sozlangan.
+5. Javoblar saqlanishi uchun bazani ulang: pastdagi "Javoblarni saqlash" bo'limiga qarang.
 
 Keyingi mijoz uchun 1–4-qadamlarni yangi nom bilan takrorlang. Hammasi bitta
 repozitoriydan ishlaydi.
@@ -129,31 +130,47 @@ repozitoriydan ishlaydi.
 
 ---
 
-## Telegram bot sozlash (RSVP uchun)
+## Javoblarni saqlash (RSVP)
 
-1. Telegram'da [@BotFather](https://t.me/BotFather) → `/newbot` → bot nomini
-   bering. Berilgan **token** `TELEGRAM_BOT_TOKEN` bo'ladi.
-2. Javoblar qayerga kelishini tanlang:
-   - **O'zingizga yoki mijozga:** botga `/start` yozing.
-   - **Guruhga:** botni guruhga qo'shing va guruhda biror xabar yozing.
-3. Brauzerda `https://api.telegram.org/bot<TOKEN>/getUpdates` ni oching.
-   `"chat":{"id": ...}` dagi raqam `TELEGRAM_CHAT_ID` bo'ladi. Guruh ID'si
-   odatda `-100` bilan boshlanadi.
+Mehmon javoblari **Upstash Redis** bazasida saqlanadi. Baza bepul va Vercel ichidan
+ulanadi.
 
-Bitta botni barcha mijozlar uchun ishlatish mumkin. Har bir loyihaga faqat
-boshqa `TELEGRAM_CHAT_ID` qo'yasiz. Xabar oxirida qaysi saytdan kelgani
-ko'rsatiladi.
+**Birinchi marta (bir martalik):**
+1. Vercel → yuqori menyuda **Storage** → **Create Database** → **Upstash for Redis**.
+2. Istalgan nom bering, region sifatida **Frankfurt (eu-central-1)** ni tanlang,
+   rejani **Free** qoldirib yarating.
 
-**Bot ulanganini tekshirish:** saytingizda `/api/rsvp` sahifasini oching
-(masalan `https://yusuf-zulayho.vercel.app/api/rsvp`). `"ready": true` bo'lsa,
-bot ulangan. `"YO'Q"` ko'rsatilsa, Vercel'da o'sha o'zgaruvchi yo'q yoki
-qo'shilgandan keyin **Redeploy** qilinmagan.
+**Har bir mijoz loyihasi uchun:**
+1. **Storage** → bazangiz → **Connect Project** → mijoz loyihasini tanlang.
+   Kerakli o'zgaruvchilar (`KV_REST_API_URL`, `REDIS_URL` va boshqalar) loyihaga
+   o'zi qo'shiladi.
+2. Loyiha → **Settings → Environment Variables** ga `ADMIN_PASSWORD` qo'shing.
+   Bu `/admin` sahifasining paroli bo'ladi.
+3. **Deployments → ⋯ → Redeploy**.
 
-**Bot ulanmagan bo'lsa ham forma ishlaydi.** Mehmon formani to'ldirgach,
-"WhatsApp orqali yuborish" va "Telegram orqali yuborish" tugmalari chiqadi. Javob
-tayyor matn ko'rinishida yuboriladi. WhatsApp xabari `rsvp.whatsapp` raqamiga
-boradi, u bo'sh bo'lsa `contacts` dagi birinchi raqamga. Agar
-`rsvp.fallbackUrl` berilgan bo'lsa (masalan, Google Forms), o'sha havola chiqadi.
+Bitta bazani barcha mijozlar uchun ishlatish mumkin. Har bir sayt javoblari
+`WEDDING` nomi bo'yicha alohida saqlanadi va bir-biriga aralashmaydi.
+
+**Tekshirish:** saytingizda `/api/rsvp` sahifasini oching (masalan
+`https://yusuf-zulayho.vercel.app/api/rsvp`). `"baza": "ulangan ✅"` va
+`"adminParol": "bor ✅"` bo'lsa, hammasi tayyor.
+
+**Javoblarni ko'rish:** `https://sayt-manzili/admin` sahifasini oching va parolni
+kiriting. Sahifada quyidagilar bor:
+- statistika: jami javob, keladi, kelmaydi, jami mehmon;
+- filtr va qidiruv;
+- **Excel (CSV)** ga yuklab olish;
+- keraksiz javobni o'chirish.
+
+Admin sahifa manzilini mijozga (kelin-kuyovga) ham parol bilan berishingiz mumkin.
+
+**Saytdagi "Tilaklar" bo'limi.** Mehmonlar yozgan tilaklar taklifnomaning o'zida
+ko'rinadi: faqat ism va tilak chiqadi, telefon raqami ko'rsatilmaydi. O'chirish
+uchun config'da `rsvp.showWishes: false` qiling. Admin sahifada o'chirilgan javob
+tilaklar ro'yxatidan ham yo'qoladi.
+
+> Baza paroli (`REDIS_URL`) maxfiy. Uni hech kimga yubormang va kodga yozmang,
+> u faqat Vercel sozlamalarida turadi.
 
 ---
 
@@ -178,7 +195,8 @@ boradi, u bo'sh bo'lsa `contacts` dagi birinchi raqamga. Agar
   chiqadi, RSVP forma avtomatik yopiladi. `rsvp.deadline` dan keyin ham forma
   yopiladi.
 - **Mehmon javobi eslab qolinadi.** Javob bergan mehmon sahifani qayta ochsa,
-  "Rahmat" xabarini ko'radi va xohlasa javobini o'zgartira oladi.
+  "Rahmat" xabarini ko'radi va xohlasa javobini o'zgartira oladi. O'zgartirilgan
+  javob yangi yozuv sifatida qo'shilmaydi, eskisi yangilanadi.
 - **Qidiruv tizimlari.** Taklifnomalar shaxsiy bo'lgani uchun Google'da
   indekslanmaydi (`noindex`).
 - **Config tekshiruvi.** Build paytida config tekshiriladi. Xato bo'lsa, deploy

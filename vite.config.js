@@ -19,7 +19,7 @@ const MIME = {
 };
 
 export default defineConfig(async ({ mode }) => {
-  // .env faylidagi qiymatlar (WEDDING, TELEGRAM_*) — mavjud muhit o'zgaruvchilari ustun turadi
+  // .env faylidagi qiymatlar (WEDDING, REDIS_URL, ADMIN_PASSWORD) — mavjud muhit o'zgaruvchilari ustun turadi
   for (const [k, v] of Object.entries(loadEnv(mode, root, ''))) {
     if (process.env[k] === undefined) process.env[k] = v;
   }
@@ -37,6 +37,12 @@ export default defineConfig(async ({ mode }) => {
     build: {
       target: 'es2019',
       assetsInlineLimit: 0,
+      rollupOptions: {
+        input: {
+          main: path.join(root, 'index.html'),
+          admin: path.join(root, 'admin.html'),
+        },
+      },
     },
     plugins: [weddingPlugin(client)],
   };
@@ -77,7 +83,7 @@ function weddingPlugin(client) {
         .replace(/\s*<meta property="og:url" content="">/, '');
     },
 
-    // Dev rejimida /media/* va /api/rsvp ni xizmat qilish
+    // Dev rejimida /media/* va /api/* ni xizmat qilish
     configureServer(server) {
       server.middlewares.use('/media', (req, res, next) => {
         const file = path.join(mediaDir, decodeURIComponent(req.url.split('?')[0]));
@@ -88,9 +94,18 @@ function weddingPlugin(client) {
         if (type) res.setHeader('Content-Type', type);
         fs.createReadStream(file).pipe(res);
       });
-      server.middlewares.use('/api/rsvp', async (req, res) => {
-        const { default: handler } = await server.ssrLoadModule('/api/rsvp.js');
-        handler(req, res);
+      // /api/<nom> -> api/<nom>.js (Vercel'dagidek)
+      server.middlewares.use('/api', async (req, res, next) => {
+        const name = req.url.split('?')[0].replace(/^\/+|\/+$/g, '');
+        if (!/^[a-z0-9-]+$/.test(name) || !fs.existsSync(path.join(root, 'api', `${name}.js`))) return next();
+        try {
+          const { default: handler } = await server.ssrLoadModule(`/api/${name}.js`);
+          await handler(req, res);
+        } catch (err) {
+          console.error(err);
+          res.statusCode = 500;
+          res.end('{"ok":false,"error":"server_error"}');
+        }
       });
     },
 

@@ -247,6 +247,17 @@ function rsvp(c, d) {
   `;
 }
 
+function wishes(c) {
+  if (!c.rsvp?.enabled || c.rsvp.showWishes === false) return '';
+  // Tilaklar serverdan yuklanadi; bo'lmasa bo'lim yashirin qoladi
+  return html`
+    <section class="section wishes" id="wishes" hidden>
+      <h2 class="title">Tilaklar</h2>
+      <ul class="wishes__list" id="wishes-list"></ul>
+    </section>
+  `;
+}
+
 function contacts(c) {
   if (!c.contacts?.length) return '';
   return html`
@@ -310,6 +321,7 @@ export function renderPage(c, d, brand) {
         ${dressCode(c)}
         ${gallery(c)}
         ${rsvp(c, d)}
+        ${wishes(c)}
         ${contacts(c)}
       </main>
       ${footer(c, d, brand)}

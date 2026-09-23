@@ -12,6 +12,7 @@ import {
   initPetals,
   initGallery,
   initRsvp,
+  loadWishes,
 } from './features.js';
 
 const derived = deriveConfig(config);
@@ -22,7 +23,8 @@ initCountdown(derived);
 initCalendar(config, derived);
 initReveal();
 initGallery();
-initRsvp(config, derived);
+initRsvp(config, derived, { onSaved: loadWishes });
+loadWishes();
 
 const music = initMusic();
 initEnvelope({
