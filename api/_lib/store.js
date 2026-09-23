@@ -10,13 +10,29 @@ import { weddingSlug } from './http.js';
 const MAX_ENTRIES = 3000;
 const TIMEOUT = 8000;
 
-function backend() {
-  const restUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
-  const restToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
-  if (restUrl && restToken) return { type: 'rest', url: restUrl.replace(/\/+$/, ''), token: restToken };
+// Nusxalashdagi odatiy xatolarni tozalash: bo'sh joy, qo'shtirnoq, "KALIT=" prefiksi
+function envValue(...names) {
+  for (const name of names) {
+    const raw = process.env[name];
+    if (!raw) continue;
+    const v = raw
+      .replace(/\s+/g, '')
+      .replace(/^[A-Z0-9_]+=/, '')
+      .replace(/^["'`]+|["'`;,]+$/g, '');
+    if (v) return v;
+  }
+  return '';
+}
 
-  // Qo'shtirnoq yoki bo'sh joy bilan nusxalangan bo'lsa ham qabul qilamiz
-  const redisUrl = (process.env.REDIS_URL || process.env.KV_URL || '').replace(/\s+/g, '').replace(/^["']|["']$/g, '');
+function backend() {
+  const restUrl = envValue('KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL');
+  const restToken = envValue('KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN');
+  if (restUrl && restToken) {
+    const url = (/^https?:\/\//i.test(restUrl) ? restUrl : `https://${restUrl}`).replace(/\/+$/, '');
+    return { type: 'rest', url, token: restToken };
+  }
+
+  const redisUrl = envValue('REDIS_URL', 'KV_URL');
   // Upstash faqat TLS qabul qiladi: redis:// bilan nusxalangan bo'lsa rediss:// ga o'tkazamiz
   if (/^redis:\/\/[^/]*\.upstash\.io/i.test(redisUrl)) return { type: 'tcp', url: redisUrl.replace(/^redis:/i, 'rediss:') };
   if (/^rediss?:\/\//.test(redisUrl)) return { type: 'tcp', url: redisUrl };
@@ -31,7 +47,10 @@ export function storeHost() {
   if (!be) return null;
   try {
     const u = new URL(be.url);
-    return `${be.type === 'tcp' ? 'REDIS_URL' : 'REST'} → ${u.hostname}${u.port ? ':' + u.port : ''}`;
+    const host = `${u.hostname}${u.port ? ':' + u.port : ''}`;
+    if (be.type === 'tcp') return `REDIS_URL → ${host}`;
+    // Tokenning o'zi emas, faqat uzunligi va oxirgi 4 belgisi — Upstash'dagi bilan solishtirish uchun
+    return `REST → ${host} | token: …${be.token.slice(-4)} (${be.token.length} belgi)`;
   } catch {
     return "manzilni o'qib bo'lmadi";
   }
