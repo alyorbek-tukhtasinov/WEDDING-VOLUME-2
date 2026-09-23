@@ -144,7 +144,15 @@ Bitta botni barcha mijozlar uchun ishlatish mumkin. Har bir loyihaga faqat
 boshqa `TELEGRAM_CHAT_ID` qo'yasiz. Xabar oxirida qaysi saytdan kelgani
 ko'rsatiladi.
 
-Bot sozlanmagan bo'lsa, forma "onlayn javob qabul qilinmayapti" deb ko'rsatadi.
+**Bot ulanganini tekshirish:** saytingizda `/api/rsvp` sahifasini oching
+(masalan `https://yusuf-zulayho.vercel.app/api/rsvp`). `"ready": true` bo'lsa,
+bot ulangan. `"YO'Q"` ko'rsatilsa, Vercel'da o'sha o'zgaruvchi yo'q yoki
+qo'shilgandan keyin **Redeploy** qilinmagan.
+
+**Bot ulanmagan bo'lsa ham forma ishlaydi.** Mehmon formani to'ldirgach,
+"WhatsApp orqali yuborish" va "Telegram orqali yuborish" tugmalari chiqadi. Javob
+tayyor matn ko'rinishida yuboriladi. WhatsApp xabari `rsvp.whatsapp` raqamiga
+boradi, u bo'sh bo'lsa `contacts` dagi birinchi raqamga. Agar
 `rsvp.fallbackUrl` berilgan bo'lsa (masalan, Google Forms), o'sha havola chiqadi.
 
 ---

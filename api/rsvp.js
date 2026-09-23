@@ -30,13 +30,24 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const clean = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 
 export default async function handler(req, res) {
+  const token = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
+  const chatIds = (process.env.TELEGRAM_CHAT_ID || '').split(',').map((s) => s.trim()).filter(Boolean);
+
+  // Brauzerda /api/rsvp ni ochib, bot ulanganini tekshirish mumkin (maxfiy qiymatlar ko'rsatilmaydi)
+  if (req.method === 'GET') {
+    return send(res, 200, {
+      ok: true,
+      wedding: process.env.WEDDING || 'demo',
+      telegramBotToken: token ? 'bor' : "YO'Q",
+      telegramChatId: chatIds.length ? `bor (${chatIds.length} ta)` : "YO'Q",
+      ready: Boolean(token && chatIds.length),
+    });
+  }
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+    res.setHeader('Allow', 'GET, POST');
     return send(res, 405, { ok: false, error: 'method_not_allowed' });
   }
 
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatIds = (process.env.TELEGRAM_CHAT_ID || '').split(',').map((s) => s.trim()).filter(Boolean);
   if (!token || !chatIds.length) {
     return send(res, 503, { ok: false, error: 'not_configured' });
   }

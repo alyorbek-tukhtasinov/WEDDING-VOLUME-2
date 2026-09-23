@@ -1131,6 +1131,12 @@ a {
   font-weight: 600;
 }
 
+.rsvp__send {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
 .rsvp__done {
   padding: 1.5rem 0 0.5rem;
   font-size: 1.25rem;
@@ -1305,13 +1311,14 @@ a {
 }
 
 /* --------------------------- Gul barglari ---------------------------- */
-/* Faqat bosh sahifada — forma va matnlarga xalaqit bermaydi */
 .petals {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 2;
+  z-index: 40;
   pointer-events: none;
   overflow: hidden;
+  max-width: var(--page-w);
+  margin: 0 auto;
 }
 
 .petal {
@@ -1323,7 +1330,7 @@ a {
 
 @keyframes fall {
   to {
-    transform: translate(var(--drift), 1000px) rotate(var(--spin));
+    transform: translate(var(--drift), 110vh) rotate(var(--spin));
   }
 }
 

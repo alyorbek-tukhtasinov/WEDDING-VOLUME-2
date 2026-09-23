@@ -291,17 +291,7 @@ export function initRsvp(c, d) {
         return;
       }
       if (json.error === 'not_configured') {
-        if (c.rsvp.fallbackUrl) {
-          setStatus('');
-          status.append(linkTo(c.rsvp.fallbackUrl, 'Javobni shu yerda qoldiring →'));
-        } else {
-          setStatus(
-            c.contacts?.length
-              ? 'Hozircha onlayn javob qabul qilinmayapti. Iltimos, telefon orqali bog‘laning.'
-              : 'Hozircha onlayn javob qabul qilinmayapti.',
-            true,
-          );
-        }
+        showMessengerFallback(data);
         return;
       }
       setStatus('Xatolik yuz berdi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.', true);
@@ -311,6 +301,37 @@ export function initRsvp(c, d) {
       submit.disabled = false;
     }
   });
+
+  // Telegram bot ulanmagan bo'lsa: javob tayyor matn bilan messenjer orqali yuboriladi
+  function showMessengerFallback(data) {
+    if (c.rsvp.fallbackUrl) {
+      setStatus('');
+      status.append(linkTo(c.rsvp.fallbackUrl, 'Javobni shu yerda qoldiring →'));
+      return;
+    }
+    const text = rsvpText(data, d);
+    const phone = (c.rsvp.whatsapp || c.contacts?.[0]?.phone || '').replace(/\D/g, '');
+    const links = [];
+    if (phone) links.push(['WhatsApp orqali yuborish', `https://wa.me/${phone}?text=${encodeURIComponent(text)}`]);
+    links.push([
+      'Telegram orqali yuborish',
+      `https://t.me/share/url?url=${encodeURIComponent(location.origin)}&text=${encodeURIComponent(text)}`,
+    ]);
+
+    // Bu yerda javob saqlanmaydi: mehmon messenjerda yubormasligi mumkin
+    setStatus('');
+    form.hidden = true;
+    doneBox.hidden = false;
+    doneBox.textContent = 'Javobingiz tayyor! Uni yuborish uchun quyidagi tugmani bosing:';
+    const box = Object.assign(document.createElement('div'), { className: 'rsvp__send' });
+    for (const [label, href] of links) {
+      const link = linkTo(href, label);
+      link.className = 'btn btn--solid';
+      box.append(link);
+    }
+    doneBox.append(box);
+    appendResend();
+  }
 
   function setStatus(text, isError = false, focusEl) {
     status.textContent = text;
@@ -336,6 +357,18 @@ export function initRsvp(c, d) {
     });
     doneBox.append(document.createElement('br'), btn);
   }
+}
+
+function rsvpText(data, d) {
+  const lines = [
+    `💍 ${d.names} to‘yi`,
+    data.attending === 'yes' ? '✅ Albatta kelaman' : '❌ Afsuski, kela olmayman',
+    `👤 ${data.name}`,
+  ];
+  if (data.phone?.trim()) lines.push(`📞 ${data.phone.trim()}`);
+  if (data.attending === 'yes') lines.push(`👥 Mehmonlar soni: ${data.guests || 1}`);
+  if (data.message?.trim()) lines.push(`💬 ${data.message.trim()}`);
+  return lines.join('\n');
 }
 
 function thanks(attending, name) {
