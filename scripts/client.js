@@ -16,6 +16,14 @@ export function listClients() {
 }
 
 export async function loadClient(slugInput) {
+  // Vercel'da WEDDING majburiy: esdan chiqsa sayt jimgina "demo" bo'lib qolmasin
+  // (aks holda bir nechta mijoz javoblari bitta joyga yozilib, aralashib ketadi)
+  if (process.env.VERCEL && !(slugInput || '').trim()) {
+    throw new Error(
+      "\n\n✖ Vercel'da WEDDING o'zgaruvchisi o'rnatilmagan.\n" +
+        "  Settings → Environment Variables → WEDDING = clients/ dagi mijoz papkasi nomi (masalan: jasur-madina)\n",
+    );
+  }
   const slug = (slugInput || 'demo').trim();
   const fail = (msg) => {
     throw new Error(`\n\n✖ Taklifnoma "${slug}": ${msg}\n`);

@@ -17,10 +17,16 @@ export default async function handler(req, res) {
   const store = storeReady();
 
   if (req.method === 'GET') {
-    const connection = store ? await ping() : "o'zgaruvchi topilmadi";
+    const slug = weddingSlug();
+    const connection = !slug
+      ? "WEDDING o'rnatilmagan — javoblar saqlanmaydi"
+      : store
+        ? await ping()
+        : "o'zgaruvchi topilmadi";
     return send(res, 200, {
       ok: true,
-      wedding: weddingSlug(),
+      wedding: slug || "YO'Q ❌",
+      malumotlarKaliti: slug ? `taklifnoma:${slug}:rsvp` : null,
       baza: connection === true ? 'ulangan ✅' : `ulanmagan ❌ (${connection})`,
       server: storeHost(),
       adminParol: process.env.ADMIN_PASSWORD ? 'bor ✅' : "YO'Q ❌",

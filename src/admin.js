@@ -115,6 +115,7 @@ function renderDashboard() {
       <div>
         <p class="eyebrow">Mehmonlar javoblari</p>
         <h1 class="names">${d.groom} <span>&amp;</span> ${d.bride}</h1>
+        <p class="scope">Faqat shu taklifnoma javoblari · ${data.wedding}</p>
       </div>
       <div class="top__actions">
         <button class="btn" id="refresh" type="button">Yangilash</button>

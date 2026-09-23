@@ -148,8 +148,38 @@ ulanadi.
    Bu `/admin` sahifasining paroli bo'ladi.
 3. **Deployments → ⋯ → Redeploy**.
 
-Bitta bazani barcha mijozlar uchun ishlatish mumkin. Har bir sayt javoblari
-`WEDDING` nomi bo'yicha alohida saqlanadi va bir-biriga aralashmaydi.
+### Ko'p mijoz: ma'lumotlar aralashmasligi
+
+Bitta Upstash bazasini barcha mijozlar uchun ishlatavering. Har bir sayt javoblari
+alohida kalitda saqlanadi:
+
+```
+taklifnoma:yusuf-zulayho:rsvp   ← faqat yusuf-zulayho sayti o'qiydi va yozadi
+taklifnoma:jasur-madina:rsvp    ← faqat jasur-madina sayti o'qiydi va yozadi
+```
+
+- **Kalit serverda aniqlanadi.** Kalit Vercel'dagi `WEDDING` sozlamasidan
+  olinadi, mehmon yoki brauzer uni o'zgartira olmaydi. Bir saytning `/admin`
+  sahifasi boshqa sayt javoblarini ko'ra ham, o'chira ham olmaydi.
+- **`WEDDING` esdan chiqsa, xato darhol ko'rinadi.** Vercel'da `WEDDING`
+  o'rnatilmagan bo'lsa, deploy xato bilan to'xtaydi. Sayt jimgina "demo" bo'lib
+  qolmaydi.
+- **Admin sahifasida ham ko'rsatiladi.** `/admin` tepasida qaysi taklifnoma
+  ekani yozilgan, `/api/rsvp` da esa `malumotlarKaliti` ko'rinadi.
+
+**Har bir yangi mijoz uchun tekshiruv ro'yxati:**
+1. `WEDDING` = shu mijozning **o'z** papka nomi (`clients/<nom>`). Ikki
+   loyihaga bir xil nom qo'ymang.
+2. `UPSTASH_REDIS_REST_URL` va `UPSTASH_REDIS_REST_TOKEN` = umumiy baza
+   qiymatlari, hamma loyihada bir xil.
+3. `ADMIN_PASSWORD` = har bir mijoz uchun **alohida** parol. Kelin-kuyovga
+   berasiz.
+4. Deploy tugagach `/api/rsvp` ni oching. `wedding` va `malumotlarKaliti`
+   to'g'ri mijoz nomini ko'rsatishi kerak.
+
+**Hajm.** Upstash'ning bepul rejasi o'nlab to'y uchun yetadi, har bir to'yga
+3000 tagacha javob sig'adi. Aniq limitlarni Upstash panelidagi **Usage**
+bo'limida kuzatib boring.
 
 **Tekshirish:** saytingizda `/api/rsvp` sahifasini oching (masalan
 `https://yusuf-zulayho.vercel.app/api/rsvp`). `"baza": "ulangan ✅"` va

@@ -26,7 +26,14 @@ export async function readBody(req) {
 
 export const clean = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 
-export const weddingSlug = () => process.env.WEDDING || 'demo';
+// Har bir sayt ma'lumotlari shu nom bo'yicha alohida saqlanadi. Nom faqat serverdagi
+// sozlamadan olinadi — mehmon yoki brauzer uni o'zgartira olmaydi.
+// Vercel'da WEDDING yo'q bo'lsa — null: hech narsa saqlanmaydi (aralashib ketmasligi uchun).
+export function weddingSlug() {
+  const slug = (process.env.WEDDING || '').trim().toLowerCase();
+  if (slug) return /^[a-z0-9][a-z0-9-]*$/.test(slug) ? slug : null;
+  return process.env.VERCEL ? null : 'demo';
+}
 
 /** Admin parolini tekshirish (vaqt bo'yicha hujumlarga chidamli). */
 export function checkAdmin(req) {

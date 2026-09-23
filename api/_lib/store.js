@@ -47,7 +47,7 @@ function backend() {
   return null;
 }
 
-export const storeReady = () => Boolean(backend());
+export const storeReady = () => Boolean(backend()) && Boolean(weddingSlug());
 
 /** Qaysi serverga ulanilayotgani (parolsiz) — tekshiruv sahifasi uchun. */
 export function storeHost() {
@@ -93,6 +93,7 @@ function describe(err) {
 async function redis(...command) {
   const be = backend();
   if (!be) throw new Error('store_not_configured');
+  if (!weddingSlug()) throw new Error("WEDDING o'rnatilmagan");
   try {
     if (be.type === 'tcp') {
       const client = await getTcpClient(be.url);
@@ -116,7 +117,12 @@ async function redis(...command) {
   }
 }
 
-const key = () => `taklifnoma:${weddingSlug()}:rsvp`;
+// Har bir mijoz — alohida kalit: taklifnoma:<WEDDING>:rsvp
+const key = () => {
+  const slug = weddingSlug();
+  if (!slug) throw new Error("WEDDING o'rnatilmagan");
+  return `taklifnoma:${slug}:rsvp`;
+};
 
 /** Javobni saqlaydi. Bir mehmon (id) qayta yuborsa — eski javobi yangilanadi. */
 export async function saveEntry(entry) {

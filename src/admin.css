@@ -161,6 +161,13 @@ p {
   gap: 1rem;
 }
 
+.scope {
+  margin-top: 0.2rem;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
 .top__actions {
   display: flex;
   flex-wrap: wrap;
