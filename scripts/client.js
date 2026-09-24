@@ -24,7 +24,8 @@ export async function loadClient(slugInput) {
         "  Settings → Environment Variables → WEDDING = clients/ dagi mijoz papkasi nomi (masalan: jasur-madina)\n",
     );
   }
-  const slug = (slugInput || 'demo').trim();
+  // Katta harf yoki bo'sh joy bilan yozilgan bo'lsa ham qabul qilamiz (API ham shunday qiladi)
+  const slug = (slugInput || 'demo').trim().toLowerCase();
   const fail = (msg) => {
     throw new Error(`\n\n✖ Taklifnoma "${slug}": ${msg}\n`);
   };

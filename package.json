@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Sozlanadigan onlayn to'y taklifnomasi — har bir mijoz uchun alohida Vercel deploy",
   "engines": {
-    "node": ">=20.19"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "vite",
