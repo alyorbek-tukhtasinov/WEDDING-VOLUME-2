@@ -797,6 +797,60 @@ a {
   color: var(--ink-soft);
 }
 
+/* ---------------------------- Sovg'a yozuvi --------------------------- */
+.gift {
+  position: relative;
+  margin: 0 auto 2.25rem;
+  padding: 2.25rem 1.25rem 2rem;
+  max-width: 400px;
+  background:
+    radial-gradient(closest-side, rgb(255 250 240 / 0.9), transparent),
+    var(--paper);
+  border: 1px solid var(--gold-soft);
+  box-shadow:
+    0 0 0 6px var(--cream),
+    0 0 0 7px var(--gold-soft),
+    0 18px 40px -22px rgb(11 37 69 / 0.4);
+}
+
+.gift__frame {
+  width: min(220px, 70%);
+  margin: 0 auto 1rem;
+}
+
+.gift__frame--bottom {
+  margin: 1rem auto 0;
+}
+
+.gift__eyebrow {
+  font-family: var(--f-caps);
+  font-size: 0.72rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--wine);
+}
+
+.gift__title {
+  margin: 0.5rem 0 0.75rem;
+  font-family: var(--f-script);
+  font-size: clamp(2.4rem, 11vw, 3.2rem);
+  line-height: 1.15;
+  color: var(--navy);
+}
+
+.gift__text {
+  font-size: 1.2rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.gift__heart {
+  width: 26px;
+  margin: 1rem auto 0;
+  animation: beat 1.6s ease-in-out infinite;
+}
+
 /* ------------------------------ Dastur ------------------------------- */
 .program {
   background: var(--paper);

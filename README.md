@@ -204,6 +204,24 @@ tilaklar ro'yxatidan ham yo'qoladi.
 
 ---
 
+## Qo'shimcha sozlamalar
+
+**"Sovg'a" yozuvi (`giftNote`).** Mijoz config'iga qo'shilsa, "Qayerda?" bo'limida
+bino rasmi o'rniga katta bezakli yozuv chiqadi. Xarita tugmalari joyida qoladi:
+
+```js
+giftNote: {
+  eyebrow: 'Eng qimmatli sovg‘a',
+  title: 'Sizning tashrifingiz',
+  text: 'Kelishingizning o‘zi biz uchun eng katta sovg‘a.',
+},
+```
+
+Berilmasa, bo'lim avvalgidek rasm bilan chiqadi. Namuna uchun
+`clients/begzodxoja-xusnoraxon` ga qarang.
+
+---
+
 ## Brendingiz va dizayn
 
 - **`brand.config.js`**: sayt pastidagi "Onlayn taklifnoma buyurtma qilish"

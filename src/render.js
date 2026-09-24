@@ -122,13 +122,29 @@ function countdown() {
   `;
 }
 
+// "Sovg'a" yozuvi: berilsa, to'yxona bo'limida rasm o'rniga katta bezakli matn chiqadi
+function giftNote(g) {
+  return html`
+    <div class="gift" data-reveal>
+      <img class="gift__frame" src="${img('frame-top.webp')}" alt="" loading="lazy" />
+      ${g.eyebrow ? html`<p class="gift__eyebrow">${g.eyebrow}</p>` : ''}
+      <p class="gift__title">${g.title}</p>
+      ${g.text ? html`<p class="gift__text">${g.text}</p>` : ''}
+      <img class="gift__heart" src="${img('heart.webp')}" alt="" loading="lazy" />
+      <img class="gift__frame gift__frame--bottom" src="${img('frame-bottom.webp')}" alt="" loading="lazy" />
+    </div>
+  `;
+}
+
 function venue(c) {
   const v = c.venue;
   const image = v.image ? mediaUrl(v.image) : img('building.webp');
   return html`
     <section class="section venue" id="venue">
       <h2 class="title" data-reveal>Qayerda?</h2>
-      <img class="venue__img ${v.image ? 'venue__img--photo' : ''}" src="${image}" alt="${v.name}" loading="lazy" data-reveal />
+      ${c.giftNote?.title
+        ? giftNote(c.giftNote)
+        : html`<img class="venue__img ${v.image ? 'venue__img--photo' : ''}" src="${image}" alt="${v.name}" loading="lazy" data-reveal />`}
       <p class="venue__name" data-reveal>${v.name}</p>
       <p class="venue__address" data-reveal>${v.address}</p>
       <div class="actions" data-reveal>

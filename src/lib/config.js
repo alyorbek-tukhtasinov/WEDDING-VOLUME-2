@@ -77,6 +77,14 @@ export function validateConfig(c, mediaFiles = null) {
     need(Number.isInteger(mg) && mg >= 1 && mg <= 20, 'rsvp.maxGuests 1 dan 20 gacha butun son bo\'lishi kerak');
   }
 
+  if (c.giftNote) {
+    need(typeof c.giftNote === 'object', 'giftNote obyekt bo\'lishi kerak: { eyebrow, title, text }');
+    for (const k of ['eyebrow', 'title', 'text']) {
+      const v = c.giftNote?.[k];
+      need(v == null || typeof v === 'string', `giftNote.${k} matn bo'lishi kerak`);
+    }
+  }
+
   (c.contacts || []).forEach((ct, i) => {
     need(ct?.name?.trim(), `contacts[${i}].name kiritilmagan`);
     need(/^\+?\d[\d\s()-]{6,}$/.test(ct?.phone || ''), `contacts[${i}].phone noto'g'ri: "${ct?.phone}"`);
