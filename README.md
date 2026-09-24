@@ -114,7 +114,7 @@ Windows PowerShell'da buni to'g'ridan-to'g'ri ham berish mumkin:
 
    | Nomi | Qiymati | Izoh |
    |---|---|---|
-   | `WEDDING` | `jasur-madina` | **majburiy.** `clients/` dagi papka nomi |
+   | `WEDDING` | `jasur-madina` | `clients/` dagi papka nomi. Vercel loyihasi nomi papka nomi bilan bir xil bo'lsa, qo'ymasa ham bo'ladi: nom loyihadan o'zi olinadi |
    | `ADMIN_PASSWORD` | o'zingiz o'ylagan parol | `/admin` sahifasi uchun |
    | `SITE_URL` | `https://jasur-madina.uz` | ixtiyoriy, faqat o'z domeningiz bo'lsa |
 

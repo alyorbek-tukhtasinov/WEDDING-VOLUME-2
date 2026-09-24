@@ -6,7 +6,8 @@ import { validateConfig, deriveConfig } from '../src/lib/config.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const CLIENTS_DIR = path.join(ROOT, 'clients');
-export const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+import { resolveSlug, SLUG_RE } from '../api/_lib/slug.js';
+export { SLUG_RE };
 
 export function listClients() {
   return fs
@@ -16,16 +17,15 @@ export function listClients() {
 }
 
 export async function loadClient(slugInput) {
-  // Vercel'da WEDDING majburiy: esdan chiqsa sayt jimgina "demo" bo'lib qolmasin
-  // (aks holda bir nechta mijoz javoblari bitta joyga yozilib, aralashib ketadi)
-  if (process.env.VERCEL && !(slugInput || '').trim()) {
+  const resolved = slugInput != null ? { slug: String(slugInput).trim().toLowerCase(), source: 'WEDDING' } : resolveSlug();
+  if (!resolved.slug) {
     throw new Error(
-      "\n\n✖ Vercel'da WEDDING o'zgaruvchisi o'rnatilmagan.\n" +
-        "  Settings → Environment Variables → WEDDING = clients/ dagi mijoz papkasi nomi (masalan: jasur-madina)\n",
+      "\n\n✖ Taklifnoma nomi aniqlanmadi.\n" +
+        "  Vercel → Settings → Environment Variables → WEDDING = clients/ dagi mijoz papkasi nomi (masalan: jasur-madina)\n" +
+        `  Mavjud mijozlar: ${listClients().join(', ')}\n`,
     );
   }
-  // Katta harf yoki bo'sh joy bilan yozilgan bo'lsa ham qabul qilamiz (API ham shunday qiladi)
-  const slug = (slugInput || 'demo').trim().toLowerCase();
+  const slug = resolved.slug;
   const fail = (msg) => {
     throw new Error(`\n\n✖ Taklifnoma "${slug}": ${msg}\n`);
   };
@@ -34,7 +34,11 @@ export async function loadClient(slugInput) {
   const dir = path.join(CLIENTS_DIR, slug);
   const configPath = path.join(dir, 'config.js');
   if (!fs.existsSync(configPath)) {
-    fail(`clients/${slug}/config.js topilmadi. Mavjud mijozlar: ${listClients().join(', ') || '(yo\'q)'}`);
+    fail(
+      `clients/${slug}/config.js topilmadi (nom ${resolved.source} dan olindi). ` +
+        `Mavjud mijozlar: ${listClients().join(', ') || "(yo'q)"}. ` +
+        `Vercel'da WEDDING ga shulardan birini yozing.`,
+    );
   }
 
   const mediaDir = path.join(dir, 'media');
@@ -46,7 +50,7 @@ export async function loadClient(slugInput) {
   const errors = validateConfig(config, mediaFiles);
   if (errors.length) fail(`config.js da xatolar bor:\n  - ${errors.join('\n  - ')}`);
 
-  return { slug, dir, configPath, mediaDir, mediaFiles, config, derived: deriveConfig(config) };
+  return { slug, slugSource: resolved.source, dir, configPath, mediaDir, mediaFiles, config, derived: deriveConfig(config) };
 }
 
 /** Saytning to'liq manzili (og:image uchun absolyut URL kerak). */

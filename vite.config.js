@@ -25,7 +25,14 @@ export default defineConfig(async ({ mode }) => {
   }
 
   // Qaysi mijoz yig'iladi: WEDDING muhit o'zgaruvchisi (Vercel -> Settings -> Environment Variables)
-  const client = await loadClient(process.env.WEDDING);
+  let client;
+  try {
+    client = await loadClient();
+  } catch (err) {
+    // stdout ga ham yozamiz — Vercel logida albatta ko'rinsin
+    console.log(err.message);
+    throw err;
+  }
 
   return {
     resolve: {
@@ -117,7 +124,7 @@ function weddingPlugin(client) {
           filter: (src) => !path.basename(src).startsWith('.'),
         });
       }
-      console.log(`\n✔ "${client.slug}" taklifnomasi yig'ildi: ${derived.names}, ${derived.dateText}\n`);
+      console.log(`\n✔ "${client.slug}" taklifnomasi yig'ildi (nom: ${client.slugSource}): ${derived.names}, ${derived.dateText}\n`);
     },
   };
 }

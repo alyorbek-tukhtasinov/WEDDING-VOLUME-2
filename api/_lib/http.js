@@ -1,6 +1,7 @@
 // API funksiyalari uchun umumiy yordamchilar.
 // "_" bilan boshlangan papka Vercel'da alohida funksiya bo'lmaydi.
 import crypto from 'node:crypto';
+import { resolveSlug, SLUG_RE } from './slug.js';
 
 const MAX_BODY = 8 * 1024;
 
@@ -28,12 +29,13 @@ export const clean = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ')
 
 // Har bir sayt ma'lumotlari shu nom bo'yicha alohida saqlanadi. Nom faqat serverdagi
 // sozlamadan olinadi — mehmon yoki brauzer uni o'zgartira olmaydi.
-// Vercel'da WEDDING yo'q bo'lsa — null: hech narsa saqlanmaydi (aralashib ketmasligi uchun).
+// Aniqlab bo'lmasa — null: hech narsa saqlanmaydi (aralashib ketmasligi uchun).
 export function weddingSlug() {
-  const slug = (process.env.WEDDING || '').trim().toLowerCase();
-  if (slug) return /^[a-z0-9][a-z0-9-]*$/.test(slug) ? slug : null;
-  return process.env.VERCEL ? null : 'demo';
+  const { slug } = resolveSlug();
+  return slug && SLUG_RE.test(slug) ? slug : null;
 }
+
+export const weddingSlugSource = () => resolveSlug().source;
 
 /** Admin parolini tekshirish (vaqt bo'yicha hujumlarga chidamli). */
 export function checkAdmin(req) {
