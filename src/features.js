@@ -304,7 +304,9 @@ export function initRsvp(c, d, { onSaved } = {}) {
       }
       setStatus(
         json.error === 'not_configured'
-          ? 'Javoblarni saqlash hali sozlanmagan (sayt egasi uchun: README → “Javoblarni saqlash”).'
+          ? c.contacts?.length
+            ? 'Hozircha javobni qabul qilib bo‘lmadi. Iltimos, birozdan so‘ng urinib ko‘ring yoki telefon orqali bog‘laning.'
+            : 'Hozircha javobni qabul qilib bo‘lmadi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.'
           : 'Xatolik yuz berdi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.',
         true,
       );
