@@ -42,13 +42,18 @@ export default {
     image: '',
   },
 
-  // To'y dasturi (bo'sh — bo'lim ko'rsatilmaydi)
-  program: [],
+  // To'y dasturi
+  program: [
+    { time: '19:00', title: 'Mehmonlarni kutib olish' },
+    { time: '19:30', title: 'Kelin-kuyovning kirib kelishi' },
+    { time: '20:00', title: 'Tantanali ziyofat' },
+    { time: '22:30', title: 'To‘y tortini kesish' },
+  ],
 
-  // Dress-kod (bo'sh — bo'lim ko'rsatilmaydi)
+  // Dress-kod
   dressCode: {
-    text: '',
-    colors: [],
+    text: 'Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.',
+    colors: ['#0b2545', '#c9a96e', '#f4efe6', '#7a1f3d'],
   },
 
   // Galereya: media/ dagi rasmlar nomlari (bo'sh bo'lsa ko'rsatilmaydi)
