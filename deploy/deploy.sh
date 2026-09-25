@@ -40,7 +40,7 @@ health() {
 switch_to() {
   ln -sfn "$1" "$APP/current.new"
   mv -Tf "$APP/current.new" "$APP/current"
-  systemctl restart taklifnoma
+  systemctl restart taklifnoma 9>&-
 }
 
 cd "$APP"
@@ -124,4 +124,4 @@ done
 rm -rf releases/*.tmp 2>/dev/null || true
 
 # nginx va HTTPS sertifikatlari (xato bo'lsa ham saytlar ishlashda davom etadi)
-"$LIB/web.sh" || log "! nginx/sertifikat bosqichida xato — journalctl -u taklifnoma-deploy"
+"$LIB/web.sh" 9>&- || log "! nginx/sertifikat bosqichida xato — journalctl -u taklifnoma-deploy"
