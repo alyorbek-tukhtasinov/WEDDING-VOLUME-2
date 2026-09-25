@@ -141,6 +141,47 @@ esa bitta repodan yig'iladi. Shuning uchun `vercel.json` da:
   build o'tkazib yuboriladi. Umumiy kod (`src/`, `api/`, `public/`...) o'zgarsa —
   hamma loyiha yig'iladi. Aniqlab bo'lmasa — har doim yig'iladi.
 
+## O'z serveringizda (VPS) — Vercel o'rniga
+
+Barcha taklifnomalar bitta serverda ishlaydi: deploy limiti yo'q, har mijozga alohida
+loyiha ochish shart emas. Manzil: `https://<mijoz-papkasi>.<domen>` (masalan
+`salimboy-jasminaxon.documen.uz`). Serverdagi boshqa saytlar va botlarga tegmaydi.
+
+**Qanday ishlaydi**
+- nginx har bir subdomenni `clients/` dagi papkaga bog'laydi, `/api/*` ni esa
+  `server/index.js` ga (bitta Node jarayoni, faqat `127.0.0.1:3190`) yo'naltiradi.
+- `taklifnoma-deploy.timer` har 2 daqiqada GitHub'dagi `main` ni tekshiradi. Yangi commit
+  bo'lsa: hamma mijozni yig'adi → almashtiradi → API'ni tekshiradi. Nimadir yig'ilmasa
+  yoki API javob bermasa — saytlar eski versiyada qoladi.
+- HTTPS sertifikati (Let's Encrypt) DNS'i serverga yo'naltirilgan subdomenlarga o'zi olinadi.
+- Baza — Vercel'dagi Upstash'ning o'zi: javoblar ko'chirishda yo'qolmaydi.
+
+**O'rnatish (bir marta, serverda)**
+
+```bash
+git clone https://github.com/alyorbek-tukhtasinov/WEDDING-VOLUME-2.git /tmp/taklifnoma
+sudo bash /tmp/taklifnoma/deploy/install.sh documen.uz 138.68.110.106 siz@email.uz
+sudo nano /etc/taklifnoma/env        # REDIS_URL va har mijozning admin paroli
+sudo systemctl restart taklifnoma
+```
+
+Admin parol nomi: `ADMIN_PASSWORD__` + papka nomi katta harflarda, `-` o'rniga `_`
+(masalan `ADMIN_PASSWORD__SALIMBOY_JASMINAXON=...`). Bir mijoz paroli boshqasiga ishlamaydi.
+
+**Mijozni ko'chirish / yangi mijoz**: DNS'da `<papka>.documen.uz` uchun `A` yozuv →
+`138.68.110.106` (yoki bir marta `*.documen.uz` → shu IP — keyin yangi mijozlar uchun DNS
+ham kerak emas). 2–4 daqiqada sayt HTTPS bilan ochiladi.
+
+**Kundalik buyruqlar**
+
+| Nima | Buyruq |
+|---|---|
+| Holat | `systemctl status taklifnoma` |
+| Loglar | `journalctl -u taklifnoma -u taklifnoma-deploy -n 50` |
+| Hozir yangilash | `sudo /usr/local/lib/taklifnoma/deploy.sh --force` |
+| Oldingi versiyaga qaytish | `sudo /usr/local/lib/taklifnoma/deploy.sh --rollback` |
+| `deploy/` o'zgarganda | `install.sh` ni yana bir marta ishga tushiring (xavfsiz) |
+
 ## Javoblarni saqlash (RSVP)
 
 Mehmon javoblari **Upstash Redis** bazasida saqlanadi. Baza bepul va Vercel ichidan

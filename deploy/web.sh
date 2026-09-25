@@ -88,15 +88,22 @@ done
 have=$(cert_hosts)
 missing=$(comm -23 <(printf '%s\n' "${want[@]}" | sed '/^$/d' | sort -u) <(printf '%s\n' "$have" | sed '/^$/d'))
 
-# 3) Yangi manzillar bo'lsa — sertifikatni kengaytirish
+# 3) Yangi manzillar bo'lsa — sertifikatni kengaytirish.
+# Muvaffaqiyatsiz urinishdan keyin 30 daqiqa kutiladi (Let's Encrypt cheklovlariga tushmaslik uchun).
+FAIL_STAMP=/var/lib/taklifnoma-cert-failed
+if [ -n "$missing" ] && [ -n "$(find "$FAIL_STAMP" -mmin -30 2>/dev/null)" ]; then missing=""; fi
 if [ -n "$missing" ]; then
   log "sertifikat olinmoqda: $(echo "$missing" | tr '\n' ' ')"
   args=()
   for h in $(printf '%s\n' "${want[@]}" $have | sed '/^$/d' | sort -u); do args+=(-d "$h"); done
-  certbot certonly --webroot -w "$WEBROOT" --cert-name "$CERT_NAME" "${args[@]}" \
+  if certbot certonly --webroot -w "$WEBROOT" --cert-name "$CERT_NAME" "${args[@]}" \
     --non-interactive --agree-tos -m "$CERT_EMAIL" --expand --allow-subset-of-names \
-    --deploy-hook "systemctl reload nginx" \
-    || log "! sertifikat olinmadi (DNS hali tarqalmagan bo'lishi mumkin) — keyingi deployda yana urinadi"
+    --deploy-hook "systemctl reload nginx"; then
+    rm -f "$FAIL_STAMP"
+  else
+    touch "$FAIL_STAMP"
+    log "! sertifikat olinmadi (DNS hali tarqalmagan bo'lishi mumkin) — 30 daqiqadan keyin yana urinadi"
+  fi
 fi
 
 # 4) HTTPS qismi — sertifikat bo'lsa

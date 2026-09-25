@@ -52,8 +52,8 @@ if [ "${1:-}" = "--rollback" ]; then
     [ "$(readlink -f "$r")" != "$PREV_REL" ] && echo "$APP/$r" && break; done || true)
   [ -n "$OLD" ] || { log "qaytish uchun oldingi versiya yo'q"; exit 1; }
   switch_to "$OLD"
-  # Qaytarilgan commit taymer tomonidan qayta o'rnatilmasin (yangi commit kelguncha)
-  revision "$PREV_REL" > "$APP/.failed"
+  # GitHub'dagi hozirgi commit taymer tomonidan qayta o'rnatilmasin — faqat yangi commit kelganda
+  as_app git -C repo rev-parse "origin/$BRANCH" > "$APP/.failed" 2>/dev/null || revision "$PREV_REL" > "$APP/.failed"
   health && log "oldingi versiyaga qaytildi: $(revision "$OLD" | cut -c1-7)" || { log "✖ API javob bermayapti"; exit 1; }
   exit 0
 fi
@@ -66,9 +66,12 @@ NEW=$(as_app git -C repo rev-parse "origin/$BRANCH")
 CUR=$(revision current)
 
 if [ "${1:-}" != "--force" ]; then
-  [ "$NEW" = "$CUR" ] && exit 0
-  # Oldin yig'ilmagan commit'ni har 2 daqiqada qayta urinmaymiz — yangi commit kutiladi
-  [ "$NEW" = "$(cat .failed 2>/dev/null || true)" ] && exit 0
+  # Yangi commit yo'q (yoki oldin yig'ilmagan commit — uni har 2 daqiqada qayta urinmaymiz).
+  # Baribir sertifikatlarni tekshiramiz: DNS keyinroq yo'naltirilsa ham HTTPS o'zi yoqilsin.
+  if [ "$NEW" = "$CUR" ] || [ "$NEW" = "$(cat .failed 2>/dev/null || true)" ]; then
+    [ -n "$CUR" ] && { "$LIB/web.sh" 9>&- || true; }
+    exit 0
+  fi
 fi
 log "yangi versiya: ${NEW:0:7} (hozirgi: ${CUR:0:7})"
 
