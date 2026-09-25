@@ -85,6 +85,42 @@ a {
   box-shadow: 0 0 80px rgb(0 0 0 / 0.45);
 }
 
+/* ---------------- Fon rasmi (config: backgroundImage) ---------------- */
+/* Rasm ekranga mahkamlanadi, kontent uning ustidan suzib o'tadi */
+.page-bg {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(100%, var(--page-w));
+  transform: translateX(-50%);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.page-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--cream);
+  opacity: var(--bg-veil, 0.84);
+}
+
+.page--photo {
+  background: transparent;
+}
+
+/* Yirtiq qog'oz chetlari krem fonga moslangan — rasmli fonda ko'rsatilmaydi */
+.page--photo .torn::before,
+.page--photo .torn::after {
+  display: none;
+}
+
+.page--photo .torn {
+  margin: 0;
+}
+
 /* ------------------------------ Konvert ------------------------------ */
 .envelope {
   position: fixed;

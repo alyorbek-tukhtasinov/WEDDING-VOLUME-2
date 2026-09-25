@@ -41,6 +41,10 @@ export default {
     image: '',
   },
 
+  // Butun sayt ortidagi fon rasmi (media/ dagi fayl). Asliga qaytarish uchun shu 2 qatorni o'chiring.
+  backgroundImage: 'bg.jpg',
+  backgroundOverlay: 0.84, // 0..1 — rasm ustidagi krem parda (katta = xiraroq)
+
   // To'yxona bo'limida rasm o'rniga chiqadigan katta yozuv
   giftNote: {
     eyebrow: 'Eng qimmatli sovg‘a',

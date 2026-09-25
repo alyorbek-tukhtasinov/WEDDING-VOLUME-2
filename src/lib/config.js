@@ -9,11 +9,11 @@ export const WEEKDAYS = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'pay
 export const WEEKDAYS_SHORT = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+export const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const TZ_RE = /^[+-](0\d|1[0-4]):[0-5]\d$/;
 const MEDIA_RE = /^[\w.\-]+$/;
 
-function isValidDate(str) {
+export function isValidDate(str) {
   const m = DATE_RE.exec(str || '');
   if (!m) return false;
   const [y, mo, d] = [+m[1], +m[2], +m[3]];
@@ -59,6 +59,11 @@ export function validateConfig(c, mediaFiles = null) {
   }
   checkMedia(c.venue?.image, 'venue.image');
   checkMedia(c.music, 'music');
+  checkMedia(c.backgroundImage, 'backgroundImage');
+  if (c.backgroundOverlay != null) {
+    const o = Number(c.backgroundOverlay);
+    need(Number.isFinite(o) && o >= 0 && o <= 1, 'backgroundOverlay 0 dan 1 gacha son bo\'lishi kerak (masalan 0.84)');
+  }
   need(!c.music || /\.(mp3|m4a|aac|ogg)$/i.test(c.music), 'music: faqat .mp3, .m4a, .aac yoki .ogg fayl bo\'lishi mumkin');
   checkMedia(c.seo?.ogImage, 'seo.ogImage');
   (c.gallery || []).forEach((g, i) => checkMedia(g, `gallery[${i}]`));
@@ -103,6 +108,29 @@ export function validateConfig(c, mediaFiles = null) {
 
 function initialsOf(name) {
   return (name || '').trim().charAt(0).toUpperCase();
+}
+
+const dayNum = (iso) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return Date.UTC(y, m - 1, d) / 86400000;
+};
+const fromDayNum = (n) => new Date(n * 86400000).toISOString().slice(0, 10);
+
+/**
+ * Admin sahifasidan o'zgartirilgan sana/vaqtni config ustiga qo'yadi.
+ * Javob muddati (rsvp.deadline) ham to'y sanasi bilan birga shuncha kunga suriladi.
+ */
+export function applyOverrides(c, s) {
+  if (!s || typeof s !== 'object') return c;
+  const date = isValidDate(s.date) ? s.date : c.event.date;
+  const time = TIME_RE.test(s.time || '') ? s.time : c.event.time;
+  if (date === c.event.date && time === c.event.time) return c;
+  let rsvp = c.rsvp;
+  if (rsvp?.deadline && isValidDate(rsvp.deadline) && date !== c.event.date) {
+    rsvp = { ...rsvp, deadline: fromDayNum(dayNum(rsvp.deadline) + dayNum(date) - dayNum(c.event.date)) };
+  }
+  // originalDate — mehmonning brauzerdagi javobi sana o'zgarganda yo'qolmasligi uchun
+  return { ...c, event: { ...c.event, date, time, originalDate: c.event.date }, rsvp };
 }
 
 export const mediaUrl = (name) => (name ? `/media/${name}` : '');

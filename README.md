@@ -220,6 +220,25 @@ giftNote: {
 Berilmasa, bo'lim avvalgidek rasm bilan chiqadi. Namuna uchun
 `clients/begzodxoja-xusnoraxon` ga qarang.
 
+**Fon rasmi (`backgroundImage`).** Butun sayt ortiga kelin-kuyov rasmi qo'yiladi.
+Rasm ekranga mahkamlanadi, ustida krem parda bo'ladi:
+
+```js
+backgroundImage: 'bg.jpg',   // media/ dagi fayl (vertikal rasm yaxshi)
+backgroundOverlay: 0.84,     // 0..1 — katta bo'lsa rasm xiraroq, matn aniqroq
+```
+
+Asliga qaytarish uchun shu ikki qatorni o'chirish kifoya.
+
+**Sana va vaqtni admin sahifasidan o'zgartirish.** `/admin` → "To'y sanasi va vaqti".
+Saqlangan sana bazada turadi, qayta deploy kerak emas. Sayt ochilganda bosh sahifa,
+taqvim, hisoblagich va "Taqvimga qo'shish" yangi sanani oladi. Javob berish muddati
+ham shuncha kunga suriladi. "Asl holiga qaytarish" config'dagi sanaga qaytaradi.
+
+> Telegram'da havola ulashilganda chiqadigan tavsifdagi sana esa config'dan
+> olinadi. Sana butunlay o'zgargan bo'lsa, `config.js` ni ham yangilab deploy
+> qiling.
+
 ---
 
 ## Brendingiz va dizayn

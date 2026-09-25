@@ -159,6 +159,24 @@ export async function ping() {
   }
 }
 
+// Admin sahifasidan o'zgartirilgan sozlamalar (sana/vaqt): taklifnoma:<WEDDING>:settings
+const settingsKey = () => key().replace(/:rsvp$/, ':settings');
+
+export async function getSettings() {
+  const raw = await redis('GET', settingsKey());
+  if (!raw) return null;
+  try {
+    return JSON.parse(String(raw));
+  } catch {
+    return null;
+  }
+}
+
+export async function saveSettings(settings) {
+  if (!settings) return redis('DEL', settingsKey());
+  return redis('SET', settingsKey(), JSON.stringify(settings));
+}
+
 export async function deleteEntry(id) {
   return redis('HDEL', key(), id);
 }

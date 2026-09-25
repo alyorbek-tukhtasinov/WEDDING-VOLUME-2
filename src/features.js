@@ -224,7 +224,7 @@ export function initRsvp(c, d, { onSaved } = {}) {
   const status = $('#rsvp-status');
   const doneBox = $('#rsvp-done');
   const guestsField = $('#guests-field');
-  const storageKey = `rsvp:${d.names}:${c.event.date}`;
+  const storageKey = `rsvp:${d.names}:${c.event.originalDate || c.event.date}`;
 
   const store = {
     get() {

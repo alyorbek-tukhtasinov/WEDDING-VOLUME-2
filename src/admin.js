@@ -1,6 +1,6 @@
 import './admin.css';
 import config from '@wedding-config';
-import { deriveConfig } from './lib/config.js';
+import { deriveConfig, MONTHS } from './lib/config.js';
 import { html, $, $$ } from './lib/dom.js';
 
 const d = deriveConfig(config);
@@ -124,6 +124,16 @@ function renderDashboard() {
       </div>
     </header>
 
+    <section class="card" id="date-card">
+      <h2 class="card__title">To‘y sanasi va vaqti</h2>
+      <form class="date-form" id="date-form">
+        <label class="field"><span>Sana</span><input type="date" name="date" required /></label>
+        <label class="field"><span>Vaqt</span><input type="time" name="time" required /></label>
+        <button class="btn btn--dark" type="submit">Saqlash</button>
+      </form>
+      <p class="card__note" id="date-note"></p>
+    </section>
+
     <section class="stats">
       <div class="stat"><b>${s.total}</b><span>jami javob</span></div>
       <div class="stat stat--yes"><b>${s.attending}</b><span>keladi</span></div>
@@ -148,6 +158,7 @@ function renderDashboard() {
     <section class="list" id="list"></section>
   `.value;
 
+  initDateCard();
   $('#refresh').addEventListener('click', load);
   $('#csv').addEventListener('click', downloadCsv);
   $('#logout').addEventListener('click', () => {
@@ -171,6 +182,52 @@ function renderDashboard() {
     renderList();
   });
   renderList();
+}
+
+/* ------------------------ Sana va vaqt ------------------------ */
+const humanDate = (iso, time) => {
+  const [y, m, dd] = iso.split('-').map(Number);
+  return `${dd}-${MONTHS[m - 1]} ${y}, soat ${time}`;
+};
+
+function initDateCard() {
+  const form = $('#date-form');
+  const note = $('#date-note');
+  const current = data.settings || { date: config.event.date, time: config.event.time };
+  form.date.value = current.date;
+  form.time.value = current.time;
+
+  const original = humanDate(config.event.date, config.event.time);
+  if (data.settings) {
+    note.innerHTML = html`Saytda hozir: <b>${humanDate(data.settings.date, data.settings.time)}</b> (admin'dan o‘zgartirilgan).
+      Asl sana: ${original}. <button class="link" type="button" id="date-reset">Asl holiga qaytarish</button>`.value;
+    $('#date-reset').addEventListener('click', async () => {
+      if (!confirm(`Sana va vaqt asl holiga (${original}) qaytarilsinmi?`)) return;
+      await saveDate({ action: 'resetSettings' });
+    });
+  } else {
+    note.textContent = `Saytda hozir: ${original}. O‘zgartirsangiz, taklifnoma darhol yangi sana bilan ochiladi.`;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const date = form.date.value;
+    const time = form.time.value.slice(0, 5);
+    if (!date || !time) return;
+    if (!confirm(`To‘y sanasi ${humanDate(date, time)} qilib o‘zgartirilsinmi?`)) return;
+    await saveDate({ action: 'settings', date, time });
+  });
+
+  async function saveDate(body) {
+    $$('button', $('#date-card')).forEach((b) => (b.disabled = true));
+    try {
+      await api('POST', body);
+      await load();
+    } catch (err) {
+      alert(err.message === 'validation' ? 'Sana yoki vaqt noto‘g‘ri kiritilgan.' : ERRORS[err.message] || ERRORS.store_failed);
+      $$('button', $('#date-card')).forEach((b) => (b.disabled = false));
+    }
+  }
 }
 
 function renderList() {

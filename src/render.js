@@ -321,11 +321,20 @@ function musicButton(c) {
   `;
 }
 
+// Fon rasmi ustidagi krem pardaning quyuqligi (0..1). Katta — rasm xiraroq, matn aniqroq.
+function bgVeil(c) {
+  const v = Number(c.backgroundOverlay);
+  return Number.isFinite(v) && v >= 0 && v <= 1 ? v : 0.84;
+}
+
 export function renderPage(c, d, brand) {
   return html`
     ${envelope(c, d)}
     <div class="petals" id="petals" aria-hidden="true"></div>
-    <div class="page">
+    ${c.backgroundImage
+      ? html`<div class="page-bg" aria-hidden="true" style="background-image:url('${mediaUrl(c.backgroundImage)}');--bg-veil:${bgVeil(c)}"></div>`
+      : ''}
+    <div class="page${c.backgroundImage ? ' page--photo' : ''}">
       ${hero(c, d)}
       <main>
         ${invite(c, d)}
