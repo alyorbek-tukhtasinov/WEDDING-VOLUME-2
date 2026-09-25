@@ -1,0 +1,14 @@
+{
+  "template": "yz",
+  "couple": { "groom": "Yusuf", "bride": "Zulayho" },
+  "event": { "date": "2026-12-12", "time": "16:00", "timezone": "+05:00" },
+  "venue": {
+    "name": "Tarona to'yxonasi",
+    "address": "O'zbekiston tumani, Ziyo-Nursux MFY",
+    "googleMaps": "https://maps.app.goo.gl/qn6PFwWLDo7gizwb7",
+    "yandexMaps": "https://yandex.uz/maps/-/CTgWaCpc",
+    "mapEmbed": "https://yandex.uz/map-widget/v1/?l=sat&ll=70.766612%2C40.368446&mode=search&oid=239106477257&ol=biz&z=19"
+  },
+  "giftCard": { "number": "5614 0000 0000 0000", "holder": "Yusuf", "bank": "Uzcard" },
+  "rsvp": { "enabled": true, "maxGuests": 5 }
+}

@@ -34,6 +34,10 @@ export default defineConfig(async ({ mode }) => {
     throw err;
   }
 
+  // Shablon: volume2 — ildizdagi index.html (vanilla JS), yz — templates/yz (React)
+  const template = client.config.template || 'volume2';
+  const mainHtml = template === 'yz' ? path.join(root, 'templates', 'yz', 'index.html') : path.join(root, 'index.html');
+
   return {
     resolve: {
       alias: {
@@ -45,17 +49,22 @@ export default defineConfig(async ({ mode }) => {
       target: 'es2019',
       assetsInlineLimit: 0,
       rollupOptions: {
+        // motion (React) kutubxonasidagi "use client" izohlari — brauzer uchun ahamiyatsiz
+        onwarn(warning, warn) {
+          if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return;
+          warn(warning);
+        },
         input: {
-          main: path.join(root, 'index.html'),
+          main: mainHtml,
           admin: path.join(root, 'admin.html'),
         },
       },
     },
-    plugins: [weddingPlugin(client)],
+    plugins: [weddingPlugin(client, template)],
   };
 });
 
-function weddingPlugin(client) {
+function weddingPlugin(client, template) {
   let outDir = 'dist';
   const { config, derived, mediaDir } = client;
 
@@ -70,7 +79,12 @@ function weddingPlugin(client) {
     transformIndexHtml(html) {
       const base = siteUrl();
       const abs = (p) => (base ? base + p : p);
-      const ogImage = config.seo?.ogImage ? `/media/${config.seo.ogImage}` : '/images/og-default.jpg';
+      // yz shablonida alohida rasm tanlanmagan bo'lsa — bosh sahifadagi surat
+      const ogImage = config.seo?.ogImage
+        ? `/media/${config.seo.ogImage}`
+        : template === 'yz'
+          ? config.photos?.hero ? `/media/${config.photos.hero}` : '/images/yz/wedding1.jpg'
+          : '/images/og-default.jpg';
       const themeVars = Object.entries(config.theme || {})
         .map(([k, v]) => `--${k}:${v};`)
         .join('');
@@ -92,6 +106,12 @@ function weddingPlugin(client) {
 
     // Dev rejimida /media/* va /api/* ni xizmat qilish
     configureServer(server) {
+      if (template === 'yz') {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url === '/' || req.url === '/index.html') req.url = '/templates/yz/index.html';
+          next();
+        });
+      }
       server.middlewares.use('/media', (req, res, next) => {
         const file = path.join(mediaDir, decodeURIComponent(req.url.split('?')[0]));
         if (!file.startsWith(mediaDir + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
@@ -118,6 +138,12 @@ function weddingPlugin(client) {
 
     // Build oxirida mijozning media/ papkasini dist/media ga ko'chirish
     closeBundle() {
+      // yz: templates/yz/index.html saytning bosh sahifasi (index.html) bo'lishi kerak
+      const nested = path.join(outDir, 'templates', 'yz', 'index.html');
+      if (fs.existsSync(nested)) {
+        fs.renameSync(nested, path.join(outDir, 'index.html'));
+        fs.rmSync(path.join(outDir, 'templates'), { recursive: true, force: true });
+      }
       if (fs.existsSync(mediaDir)) {
         fs.cpSync(mediaDir, path.join(outDir, 'media'), {
           recursive: true,

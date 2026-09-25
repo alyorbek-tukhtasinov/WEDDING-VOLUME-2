@@ -63,6 +63,7 @@ export function validateConfig(c, mediaFiles = null) {
   }
   checkMedia(c.venue?.image, 'venue.image');
   checkMedia(c.music, 'music');
+  need(!c.musicTrack || findTrack(c.musicTrack), `musicTrack: to'plamda "${c.musicTrack}" qo'shig'i yo'q`);
   checkMedia(c.backgroundImage, 'backgroundImage');
   if (c.backgroundOverlay != null) {
     const o = Number(c.backgroundOverlay);
@@ -93,6 +94,38 @@ export function validateConfig(c, mediaFiles = null) {
       const v = c.giftNote?.[k];
       need(v == null || typeof v === 'string', `giftNote.${k} matn bo'lishi kerak`);
     }
+  }
+
+  // "Yusuf & Zulayho" (yz) shabloni maydonlari
+  if (c.template === 'yz') {
+    const PHOTO_KEYS = ['hero', 'invitation', 'details', 'countdown', 'map', 'gift'];
+    for (const [k, v] of Object.entries(c.photos || {})) {
+      need(PHOTO_KEYS.includes(k), `photos.${k} — noma'lum bo'lim (${PHOTO_KEYS.join(', ')})`);
+      checkMedia(v, `photos.${k}`);
+    }
+    if (c.giftCard?.number) {
+      need(/^\d{16}$/.test(String(c.giftCard.number).replace(/[\s-]/g, '')), `giftCard.number 16 xonali karta raqami bo'lishi kerak: "${c.giftCard.number}"`);
+    }
+    for (const k of ['holder', 'holderRu', 'bank', 'expiry']) {
+      need(c.giftCard?.[k] == null || typeof c.giftCard[k] === 'string', `giftCard.${k} matn bo'lishi kerak`);
+    }
+    for (const lang of ['uz', 'ru']) {
+      for (const [k, v] of Object.entries(c.texts?.[lang] || {})) need(typeof v === 'string', `texts.${lang}.${k} matn bo'lishi kerak`);
+    }
+    for (const k of ['groom', 'bride', 'venueName', 'address']) {
+      need(c.ru?.[k] == null || typeof c.ru[k] === 'string', `ru.${k} matn bo'lishi kerak`);
+    }
+  }
+  // Sahifaga joylanadigan xarita — faqat Google yoki Yandex manzili (boshqa saytni iframe'ga qo'yib bo'lmaydi)
+  if (c.venue?.mapEmbed) {
+    let ok = false;
+    try {
+      const u = new URL(c.venue.mapEmbed);
+      ok = u.protocol === 'https:' && (/(^|\.)google\.com$/.test(u.hostname) && u.pathname.startsWith('/maps/embed') || /(^|\.)yandex\.(uz|ru|com)$/.test(u.hostname) && u.pathname.startsWith('/map-widget/'));
+    } catch {
+      ok = false;
+    }
+    need(ok, `venue.mapEmbed faqat Google (maps/embed) yoki Yandex (map-widget) manzili bo'lishi mumkin`);
   }
 
   (c.contacts || []).forEach((ct, i) => {
@@ -151,6 +184,16 @@ export function applyOverrides(c, s) {
 }
 
 export const mediaUrl = (name) => (name ? `/media/${name}` : '');
+
+/**
+ * Fon musiqasi manzili. Ustunlik tartibi: admin sahifasidagi tanlov (musicUrl, '' — musiqasiz)
+ * → config'dagi to'plam qo'shig'i (musicTrack) → mijozning o'z fayli (music).
+ */
+export function musicUrlOf(c) {
+  if (c.musicUrl !== undefined) return c.musicUrl;
+  const track = c.musicTrack ? findTrack(c.musicTrack) : null;
+  return track ? track.file : mediaUrl(c.music);
+}
 
 /** Konfiguratsiyadan sahifa uchun kerakli barcha qiymatlarni hisoblaydi. */
 export function deriveConfig(c) {

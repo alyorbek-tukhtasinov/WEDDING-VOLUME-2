@@ -1,5 +1,5 @@
 import { html } from './lib/dom.js';
-import { MONTHS, WEEKDAYS_SHORT, mediaUrl } from './lib/config.js';
+import { MONTHS, WEEKDAYS_SHORT, mediaUrl, musicUrlOf } from './lib/config.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 const img = (name) => `/images/${name}`;
@@ -347,8 +347,7 @@ function footer(c, d, brand) {
 }
 
 function musicButton(c) {
-  // musicUrl — admin paneldan tanlangan to'plamdagi qo'shiq; bo'lmasa config'dagi media fayl
-  const src = c.musicUrl || mediaUrl(c.music);
+  const src = musicUrlOf(c);
   if (!src) return '';
   return html`
     <audio id="music" src="${src}" loop preload="none"></audio>
