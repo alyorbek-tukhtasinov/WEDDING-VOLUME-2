@@ -4,6 +4,10 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "ignoreCommand": "node scripts/ignore-build.js",
+  "git": {
+    "deploymentEnabled": { "claude/*": false }
+  },
   "cleanUrls": true,
   "headers": [
     {

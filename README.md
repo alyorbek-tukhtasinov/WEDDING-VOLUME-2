@@ -130,6 +130,17 @@ repozitoriydan ishlaydi.
 
 ---
 
+### Deploy'lar sonini tejash
+
+Vercel bepul tarifida kuniga 100 ta deploy limiti bor, barcha mijoz loyihalari
+esa bitta repodan yig'iladi. Shuning uchun `vercel.json` da:
+
+- `git.deploymentEnabled` — `claude/*` ish branch'lari deploy qilinmaydi, faqat `main`.
+- `ignoreCommand` (`scripts/ignore-build.js`) — loyiha faqat o'ziga tegishli o'zgarishda
+  yig'iladi: boshqa mijozning `clients/<nom>/` papkasi yoki `.md` fayllar o'zgarsa,
+  build o'tkazib yuboriladi. Umumiy kod (`src/`, `api/`, `public/`...) o'zgarsa —
+  hamma loyiha yig'iladi. Aniqlab bo'lmasa — har doim yig'iladi.
+
 ## Javoblarni saqlash (RSVP)
 
 Mehmon javoblari **Upstash Redis** bazasida saqlanadi. Baza bepul va Vercel ichidan
