@@ -1480,6 +1480,24 @@ a {
 }
 
 /* ------------------------ Harakatni kamaytirish ---------------------- */
+/* Yozuv (typing) effekti */
+.type-rest {
+  visibility: hidden;
+}
+
+.type-caret::after {
+  content: '';
+  margin-right: -2px;
+  border-right: 2px solid currentColor;
+  animation: caret 0.7s steps(1) infinite;
+}
+
+@keyframes caret {
+  50% {
+    border-color: transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

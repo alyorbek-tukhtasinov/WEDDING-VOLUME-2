@@ -180,6 +180,97 @@ export function initReveal() {
   items.forEach((el) => io.observe(el));
 }
 
+/* ------------------------- Yozuv (typing) effekti ------------------------ */
+// [data-type] matnlari ekranga chiqqanda harfma-harf yoziladi. Joy oldindan band qilinadi
+// (qolgan qism ko'rinmas holda turadi), shuning uchun sahifa sakramaydi.
+// prepareTyping() — render'dan so'ng darhol (matn yashirinadi), startTyping() — konvert ochilgach.
+const typingJobs = new Map();
+
+export function prepareTyping(enabled) {
+  if (!enabled || prefersReducedMotion() || !('IntersectionObserver' in window)) return;
+  for (const el of $$('[data-type]')) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) if (walker.currentNode.data.trim()) nodes.push(walker.currentNode);
+    if (!nodes.length) continue;
+    const parts = nodes.map((node) => {
+      const shown = document.createElement('span');
+      const rest = document.createElement('span');
+      rest.className = 'type-rest';
+      rest.textContent = node.data;
+      node.replaceWith(shown, rest);
+      return { shown, rest, chars: Array.from(node.data), text: node.data };
+    });
+    el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
+    typingJobs.set(el, parts);
+  }
+}
+
+function finishTyping(el) {
+  const parts = typingJobs.get(el);
+  if (!parts) return;
+  typingJobs.delete(el);
+  for (const p of parts) {
+    p.rest.remove();
+    p.shown.replaceWith(document.createTextNode(p.text));
+  }
+  el.removeAttribute('aria-label');
+}
+
+export function startTyping() {
+  if (!typingJobs.size) return;
+  const queue = [];
+  let busy = false;
+
+  const run = () => {
+    const el = queue.shift();
+    if (!el) {
+      busy = false;
+      return;
+    }
+    busy = true;
+    const parts = typingJobs.get(el);
+    const total = parts.reduce((n, p) => n + p.chars.length, 0);
+    // Uzun matn ham ~4 soniyadan oshmasin, qisqasi juda tez o'tib ketmasin
+    const step = Math.min(55, Math.max(16, 4000 / total));
+    let pi = 0;
+    let ci = 0;
+    const tick = () => {
+      const p = parts[pi];
+      if (!p) {
+        finishTyping(el);
+        return setTimeout(run, 180);
+      }
+      p.shown.classList.add('type-caret');
+      ci++;
+      p.shown.textContent = p.chars.slice(0, ci).join('');
+      p.rest.textContent = p.chars.slice(ci).join('');
+      if (ci >= p.chars.length) {
+        p.shown.classList.remove('type-caret');
+        pi++;
+        ci = 0;
+      }
+      setTimeout(tick, step);
+    };
+    tick();
+  };
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      const seen = entries.filter((e) => e.isIntersecting).map((e) => e.target);
+      // Hujjatdagi tartib bo'yicha navbatga qo'yiladi
+      seen.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+      for (const el of seen) {
+        io.unobserve(el);
+        queue.push(el);
+      }
+      if (!busy) run();
+    },
+    { rootMargin: '0px 0px -10% 0px', threshold: 0.3 },
+  );
+  typingJobs.forEach((_, el) => io.observe(el));
+}
+
 /* ---------------------------- Gul barglari --------------------------- */
 export function initPetals(enabled) {
   const box = $('#petals');

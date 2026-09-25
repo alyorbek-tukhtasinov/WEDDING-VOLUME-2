@@ -10,6 +10,8 @@ import {
   initMusic,
   initReveal,
   initPetals,
+  prepareTyping,
+  startTyping,
   initGallery,
   initRsvp,
   loadWishes,
@@ -34,6 +36,8 @@ async function start() {
   const derived = deriveConfig(c);
   const app = document.getElementById('app');
   app.innerHTML = renderPage(c, derived, brand);
+  const typing = c.effects?.typing !== false;
+  prepareTyping(typing);
 
   initCountdown(derived);
   initCalendar(c, derived);
@@ -46,6 +50,8 @@ async function start() {
   initEnvelope({
     onOpen({ gesture }) {
       initPetals(c.effects?.petals !== false);
+      // Konvert ochilish animatsiyasi tugagach yozish boshlanadi
+      setTimeout(startTyping, gesture ? 1500 : 300);
       if (gesture) {
         music.play();
       } else {

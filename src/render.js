@@ -27,7 +27,7 @@ function hero(c, d) {
     <header class="hero" id="top">
       <img class="hero__bg" src="${img('hero-arch.webp')}" alt="" fetchpriority="high" />
       <div class="hero__content">
-        <p class="hero__caption">${c.texts?.heroCaption || 'To‘yga taklifnoma'}</p>
+        <p class="hero__caption" data-type>${c.texts?.heroCaption || 'To‘yga taklifnoma'}</p>
         <h1 class="hero__names">
           <span>${d.groom}</span>
           <span class="hero__amp">&amp;</span>
@@ -47,9 +47,9 @@ function invite(c, d) {
     <section class="invite" id="invite">
       <div class="paper paper--a" data-reveal>
         <img class="frame frame--top" src="${img('frame-top.webp')}" alt="" loading="lazy" />
-        <p class="invite__greeting">${c.texts?.greeting}</p>
-        <p class="invite__text">${c.texts?.invitation}</p>
-        ${c.hosts ? html`<p class="invite__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
+        <p class="invite__greeting" data-type>${c.texts?.greeting}</p>
+        <p class="invite__text" data-type>${c.texts?.invitation}</p>
+        ${c.hosts ? html`<p class="invite__hosts" data-type><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
         <img class="frame frame--bottom" src="${img('frame-bottom.webp')}" alt="" loading="lazy" />
       </div>
     </section>
@@ -127,9 +127,9 @@ function giftNote(g) {
   return html`
     <div class="gift" data-reveal>
       <img class="gift__frame" src="${img('frame-top.webp')}" alt="" loading="lazy" />
-      ${g.eyebrow ? html`<p class="gift__eyebrow">${g.eyebrow}</p>` : ''}
-      <p class="gift__title">${g.title}</p>
-      ${g.text ? html`<p class="gift__text">${g.text}</p>` : ''}
+      ${g.eyebrow ? html`<p class="gift__eyebrow" data-type>${g.eyebrow}</p>` : ''}
+      <p class="gift__title" data-type>${g.title}</p>
+      ${g.text ? html`<p class="gift__text" data-type>${g.text}</p>` : ''}
       <img class="gift__heart" src="${img('heart.webp')}" alt="" loading="lazy" />
       <img class="gift__frame gift__frame--bottom" src="${img('frame-bottom.webp')}" alt="" loading="lazy" />
     </div>
@@ -184,7 +184,7 @@ function dressCode(c) {
   return html`
     <section class="section dress">
       <h2 class="title" data-reveal>Dress-kod</h2>
-      <p class="dress__text" data-reveal>${c.dressCode.text}</p>
+      <p class="dress__text" data-reveal data-type>${c.dressCode.text}</p>
       ${c.dressCode.colors?.length
         ? html`<div class="dress__colors" data-reveal>
             ${c.dressCode.colors.map((col) => html`<span style="background:${col}" title="${col}"></span>`)}
