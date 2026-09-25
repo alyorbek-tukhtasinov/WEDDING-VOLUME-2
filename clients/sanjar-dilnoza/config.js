@@ -22,7 +22,7 @@ export default {
   },
 
   // Taklif qiluvchilar
-  hosts: 'To‘rayevlar oilasi',
+  hosts: 'To‘rayevlar va Qurbonovlar oilasi',
 
   texts: {
     heroCaption: 'Nikoh to‘yiga taklifnoma',
