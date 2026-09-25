@@ -45,12 +45,12 @@ export default {
   backgroundImage: 'bg.jpg',
   backgroundOverlay: 0.84, // 0..1 — rasm ustidagi krem parda (katta = xiraroq)
 
-  // To'y dasturi (kunduzgi tadbirga moslangan)
+  // To'y dasturi (kelin tomon — qiz uzatish, kelinning uyida)
   program: [
     { time: '11:00', title: 'Mehmonlarni kutib olish' },
-    { time: '11:30', title: 'Kelin-kuyovning kirib kelishi' },
-    { time: '12:00', title: 'Tantanali ziyofat' },
-    { time: '14:00', title: 'To‘y tortini kesish' },
+    { time: '11:30', title: 'Dasturxon atrofida ziyofat' },
+    { time: '13:00', title: 'Kuyov va uning yaqinlarining kirib kelishi' },
+    { time: '13:30', title: 'Kelinni kuyov xonadoniga kuzatish' },
   ],
 
   // Dress-kod (kunduzgi tadbirga moslangan)
