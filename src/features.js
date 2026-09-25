@@ -299,7 +299,7 @@ export function initGallery() {
   const dlg = $('#lightbox');
   if (!dlg || typeof dlg.showModal !== 'function') return;
   const img = $('img', dlg);
-  $$('.gallery__item').forEach((btn) =>
+  $$('.gallery__item, .garland__photo').forEach((btn) =>
     btn.addEventListener('click', () => {
       img.src = $('img', btn).src;
       dlg.showModal();

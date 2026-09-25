@@ -262,6 +262,9 @@ To'plamga yangi qo'shiq qo'shish:
 - **Umumiy dizayn rasmlari** `public/images/` da joylashgan (konvert, ramkalar,
   naqshlar). Ularni almashtirsangiz, barcha mijozlar saytiga ta'sir qiladi.
 - **Konvert va gul barglari** effektlari `effects` orqali o'chiriladi.
+- **Galereya uslubi**: `gallery` ga rasmlar qo'yilsa, standart ko'rinish — to'r (grid).
+  `galleryStyle: 'garland'` — rasmlar tilla ipga osilgan polaroidlardek bir qatorda
+  turadi va barmoq bilan suriladi.
 - **Yozuv (typing) effekti**: taklif matni, sarlavha, sovg'a va dress-kod matnlari
   ekranga chiqqanda harfma-harf yoziladi. Biror mijozda o'chirish uchun
   `effects: { typing: false }`.

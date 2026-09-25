@@ -60,7 +60,9 @@ export default {
   },
 
   // Galereya: media/ dagi rasmlar nomlari (bo'sh bo'lsa ko'rsatilmaydi)
-  gallery: [],
+  gallery: ['photo-1.jpg', 'photo-2.jpg', 'photo-3.jpg', 'photo-4.jpg'],
+  // 'garland' — ipga osilgan, suriladigan rasmlar (b-day uslubi). Asliga qaytarish: shu qatorni o'chiring.
+  galleryStyle: 'garland',
 
   // Fon musiqasi (demo bilan bir xil)
   music: 'music.m4a',

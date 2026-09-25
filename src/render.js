@@ -194,8 +194,43 @@ function dressCode(c) {
   `;
 }
 
+// b-day loyihasidagi "ipga osilgan rasmlar" uslubi: gorizontal suriladigan polaroidlar
+function garland(c) {
+  const tilts = [-5, 4, -3, 5, -4, 3];
+  return html`
+    <div class="garland" data-reveal>
+      <div class="garland__track">
+        <span class="garland__wire" aria-hidden="true"></span>
+        ${c.gallery.map(
+          (g, i) => html`
+            <div class="garland__item" style="--i:${i};--r:${tilts[i % tilts.length]}deg">
+              <span class="garland__pin" aria-hidden="true"></span>
+              <button class="garland__photo" type="button" aria-label="Rasmni kattalashtirish">
+                <img src="${mediaUrl(g)}" alt="" loading="lazy" />
+              </button>
+            </div>
+          `,
+        )}
+      </div>
+    </div>
+    <p class="garland__hint" data-reveal>Suring →</p>
+  `;
+}
+
 function gallery(c) {
   if (!c.gallery?.length) return '';
+  if (c.galleryStyle === 'garland') {
+    return html`
+      <section class="section gallery gallery--garland" id="gallery">
+        <h2 class="title" data-reveal>Lahzalarimiz</h2>
+        ${garland(c)}
+        <dialog class="lightbox" id="lightbox">
+          <img alt="" />
+          <button class="lightbox__close" type="button" aria-label="Yopish">×</button>
+        </dialog>
+      </section>
+    `;
+  }
   return html`
     <section class="section gallery" id="gallery">
       <h2 class="title" data-reveal>Lahzalarimiz</h2>

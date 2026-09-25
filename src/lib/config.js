@@ -69,6 +69,7 @@ export function validateConfig(c, mediaFiles = null) {
   need(!c.music || /\.(mp3|m4a|aac|ogg)$/i.test(c.music), 'music: faqat .mp3, .m4a, .aac yoki .ogg fayl bo\'lishi mumkin');
   checkMedia(c.seo?.ogImage, 'seo.ogImage');
   (c.gallery || []).forEach((g, i) => checkMedia(g, `gallery[${i}]`));
+  need(!c.galleryStyle || ['grid', 'garland'].includes(c.galleryStyle), `galleryStyle faqat 'grid' yoki 'garland' bo'lishi mumkin: "${c.galleryStyle}"`);
 
   (c.program || []).forEach((p, i) => {
     need(TIME_RE.test(p?.time || ''), `program[${i}].time noto'g'ri: "${p?.time}"`);
