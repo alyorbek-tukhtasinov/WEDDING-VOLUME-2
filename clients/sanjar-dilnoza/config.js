@@ -55,7 +55,7 @@ export default {
 
   // Dress-kod (demo bilan bir xil)
   dressCode: {
-    text: 'Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.',
+    text: 'O‘zingizga qulay va ma’qul bo‘lgan bayramona libosda tashrif buyuring — biz uchun eng muhimi, siz bilan birga bo‘lish.',
     colors: ['#0b2545', '#c9a96e', '#f4efe6', '#7a1f3d'],
   },
 
