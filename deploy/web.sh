@@ -80,10 +80,20 @@ enable taklifnoma.conf
 apply
 
 # 2) Qaysi subdomenlar shu serverga yo'naltirilgan?
+# Avval domenning asosiy (authoritative) DNS serveridan so'raladi — oddiy DNS keshi eski javobni
+# ushlab turgan bo'lsa ham sertifikat darhol olinadi (Let's Encrypt ham xuddi shu javobni ko'radi).
+NS=""
+command -v dig >/dev/null && NS=$(dig +short +time=3 +tries=1 NS "$SITE_DOMAIN" 2>/dev/null | head -n1 | sed 's/\.$//')
+points_here() {
+  if [ -n "$NS" ]; then
+    dig +short +time=3 +tries=1 A "$1" "@$NS" 2>/dev/null | grep -qx "$SERVER_IP" && return 0
+  fi
+  getent ahostsv4 "$1" | awk '{print $1}' | grep -qx "$SERVER_IP"
+}
 want=()
 for d in "$APP"/current/sites/*/; do
   host="$(basename "$d").$SITE_DOMAIN"
-  if getent ahostsv4 "$host" | awk '{print $1}' | grep -qx "$SERVER_IP"; then want+=("$host"); fi
+  if points_here "$host"; then want+=("$host"); fi
 done
 have=$(cert_hosts)
 missing=$(comm -23 <(printf '%s\n' "${want[@]}" | sed '/^$/d' | sort -u) <(printf '%s\n' "$have" | sed '/^$/d'))
