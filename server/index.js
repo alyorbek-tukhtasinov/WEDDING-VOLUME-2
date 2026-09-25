@@ -60,8 +60,16 @@ export const server = http.createServer((req, res) => {
 server.requestTimeout = 20_000;
 server.headersTimeout = 10_000;
 
-// Test paytida import qilinsa — o'zi ishga tushmaydi
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// Test paytida import qilinsa — o'zi ishga tushmaydi.
+// realpath: serverda /opt/taklifnoma/current (symlink) orqali ishga tushiriladi.
+const isMain = () => {
+  try {
+    return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+};
+if (process.argv[1] && isMain()) {
   server.listen(PORT, '127.0.0.1', () => {
     const sites = fs.existsSync(SITES_DIR) ? fs.readdirSync(SITES_DIR).filter(siteExists) : [];
     console.log(`Taklifnoma API: http://127.0.0.1:${PORT} — ${sites.length} ta sayt (${SITES_DIR})`);
