@@ -182,6 +182,36 @@ ham kerak emas). 2–4 daqiqada sayt HTTPS bilan ochiladi.
 | Oldingi versiyaga qaytish | `sudo /usr/local/lib/taklifnoma/deploy.sh --rollback` |
 | `deploy/` o'zgarganda | `install.sh` ni yana bir marta ishga tushiring (xavfsiz) |
 
+## Boshqaruv paneli (boshqaruv.documen.uz)
+
+Yangi to'y yaratish va tahrirlash kod yozmasdan, brauzerda. Faqat egasining paroli bilan.
+
+- **Ikki shablon**: *Volume 2* (krem-tilla, dastur, dress-kod, tilaklar) va *Yusuf & Zulayho*
+  (qora-tilla, o'zbek/rus, 6 suratli bo'lim, sovg'a kartasi). Yangi to'y shablon tanlashdan boshlanadi.
+- **Jonli ko'rinish**: o'ng tomonda saytning telefon ko'rinishi — shablonning haqiqiy kodi bilan.
+- **To'y dasturi**: tayyor shablonlar (kechki, kunduzgi, kelin tomon, nahorgi osh, fotiha) va
+  "✨ Vaqtga qarab avtomatik". To'y vaqti o'zgarsa, dastur ham o'zi suriladi.
+- **Dress-kod**: yoqish/o'chirish va tayyor matnlar (kechki, qulay, milliy, pastel, klassik).
+- **Xarita**: mijoz yuborgan Google/Yandex havolasi, `<iframe>` kodi yoki koordinatani joylang —
+  ikkala havola va sahifadagi xarita o'zi tuziladi.
+- **Rasmlar**: telefondan tanlanadi, brauzerda siqiladi (galereya, fon, Yusuf & Zulayho bo'limlari).
+- **Saqlash va chiqarish**: GitHub'ga commit (tarix saqlanadi) → server darhol yig'adi (~15–30 s).
+  Xato bo'lsa, saytlar oldingi holatda qoladi va panel sababini ko'rsatadi.
+- **Mijoz paroli**: "🔑 Mijoz uchun /admin parol" — yangi parol yaratadi (bazada faqat xeshi turadi).
+- **Nusxa olish**: mavjud to'yni andoza qilib yangisini yaratish (rasmlar qayta yuklanadi).
+
+**Sozlash (bir marta)**
+
+1. `/etc/taklifnoma/env` ga:
+   - `OWNER_PASSWORD=` — panel paroli (uzun va murakkab);
+   - `GITHUB_TOKEN=` — github.com → Settings → Developer settings → Personal access tokens →
+     *Fine-grained tokens* → faqat shu repo, **Contents: Read and write**.
+2. `sudo bash deploy/install.sh ...` ni qayta ishga tushiring (nginx panel bloki va darhol-deploy).
+3. DNS: `boshqaruv` → A → server IP.
+
+Panel `config.json` yozadi; qo'lda yozilgan `config.js` mijozlar panelda birinchi saqlanganda
+`config.json` ga o'tadi. Ikkalasi ham ishlaydi.
+
 ## Javoblarni saqlash (RSVP)
 
 Mehmon javoblari **Upstash Redis** bazasida saqlanadi. Baza bepul va Vercel ichidan

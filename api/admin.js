@@ -5,12 +5,12 @@
 //   POST /api/admin { action: 'settings', music }        — fon musiqasi: to'plamdagi id, 'none' yoki null (asli)
 //   POST /api/admin { action: 'resetSettings' }          — barcha o'zgarishlarni bekor qilish
 import { send, readBody, checkAdmin, weddingSlug } from './_lib/http.js';
-import { storeReady, listEntries, deleteEntry, getSettings, saveSettings } from './_lib/store.js';
+import { storeReady, listEntries, deleteEntry, getSettings, saveSettings, getAdminHash } from './_lib/store.js';
 import { isValidDate, TIME_RE } from '../src/lib/config.js';
 import { findTrack } from '../src/lib/music.js';
 
 export default async function handler(req, res) {
-  const auth = checkAdmin(req);
+  const auth = await checkAdmin(req, storeReady() ? getAdminHash : null);
   if (auth === 'no_password') return send(res, 503, { ok: false, error: 'no_password' });
   if (auth !== 'ok') {
     // Parolni taxmin qilishni sekinlashtirish

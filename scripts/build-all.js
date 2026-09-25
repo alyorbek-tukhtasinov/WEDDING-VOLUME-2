@@ -42,6 +42,21 @@ for (const slug of clients) {
   }
 }
 
+// Boshqaruv paneli (boshqaruv.<domen>) — mijozlar bilan birga yig'iladi
+{
+  const target = path.join(out, 'boshqaruv');
+  const r = spawnSync(process.execPath, [vite, 'build', '--config', path.join(ROOT, 'panel', 'vite.config.js'), '--outDir', target, '--emptyOutDir', '--logLevel', 'warn'], {
+    cwd: ROOT,
+    env: process.env,
+    stdio: 'inherit',
+  });
+  if (r.status !== 0 || !fs.existsSync(path.join(target, 'index.html'))) {
+    console.error('\n✖ Boshqaruv paneli yig\'ilmadi — hech narsa almashtirilmaydi.');
+    process.exit(1);
+  }
+  clients.push('boshqaruv');
+}
+
 // Umumiy fayllar (musiqa, dizayn rasmlari) har saytda bir xil — diskda bir marta turishi uchun hardlink
 let saved = 0;
 const [first, ...rest] = clients;
@@ -64,4 +79,4 @@ for (const dir of ['images', 'music']) {
 }
 if (saved) console.log(`  umumiy fayllar birlashtirildi: ${(saved / 1048576).toFixed(0)} MB tejaldi`);
 
-console.log(`✔ ${clients.length} ta taklifnoma yig'ildi → ${out} (${((Date.now() - started) / 1000).toFixed(1)} s)`);
+console.log(`✔ ${clients.length - 1} ta taklifnoma va boshqaruv paneli yig'ildi → ${out} (${((Date.now() - started) / 1000).toFixed(1)} s)`);

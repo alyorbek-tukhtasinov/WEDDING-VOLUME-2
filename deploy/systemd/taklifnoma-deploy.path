@@ -1,0 +1,9 @@
+[Unit]
+Description=Taklifnoma: boshqaruv panelida saqlanganda darhol yangilash
+
+[Path]
+PathModified=/opt/taklifnoma/trigger/deploy
+Unit=taklifnoma-deploy.service
+
+[Install]
+WantedBy=paths.target

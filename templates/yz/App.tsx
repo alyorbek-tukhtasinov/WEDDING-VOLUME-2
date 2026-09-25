@@ -16,8 +16,9 @@ import { CountdownSection } from './components/CountdownSection';
 import { MapSection } from './components/MapSection';
 import { GiftSection } from './components/GiftSection';
 
-export default function App() {
-  const [hasOpened, setHasOpened] = useState(false);
+// preview — boshqaruv panelidagi jonli ko'rinish: konvertsiz, darhol ochiq holda
+export default function App({ preview = false }: { preview?: boolean }) {
+  const [hasOpened, setHasOpened] = useState(preview);
 
   return (
     <LanguageProvider>

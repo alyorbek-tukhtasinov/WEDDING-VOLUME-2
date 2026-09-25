@@ -27,6 +27,16 @@ flock -n 9 || { log "boshqa deploy ishlayapti"; exit 0; }
 
 revision() { cat "$1/REVISION" 2>/dev/null || true; }
 
+# Boshqaruv paneli uchun deploy holati: /opt/taklifnoma/status.json
+set_status() { # set_status <holat> <sha> [xabar] [log fayli]
+  local tail=""
+  [ -n "${4:-}" ] && [ -f "$4" ] && tail=$(tail -n 30 "$4")
+  node -e 'const [state, sha, message, log] = process.argv.slice(1);
+    process.stdout.write(JSON.stringify({ state, sha, message, log, at: new Date().toISOString() }))' \
+    "$1" "$2" "${3:-}" "$tail" > "$APP/status.json.tmp" 2>/dev/null && mv -f "$APP/status.json.tmp" "$APP/status.json" || true
+  chmod 644 "$APP/status.json" 2>/dev/null || true
+}
+
 health() {
   local slug
   slug=$(ls "$APP/current/sites" | grep -x demo || ls "$APP/current/sites" | head -n1)
@@ -78,14 +88,18 @@ log "yangi versiya: ${NEW:0:7} (hozirgi: ${CUR:0:7})"
 REL="$APP/releases/$(date +%Y%m%d-%H%M%S)-${NEW:0:7}"
 TMP="$REL.tmp"
 cleanup_tmp() { rm -rf "$TMP"; }
+BUILD_LOG="$APP/last-build.log"
 fail() {
   log "✖ $* — saytlar oldingi versiyada qoldi"
   echo "$NEW" > "$APP/.failed"
+  set_status failed "$NEW" "$*" "$BUILD_LOG"
   cleanup_tmp
   exit 1
 }
 trap 'fail "kutilmagan xato (qator $LINENO)"' ERR
 
+set_status building "$NEW" "Saytlar yig'ilmoqda"
+: > "$BUILD_LOG"
 as_app mkdir -p "$TMP"
 as_app sh -c "git -C '$APP/repo' archive '$NEW' | tar -x -C '$TMP'"
 echo "$NEW" | as_app tee "$TMP/REVISION" >/dev/null
@@ -95,12 +109,12 @@ if [ -n "$PREV_REL" ] && [ -d "$PREV_REL/node_modules" ] && cmp -s "$PREV_REL/pa
   as_app cp -al "$PREV_REL/node_modules" "$TMP/node_modules"
 else
   log "paketlar o'rnatilmoqda (npm ci)..."
-  as_app sh -c "cd '$TMP' && npm ci --no-audit --no-fund --loglevel=error" || fail "npm ci bajarilmadi"
+  as_app sh -c "cd '$TMP' && npm ci --no-audit --no-fund --loglevel=error" 2>&1 | tee -a "$BUILD_LOG" || fail "npm ci bajarilmadi"
 fi
 
 log "saytlar yig'ilmoqda..."
 as_app env NODE_OPTIONS=--max-old-space-size=512 SITE_DOMAIN="$SITE_DOMAIN" \
-  sh -c "cd '$TMP' && node scripts/build-all.js --out sites" || fail "saytlar yig'ilmadi"
+  sh -c "cd '$TMP' && node scripts/build-all.js --out sites" 2>&1 | tee -a "$BUILD_LOG" || fail "saytlar yig'ilmadi"
 
 trap - ERR
 as_app mv "$TMP" "$REL"
@@ -114,9 +128,11 @@ if ! health; then
     log "oldingi versiyaga qaytildi: ${CUR:0:7}"
   fi
   echo "$NEW" > "$APP/.failed"
+  set_status failed "$NEW" "Yangi versiyada API javob bermadi — oldingi versiya qoldi"
   exit 1
 fi
 rm -f "$APP/.failed"
+set_status ok "$NEW" "O'rnatildi"
 log "✔ o'rnatildi: ${NEW:0:7} ($(ls "$REL/sites" | wc -l) ta sayt)"
 
 # Eski versiyalarni tozalash (hozirgisi + oxirgi ${KEEP} tasi qoladi)
@@ -128,3 +144,12 @@ rm -rf releases/*.tmp 2>/dev/null || true
 
 # nginx va HTTPS sertifikatlari (xato bo'lsa ham saytlar ishlashda davom etadi)
 "$LIB/web.sh" 9>&- || log "! nginx/sertifikat bosqichida xato — journalctl -u taklifnoma-deploy"
+
+# Yig'ish paytida panelda yana saqlangan bo'lsa — navbatdagi versiyani darhol o'rnatamiz
+as_app git -C repo fetch -q origin "$BRANCH" || true
+LATEST=$(as_app git -C repo rev-parse "origin/$BRANCH" 2>/dev/null || echo "$NEW")
+if [ "$LATEST" != "$NEW" ] && [ "${DEPLOY_ROUND:-1}" -lt 5 ]; then
+  log "yig'ish paytida yangi o'zgarish keldi — davom etamiz"
+  exec 9>&-
+  DEPLOY_ROUND=$(( ${DEPLOY_ROUND:-1} + 1 )) exec "$0"
+fi

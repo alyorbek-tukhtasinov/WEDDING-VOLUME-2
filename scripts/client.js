@@ -39,6 +39,7 @@ export async function loadClient(slugInput) {
   };
 
   if (!SLUG_RE.test(slug)) fail('WEDDING nomi faqat kichik lotin harflari, raqam va "-" dan iborat bo\'lishi kerak');
+  if (slug === 'boshqaruv') fail('"boshqaruv" nomi boshqaruv paneli uchun band');
   const dir = path.join(CLIENTS_DIR, slug);
   // Panel config.json yozadi, qo'lda yozilganlari — config.js. Ikkalasi bo'lsa config.json ustun.
   const configPath = configFile(dir);

@@ -8,7 +8,7 @@
 // GET /api/rsvp — baza ulanganini tekshiradi (maxfiy qiymatlarsiz).
 import crypto from 'node:crypto';
 import { send, readBody, clean, weddingSlug, weddingSlugSource, adminPassword } from './_lib/http.js';
-import { storeReady, storeHost, saveEntry, ping } from './_lib/store.js';
+import { storeReady, storeHost, saveEntry, ping, getAdminHash } from './_lib/store.js';
 
 const LIMITS = { name: 80, phone: 30, message: 500 };
 const ID_RE = /^[a-z0-9-]{8,64}$/i;
@@ -23,13 +23,14 @@ export default async function handler(req, res) {
       : store
         ? await ping()
         : "o'zgaruvchi topilmadi";
+    const hasPanelPassword = connection === true && Boolean(await getAdminHash().catch(() => null));
     return send(res, 200, {
       ok: true,
       wedding: slug ? `${slug} (${weddingSlugSource()})` : "YO'Q ❌",
       malumotlarKaliti: slug ? `taklifnoma:${slug}:rsvp` : null,
       baza: connection === true ? 'ulangan ✅' : `ulanmagan ❌ (${connection})`,
       server: storeHost(),
-      adminParol: adminPassword() ? 'bor ✅' : "YO'Q ❌",
+      adminParol: adminPassword() || hasPanelPassword ? 'bor ✅' : "YO'Q ❌",
       ready: connection === true,
     });
   }

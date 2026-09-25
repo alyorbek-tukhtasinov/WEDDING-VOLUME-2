@@ -45,13 +45,47 @@ export function adminPassword() {
   return ((ctx ? ctx.adminPassword : process.env.ADMIN_PASSWORD) || '').trim();
 }
 
-/** Admin parolini tekshirish (vaqt bo'yicha hujumlarga chidamli). */
-export function checkAdmin(req) {
-  const expected = adminPassword();
-  if (!expected) return 'no_password';
+export function safeEqual(given, expected) {
+  const a = crypto.createHash('sha256').update(String(given)).digest();
+  const b = crypto.createHash('sha256').update(String(expected)).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
+// Parol xeshi: scrypt$<salt>$<hash> (boshqaruv panelida yaratilgan parollar uchun)
+export function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 32).toString('hex');
+  return `scrypt$${salt}$${hash}`;
+}
+
+export function verifyPassword(password, stored) {
+  const [kind, salt, hash] = String(stored || '').split('$');
+  if (kind !== 'scrypt' || !salt || !hash) return false;
+  const got = crypto.scryptSync(String(password), salt, 32);
+  const want = Buffer.from(hash, 'hex');
+  return want.length === got.length && crypto.timingSafeEqual(got, want);
+}
+
+/**
+ * Admin parolini tekshirish (vaqt bo'yicha hujumlarga chidamli).
+ * Muhit o'zgaruvchisidagi parol yoki panelda yaratilgan parol (bazadagi xesh) qabul qilinadi.
+ * getHash — bazadan xeshni o'qiydigan funksiya (ixtiyoriy).
+ */
+export async function checkAdmin(req, getHash) {
   const header = req.headers.authorization || '';
   const given = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-  const a = crypto.createHash('sha256').update(given).digest();
-  const b = crypto.createHash('sha256').update(expected).digest();
-  return given && crypto.timingSafeEqual(a, b) ? 'ok' : 'denied';
+  const expected = adminPassword();
+  let stored = null;
+  if (getHash) {
+    try {
+      stored = await getHash();
+    } catch {
+      stored = null;
+    }
+  }
+  if (!expected && !stored) return 'no_password';
+  if (!given) return 'denied';
+  if (expected && safeEqual(given, expected)) return 'ok';
+  if (stored && verifyPassword(given, stored)) return 'ok';
+  return 'denied';
 }

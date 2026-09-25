@@ -134,6 +134,12 @@ export function initWedding(settings: unknown) {
   return current;
 }
 
+/** Boshqaruv panelidagi jonli ko'rinish: istalgan config bilan qayta hisoblash. */
+export function setConfig(cfg: unknown) {
+  current = build(cfg);
+  return current;
+}
+
 export function wedding(): Wedding {
   if (!current) current = build(config);
   return current;

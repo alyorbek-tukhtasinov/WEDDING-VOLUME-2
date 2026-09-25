@@ -55,7 +55,7 @@ fi
 
 # --- Foydalanuvchi va papkalar
 id "$RUN_USER" >/dev/null 2>&1 || useradd --system --user-group --home-dir "$APP" --shell /usr/sbin/nologin "$RUN_USER"
-install -d -o "$RUN_USER" -g "$RUN_USER" -m 755 "$APP" "$APP/releases"
+install -d -o "$RUN_USER" -g "$RUN_USER" -m 755 "$APP" "$APP/releases" "$APP/panel-work" "$APP/trigger"
 install -d -m 755 /var/www/letsencrypt "$LIB" "$LIB/nginx"
 install -d -m 700 /etc/taklifnoma
 
@@ -77,7 +77,7 @@ install -m 755 "$SRC/deploy.sh" "$SRC/web.sh" "$LIB/"
 install -m 644 "$SRC"/nginx/*.conf "$LIB/nginx/"
 
 # --- systemd
-for u in taklifnoma.service taklifnoma-deploy.service taklifnoma-deploy.timer; do
+for u in taklifnoma.service taklifnoma-deploy.service taklifnoma-deploy.timer taklifnoma-deploy.path; do
   sed "s|__NODE__|$NODE|g; s|__NODEDIR__|$(dirname "$NODE")|g" "$SRC/systemd/$u" > "/etc/systemd/system/$u"
 done
 systemctl daemon-reload
@@ -87,7 +87,9 @@ systemctl enable taklifnoma.service >/dev/null
 say "birinchi yig'ish (1–3 daqiqa)..."
 PATH="$(dirname "$NODE"):$PATH" "$LIB/deploy.sh" --force
 
-systemctl enable --now taklifnoma-deploy.timer >/dev/null
+systemctl enable --now taklifnoma-deploy.timer taklifnoma-deploy.path >/dev/null
+# Yangi sozlamalar (masalan, panel o'zgaruvchilari) API'ga yetib borsin
+systemctl restart taklifnoma
 
 echo
 echo "✔ O'rnatildi. Saytlar: https://<mijoz>.$SITE_DOMAIN"
@@ -95,3 +97,4 @@ echo "  Holat:      systemctl status taklifnoma"
 echo "  Loglar:     journalctl -u taklifnoma -u taklifnoma-deploy -n 50"
 echo "  Qo'lda:     sudo $LIB/deploy.sh --force   |   orqaga: sudo $LIB/deploy.sh --rollback"
 grep -q '^REDIS_URL=.\+' /etc/taklifnoma/env || echo "! /etc/taklifnoma/env da REDIS_URL bo'sh — javoblar saqlanmaydi. To'ldirib: sudo systemctl restart taklifnoma"
+grep -q '^OWNER_PASSWORD=.\+' /etc/taklifnoma/env || echo "! Boshqaruv paneli uchun /etc/taklifnoma/env ga OWNER_PASSWORD va GITHUB_TOKEN qo'shing, keyin: sudo systemctl restart taklifnoma"

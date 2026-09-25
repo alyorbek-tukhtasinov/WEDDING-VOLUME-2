@@ -24,8 +24,9 @@ function decide() {
   if (!files.length) return BUILD;
 
   // Boshqa mijozlarning papkalari, hujjatlar (.md) va faqat o'z serverimizga oid fayllar
-  // (deploy/, server/, build-all) Vercel'dagi bu loyihaga ta'sir qilmaydi
-  const serverOnly = (f) => f.startsWith('deploy/') || f.startsWith('server/') || f === 'scripts/build-all.js';
+  // (deploy/, server/, panel/, tests/, build-all) Vercel'dagi bu loyihaga ta'sir qilmaydi
+  const serverOnly = (f) =>
+    ['deploy/', 'server/', 'panel/', 'tests/'].some((d) => f.startsWith(d)) || f === 'scripts/build-all.js';
   const unrelated = (f) =>
     (f.startsWith('clients/') && !f.startsWith(`clients/${slug}/`)) || f.endsWith('.md') || serverOnly(f);
   const relevant = files.filter((f) => !unrelated(f));

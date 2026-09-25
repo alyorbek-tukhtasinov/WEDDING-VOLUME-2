@@ -8,15 +8,19 @@ User=taklifnoma
 Group=taklifnoma
 EnvironmentFile=/etc/taklifnoma/env
 Environment=NODE_ENV=production PORT=3190 SITES_DIR=/opt/taklifnoma/current/sites
+# Boshqaruv paneli: saqlash uchun git nusxa, deploy trigger va holat fayli
+Environment=PANEL_WORK_DIR=/opt/taklifnoma/panel-work DEPLOY_TRIGGER=/opt/taklifnoma/trigger/deploy DEPLOY_STATUS=/opt/taklifnoma/status.json
+Environment=HOME=/opt/taklifnoma
 WorkingDirectory=/opt/taklifnoma/current
 ExecStart=__NODE__ /opt/taklifnoma/current/server/index.js
 Restart=always
 RestartSec=2
-MemoryMax=256M
+MemoryMax=320M
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
+ReadWritePaths=/opt/taklifnoma/panel-work /opt/taklifnoma/trigger
 
 [Install]
 WantedBy=multi-user.target

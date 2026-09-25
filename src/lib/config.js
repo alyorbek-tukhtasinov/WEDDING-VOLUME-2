@@ -63,7 +63,7 @@ export function validateConfig(c, mediaFiles = null) {
   }
   checkMedia(c.venue?.image, 'venue.image');
   checkMedia(c.music, 'music');
-  need(!c.musicTrack || findTrack(c.musicTrack), `musicTrack: to'plamda "${c.musicTrack}" qo'shig'i yo'q`);
+  need(!c.musicTrack || c.musicTrack === 'none' || findTrack(c.musicTrack), `musicTrack: to'plamda "${c.musicTrack}" qo'shig'i yo'q`);
   checkMedia(c.backgroundImage, 'backgroundImage');
   if (c.backgroundOverlay != null) {
     const o = Number(c.backgroundOverlay);
@@ -183,7 +183,12 @@ export function applyOverrides(c, s) {
   return out;
 }
 
-export const mediaUrl = (name) => (name ? `/media/${name}` : '');
+// Boshqaruv panelidagi jonli ko'rinish yuklangan (hali saqlanmagan) rasmlarni shu ilgak orqali ko'rsatadi
+export const mediaUrl = (name) => {
+  if (!name) return '';
+  const hook = globalThis.__TAKLIFNOMA_MEDIA__;
+  return typeof hook === 'function' ? hook(name) : `/media/${name}`;
+};
 
 /**
  * Fon musiqasi manzili. Ustunlik tartibi: admin sahifasidagi tanlov (musicUrl, '' — musiqasiz)
@@ -191,6 +196,7 @@ export const mediaUrl = (name) => (name ? `/media/${name}` : '');
  */
 export function musicUrlOf(c) {
   if (c.musicUrl !== undefined) return c.musicUrl;
+  if (c.musicTrack === 'none') return '';
   const track = c.musicTrack ? findTrack(c.musicTrack) : null;
   return track ? track.file : mediaUrl(c.music);
 }

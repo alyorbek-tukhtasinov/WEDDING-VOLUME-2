@@ -180,3 +180,18 @@ export async function saveSettings(settings) {
 export async function deleteEntry(id) {
   return redis('HDEL', key(), id);
 }
+
+// Mijozning /admin paroli (boshqaruv panelida yaratiladi) — faqat xeshi saqlanadi
+const adminKey = () => {
+  const slug = weddingSlug();
+  if (!slug) throw new Error("WEDDING o'rnatilmagan");
+  return `taklifnoma:${slug}:admin`;
+};
+
+export async function getAdminHash() {
+  return (await redis('GET', adminKey())) || null;
+}
+
+export async function setAdminHash(hash) {
+  await redis('SET', adminKey(), hash);
+}

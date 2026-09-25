@@ -14,6 +14,7 @@ LIVE=/etc/letsencrypt/live/$CERT_NAME
 WEBROOT=/var/www/letsencrypt
 MAP=/etc/nginx/taklifnoma-https.map
 SNIPPET=/etc/nginx/snippets/taklifnoma-site.conf
+PANEL_SNIPPET=/etc/nginx/snippets/taklifnoma-panel.conf
 HTTP_CONF=/etc/nginx/sites-available/taklifnoma.conf
 SSL_CONF=/etc/nginx/sites-available/taklifnoma-ssl.conf
 # shellcheck source=/dev/null
@@ -25,7 +26,7 @@ DOMAIN_RE=$(printf '%s' "$SITE_DOMAIN" | sed 's/\./\\\\./g')
 render() { sed "s|__DOMAIN_RE__|$DOMAIN_RE|g; s|__DOMAIN__|$SITE_DOMAIN|g" "$LIB/nginx/$1"; }
 
 # --- Xavfsiz o'zgartirish: zaxira → yozish → nginx -t → (xato bo'lsa) qaytarish ---
-MANAGED=("$MAP" "$SNIPPET" "$HTTP_CONF" "$SSL_CONF" /etc/nginx/sites-enabled/taklifnoma.conf /etc/nginx/sites-enabled/taklifnoma-ssl.conf)
+MANAGED=("$MAP" "$SNIPPET" "$PANEL_SNIPPET" "$HTTP_CONF" "$SSL_CONF" /etc/nginx/sites-enabled/taklifnoma.conf /etc/nginx/sites-enabled/taklifnoma-ssl.conf)
 BACKUP=$(mktemp -d)
 trap 'rm -rf "$BACKUP"' EXIT
 for f in "${MANAGED[@]}"; do
@@ -75,6 +76,7 @@ write_map() {
 mkdir -p "$WEBROOT" /etc/nginx/snippets
 [ -f "$MAP" ] || write_map
 put "$SNIPPET" "$(render taklifnoma-site.conf)"
+put "$PANEL_SNIPPET" "$(render taklifnoma-panel.conf)"
 put "$HTTP_CONF" "$(render taklifnoma.conf)"
 enable taklifnoma.conf
 apply

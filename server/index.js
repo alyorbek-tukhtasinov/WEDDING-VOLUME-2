@@ -17,6 +17,7 @@ import rsvp from '../api/rsvp.js';
 import wishes from '../api/wishes.js';
 import settings from '../api/settings.js';
 import admin from '../api/admin.js';
+import { panelHandler, PANEL_SLUG } from './panel.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITES_DIR = path.resolve(process.env.SITES_DIR || path.join(ROOT, 'sites'));
@@ -36,11 +37,21 @@ function fail(res, status, error) {
 
 export const server = http.createServer((req, res) => {
   const { pathname } = new URL(req.url, 'http://localhost');
+  const slug = String(req.headers['x-wedding-slug'] || '').trim().toLowerCase();
+
+  // Boshqaruv paneli (boshqaruv.<domen>) — faqat /api/panel/*
+  if (slug === PANEL_SLUG) {
+    const m = /^\/api\/panel\/([a-z]+)\/?$/.exec(pathname);
+    if (!m || !siteExists(PANEL_SLUG)) return fail(res, 404, 'not_found');
+    return panelHandler(req, res, m[1]).catch((err) => {
+      console.error('Panel:', err);
+      if (!res.headersSent) fail(res, 500, 'server_error');
+    });
+  }
+
   const name = pathname.replace(/^\/api\/|\/+$/g, '');
   const handler = Object.hasOwn(HANDLERS, name) ? HANDLERS[name] : null;
   if (!pathname.startsWith('/api/') || !handler) return fail(res, 404, 'not_found');
-
-  const slug = String(req.headers['x-wedding-slug'] || '').trim().toLowerCase();
   if (!SLUG_RE.test(slug) || !siteExists(slug)) return fail(res, 404, 'unknown_wedding');
 
   // Parol faqat shu mijozniki: umumiy ADMIN_PASSWORD ataylab ishlatilmaydi,
@@ -71,7 +82,7 @@ const isMain = () => {
 };
 if (process.argv[1] && isMain()) {
   server.listen(PORT, '127.0.0.1', () => {
-    const sites = fs.existsSync(SITES_DIR) ? fs.readdirSync(SITES_DIR).filter(siteExists) : [];
+    const sites = fs.existsSync(SITES_DIR) ? fs.readdirSync(SITES_DIR).filter((s) => s !== PANEL_SLUG && siteExists(s)) : [];
     console.log(`Taklifnoma API: http://127.0.0.1:${PORT} — ${sites.length} ta sayt (${SITES_DIR})`);
     for (const slug of sites) {
       if (!process.env[passwordVar(slug)]) console.log(`  ! ${slug}: ${passwordVar(slug)} berilmagan — /admin ochilmaydi`);
