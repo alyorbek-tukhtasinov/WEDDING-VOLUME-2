@@ -1,3 +1,5 @@
+import { findTrack } from './music.js';
+
 // Konfiguratsiyani tekshirish va undan hosila qiymatlarni hisoblash.
 // Bu fayl ham brauzerda, ham build vaqtida (Node) ishlatiladi — DOM ishlatmang.
 
@@ -117,20 +119,32 @@ const dayNum = (iso) => {
 const fromDayNum = (n) => new Date(n * 86400000).toISOString().slice(0, 10);
 
 /**
- * Admin sahifasidan o'zgartirilgan sana/vaqtni config ustiga qo'yadi.
- * Javob muddati (rsvp.deadline) ham to'y sanasi bilan birga shuncha kunga suriladi.
+ * Admin sahifasidan o'zgartirilgan sozlamalarni config ustiga qo'yadi:
+ *   date/time — to'y sanasi va vaqti (javob muddati ham shuncha kunga suriladi)
+ *   music     — to'plamdagi qo'shiq id si yoki 'none' (musiqasiz)
  */
 export function applyOverrides(c, s) {
   if (!s || typeof s !== 'object') return c;
+  let out = c;
+
+  if (s.music === 'none') {
+    out = { ...out, music: '', musicUrl: '' };
+  } else if (s.music) {
+    const track = findTrack(s.music);
+    if (track) out = { ...out, musicUrl: track.file };
+  }
+
   const date = isValidDate(s.date) ? s.date : c.event.date;
   const time = TIME_RE.test(s.time || '') ? s.time : c.event.time;
-  if (date === c.event.date && time === c.event.time) return c;
-  let rsvp = c.rsvp;
-  if (rsvp?.deadline && isValidDate(rsvp.deadline) && date !== c.event.date) {
-    rsvp = { ...rsvp, deadline: fromDayNum(dayNum(rsvp.deadline) + dayNum(date) - dayNum(c.event.date)) };
+  if (date !== c.event.date || time !== c.event.time) {
+    let rsvp = c.rsvp;
+    if (rsvp?.deadline && isValidDate(rsvp.deadline) && date !== c.event.date) {
+      rsvp = { ...rsvp, deadline: fromDayNum(dayNum(rsvp.deadline) + dayNum(date) - dayNum(c.event.date)) };
+    }
+    // originalDate — mehmonning brauzerdagi javobi sana o'zgarganda yo'qolmasligi uchun
+    out = { ...out, event: { ...c.event, date, time, originalDate: c.event.date }, rsvp };
   }
-  // originalDate — mehmonning brauzerdagi javobi sana o'zgarganda yo'qolmasligi uchun
-  return { ...c, event: { ...c.event, date, time, originalDate: c.event.date }, rsvp };
+  return out;
 }
 
 export const mediaUrl = (name) => (name ? `/media/${name}` : '');

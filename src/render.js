@@ -312,9 +312,11 @@ function footer(c, d, brand) {
 }
 
 function musicButton(c) {
-  if (!c.music) return '';
+  // musicUrl — admin paneldan tanlangan to'plamdagi qo'shiq; bo'lmasa config'dagi media fayl
+  const src = c.musicUrl || mediaUrl(c.music);
+  if (!src) return '';
   return html`
-    <audio id="music" src="${mediaUrl(c.music)}" loop preload="none"></audio>
+    <audio id="music" src="${src}" loop preload="none"></audio>
     <button class="music" id="music-toggle" type="button" aria-label="Musiqani yoqish" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
     </button>

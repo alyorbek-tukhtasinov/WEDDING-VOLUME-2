@@ -1,6 +1,7 @@
 import './admin.css';
 import config from '@wedding-config';
-import { deriveConfig, MONTHS } from './lib/config.js';
+import { deriveConfig, MONTHS, mediaUrl } from './lib/config.js';
+import { MUSIC_LIBRARY } from './lib/music.js';
 import { html, $, $$ } from './lib/dom.js';
 
 const d = deriveConfig(config);
@@ -134,6 +135,19 @@ function renderDashboard() {
       <p class="card__note" id="date-note"></p>
     </section>
 
+    <section class="card" id="music-card">
+      <h2 class="card__title">Fon musiqasi</h2>
+      <form class="date-form" id="music-form">
+        <label class="field">
+          <span>Qo‘shiq</span>
+          <select name="music" id="music-select"></select>
+        </label>
+        <button class="btn btn--dark" type="submit">Saqlash</button>
+      </form>
+      <audio class="music-preview" id="music-preview" controls preload="none"></audio>
+      <p class="card__note" id="music-note"></p>
+    </section>
+
     <section class="stats">
       <div class="stat"><b>${s.total}</b><span>jami javob</span></div>
       <div class="stat stat--yes"><b>${s.attending}</b><span>keladi</span></div>
@@ -159,6 +173,7 @@ function renderDashboard() {
   `.value;
 
   initDateCard();
+  initMusicCard();
   $('#refresh').addEventListener('click', load);
   $('#csv').addEventListener('click', downloadCsv);
   $('#logout').addEventListener('click', () => {
@@ -193,17 +208,18 @@ const humanDate = (iso, time) => {
 function initDateCard() {
   const form = $('#date-form');
   const note = $('#date-note');
-  const current = data.settings || { date: config.event.date, time: config.event.time };
+  const changed = data.settings?.date ? data.settings : null;
+  const current = changed || { date: config.event.date, time: config.event.time };
   form.date.value = current.date;
   form.time.value = current.time;
 
   const original = humanDate(config.event.date, config.event.time);
-  if (data.settings) {
-    note.innerHTML = html`Saytda hozir: <b>${humanDate(data.settings.date, data.settings.time)}</b> (admin'dan o‘zgartirilgan).
+  if (changed) {
+    note.innerHTML = html`Saytda hozir: <b>${humanDate(changed.date, changed.time)}</b> (admin'dan o‘zgartirilgan).
       Asl sana: ${original}. <button class="link" type="button" id="date-reset">Asl holiga qaytarish</button>`.value;
     $('#date-reset').addEventListener('click', async () => {
       if (!confirm(`Sana va vaqt asl holiga (${original}) qaytarilsinmi?`)) return;
-      await saveDate({ action: 'resetSettings' });
+      await saveDate({ action: 'settings', date: null, time: null });
     });
   } else {
     note.textContent = `Saytda hozir: ${original}. O‘zgartirsangiz, taklifnoma darhol yangi sana bilan ochiladi.`;
@@ -228,6 +244,54 @@ function initDateCard() {
       $$('button', $('#date-card')).forEach((b) => (b.disabled = false));
     }
   }
+}
+
+/* ------------------------ Fon musiqasi ------------------------ */
+function initMusicCard() {
+  const form = $('#music-form');
+  const select = $('#music-select');
+  const preview = $('#music-preview');
+  const note = $('#music-note');
+  const saved = data.settings?.music || '';
+  const defaultSrc = config.music ? mediaUrl(config.music) : '';
+
+  const options = [
+    { value: '', label: defaultSrc ? 'Standart (sayt bilan birga kelgan)' : 'Standart (musiqasiz)', src: defaultSrc },
+    ...MUSIC_LIBRARY.map((t) => ({ value: t.id, label: t.title, src: t.file })),
+    { value: 'none', label: 'Musiqasiz', src: '' },
+  ];
+  select.innerHTML = options
+    .map((o) => html`<option value="${o.value}">${o.label}</option>`.value)
+    .join('');
+  select.value = options.some((o) => o.value === saved) ? saved : '';
+
+  const syncPreview = () => {
+    const src = options.find((o) => o.value === select.value)?.src || '';
+    preview.pause();
+    preview.hidden = !src;
+    if (src) preview.src = src;
+    else preview.removeAttribute('src');
+  };
+  select.addEventListener('change', syncPreview);
+  syncPreview();
+
+  const current = options.find((o) => o.value === saved);
+  note.textContent = saved
+    ? `Saytda hozir: ${current ? current.label : saved}. Mehmonlar taklifnomani ochganda shu qo‘shiq yangraydi.`
+    : 'Saytda hozir standart musiqa. Ro‘yxatdan boshqasini tanlab, ▶ bilan eshitib ko‘ring va saqlang.';
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('button', form);
+    btn.disabled = true;
+    try {
+      await api('POST', { action: 'settings', music: select.value || null });
+      await load();
+    } catch (err) {
+      alert(ERRORS[err.message] || ERRORS.store_failed);
+      btn.disabled = false;
+    }
+  });
 }
 
 function renderList() {

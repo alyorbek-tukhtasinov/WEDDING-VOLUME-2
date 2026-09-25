@@ -1,11 +1,13 @@
 // /admin sahifasi uchun: barcha javoblar (parol bilan himoyalangan).
 //   GET  /api/admin                         — ro'yxat va statistika
 //   POST /api/admin { action: 'delete', id } — javobni o'chirish
-//   POST /api/admin { action: 'settings', date: 'YYYY-MM-DD', time: 'HH:MM' } — to'y sanasi/vaqtini o'zgartirish
-//   POST /api/admin { action: 'resetSettings' } — config'dagi asl sana/vaqtga qaytarish
+//   POST /api/admin { action: 'settings', date, time }   — to'y sanasi/vaqti (null — asliga qaytarish)
+//   POST /api/admin { action: 'settings', music }        — fon musiqasi: to'plamdagi id, 'none' yoki null (asli)
+//   POST /api/admin { action: 'resetSettings' }          — barcha o'zgarishlarni bekor qilish
 import { send, readBody, checkAdmin, weddingSlug } from './_lib/http.js';
 import { storeReady, listEntries, deleteEntry, getSettings, saveSettings } from './_lib/store.js';
 import { isValidDate, TIME_RE } from '../src/lib/config.js';
+import { findTrack } from '../src/lib/music.js';
 
 export default async function handler(req, res) {
   const auth = checkAdmin(req);
@@ -25,10 +27,26 @@ export default async function handler(req, res) {
         return send(res, 200, { ok: true });
       }
       if (body.action === 'settings') {
-        if (!isValidDate(body.date) || !TIME_RE.test(body.time || '')) {
-          return send(res, 422, { ok: false, error: 'validation' });
+        // Faqat yuborilgan maydonlar o'zgaradi, qolganlari saqlanib qoladi
+        const next = { ...((await getSettings()) || {}) };
+        if ('date' in body || 'time' in body) {
+          if (body.date == null && body.time == null) {
+            delete next.date;
+            delete next.time;
+          } else if (isValidDate(body.date) && TIME_RE.test(body.time || '')) {
+            next.date = body.date;
+            next.time = body.time;
+          } else {
+            return send(res, 422, { ok: false, error: 'validation' });
+          }
         }
-        const settings = { date: body.date, time: body.time, updatedAt: new Date().toISOString() };
+        if ('music' in body) {
+          if (body.music == null || body.music === '') delete next.music;
+          else if (body.music === 'none' || findTrack(body.music)) next.music = body.music;
+          else return send(res, 422, { ok: false, error: 'validation' });
+        }
+        delete next.updatedAt;
+        const settings = Object.keys(next).length ? { ...next, updatedAt: new Date().toISOString() } : null;
         await saveSettings(settings);
         return send(res, 200, { ok: true, settings });
       }

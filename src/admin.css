@@ -208,6 +208,25 @@ p {
   color: var(--cream);
 }
 
+.date-form select {
+  padding: 0.55rem 0.1rem;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--navy) 30%, transparent);
+  background: transparent;
+  font: inherit;
+  color: var(--navy);
+}
+
+.music-preview {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.music-preview[hidden] {
+  display: none;
+}
+
 .card__note {
   margin-top: 0.75rem;
   font-size: 0.98rem;

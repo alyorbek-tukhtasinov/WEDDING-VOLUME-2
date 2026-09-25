@@ -239,6 +239,18 @@ ham shuncha kunga suriladi. "Asl holiga qaytarish" config'dagi sanaga qaytaradi.
 > olinadi. Sana butunlay o'zgargan bo'lsa, `config.js` ni ham yangilab deploy
 > qiling.
 
+**Fon musiqasini admin paneldan tanlash.** `/admin` → "Fon musiqasi". Mijoz umumiy
+to'plamdan qo'shiq tanlaydi, ▶ bilan eshitib ko'radi va saqlaydi. Qayta deploy kerak emas.
+"Standart" varianti config'dagi musiqaga qaytaradi, "Musiqasiz" esa musiqani o'chiradi.
+
+To'plamga yangi qo'shiq qo'shish:
+1. Faylni `public/music/` ga qo'ying (mp3 yoki m4a, 3–5 MB gacha).
+2. `src/lib/music.js` dagi ro'yxatga bitta qator yozing:
+   ```js
+   { id: 'musiqa-2', title: 'Qo‘shiq nomi', file: '/music/musiqa-2.mp3' },
+   ```
+3. Push qiling. Qo'shiq barcha mijozlarning admin panelida paydo bo'ladi.
+
 ---
 
 ## Brendingiz va dizayn
