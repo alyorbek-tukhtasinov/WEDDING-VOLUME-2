@@ -42,7 +42,7 @@ export default {
   },
 
   // Butun sayt ortidagi fon rasmi (media/ dagi fayl). Asliga qaytarish uchun shu 2 qatorni o'chiring.
-  backgroundImage: 'bg.jpg',
+  backgroundImage: 'photo-4.jpg', // kelinning qo'li kuyov ko'ksida
   backgroundOverlay: 0.84, // 0..1 — rasm ustidagi krem parda (katta = xiraroq)
 
   // To'y dasturi (18:00 ga moslangan)
