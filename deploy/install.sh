@@ -64,6 +64,9 @@ SITE_DOMAIN=$SITE_DOMAIN
 SERVER_IP=$SERVER_IP
 CERT_EMAIL=$CERT_EMAIL
 EOF
+# Boshqa repo yoki branch'dan o'rnatish kerak bo'lsa: REPO_URL=... BRANCH=... sudo -E bash install.sh ...
+[ -n "${REPO_URL:-}" ] && echo "REPO_URL=$REPO_URL" >> /etc/taklifnoma/deploy.conf
+[ -n "${BRANCH:-}" ] && echo "BRANCH=$BRANCH" >> /etc/taklifnoma/deploy.conf
 if [ ! -f /etc/taklifnoma/env ]; then
   install -m 600 "$SRC/env.example" /etc/taklifnoma/env
   say "/etc/taklifnoma/env yaratildi — REDIS_URL va admin parollarini yozing"
