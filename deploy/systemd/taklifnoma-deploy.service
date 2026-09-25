@@ -1,0 +1,13 @@
+[Unit]
+Description=Taklifnoma: GitHub'dagi yangi versiyani tekshirish va o'rnatish
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=PATH=__NODEDIR__:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/local/lib/taklifnoma/deploy.sh
+TimeoutStartSec=15min
+# Botlar sekinlashmasligi uchun past ustuvorlik
+Nice=15
+IOSchedulingClass=idle

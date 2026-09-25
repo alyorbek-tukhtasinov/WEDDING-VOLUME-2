@@ -7,7 +7,7 @@
 //
 // GET /api/rsvp — baza ulanganini tekshiradi (maxfiy qiymatlarsiz).
 import crypto from 'node:crypto';
-import { send, readBody, clean, weddingSlug, weddingSlugSource } from './_lib/http.js';
+import { send, readBody, clean, weddingSlug, weddingSlugSource, adminPassword } from './_lib/http.js';
 import { storeReady, storeHost, saveEntry, ping } from './_lib/store.js';
 
 const LIMITS = { name: 80, phone: 30, message: 500 };
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       malumotlarKaliti: slug ? `taklifnoma:${slug}:rsvp` : null,
       baza: connection === true ? 'ulangan ✅' : `ulanmagan ❌ (${connection})`,
       server: storeHost(),
-      adminParol: process.env.ADMIN_PASSWORD ? 'bor ✅' : "YO'Q ❌",
+      adminParol: adminPassword() ? 'bor ✅' : "YO'Q ❌",
       ready: connection === true,
     });
   }

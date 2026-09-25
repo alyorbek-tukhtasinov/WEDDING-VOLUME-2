@@ -12,7 +12,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "node scripts/check-config.js",
-    "new": "node scripts/new-client.js"
+    "new": "node scripts/new-client.js",
+    "build:all": "node scripts/build-all.js",
+    "server": "node server/index.js"
   },
   "devDependencies": {
     "vite": "^8.0.0"

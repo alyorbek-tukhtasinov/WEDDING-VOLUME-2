@@ -2,6 +2,7 @@
 // "_" bilan boshlangan papka Vercel'da alohida funksiya bo'lmaydi.
 import crypto from 'node:crypto';
 import { resolveSlug, SLUG_RE } from './slug.js';
+import { requestContext } from './context.js';
 
 const MAX_BODY = 8 * 1024;
 
@@ -31,15 +32,22 @@ export const clean = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ')
 // sozlamadan olinadi — mehmon yoki brauzer uni o'zgartira olmaydi.
 // Aniqlab bo'lmasa — null: hech narsa saqlanmaydi (aralashib ketmasligi uchun).
 export function weddingSlug() {
-  const { slug } = resolveSlug();
+  const ctx = requestContext.getStore();
+  const slug = ctx ? ctx.slug : resolveSlug().slug;
   return slug && SLUG_RE.test(slug) ? slug : null;
 }
 
-export const weddingSlugSource = () => resolveSlug().source;
+export const weddingSlugSource = () => (requestContext.getStore() ? 'server' : resolveSlug().source);
+
+/** Shu taklifnomaning admin paroli: serverda — har mijozga alohida, Vercel'da — ADMIN_PASSWORD. */
+export function adminPassword() {
+  const ctx = requestContext.getStore();
+  return ((ctx ? ctx.adminPassword : process.env.ADMIN_PASSWORD) || '').trim();
+}
 
 /** Admin parolini tekshirish (vaqt bo'yicha hujumlarga chidamli). */
 export function checkAdmin(req) {
-  const expected = (process.env.ADMIN_PASSWORD || '').trim();
+  const expected = adminPassword();
   if (!expected) return 'no_password';
   const header = req.headers.authorization || '';
   const given = header.startsWith('Bearer ') ? header.slice(7).trim() : '';

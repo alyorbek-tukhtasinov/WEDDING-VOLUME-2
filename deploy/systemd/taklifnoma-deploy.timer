@@ -1,0 +1,10 @@
+[Unit]
+Description=Taklifnoma: har 2 daqiqada yangi versiyani tekshirish
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=2min
+RandomizedDelaySec=10s
+
+[Install]
+WantedBy=timers.target

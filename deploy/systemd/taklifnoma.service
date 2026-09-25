@@ -1,0 +1,22 @@
+[Unit]
+Description=Taklifnoma API (mehmon javoblari, tilaklar, admin)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=taklifnoma
+Group=taklifnoma
+EnvironmentFile=/etc/taklifnoma/env
+Environment=NODE_ENV=production PORT=3190 SITES_DIR=/opt/taklifnoma/current/sites
+WorkingDirectory=/opt/taklifnoma/current
+ExecStart=__NODE__ /opt/taklifnoma/current/server/index.js
+Restart=always
+RestartSec=2
+MemoryMax=256M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
