@@ -227,7 +227,7 @@ mehmonlar tilaklari fonar bo‘lib ko‘tarilib, osmonda yulduzga aylanadi.
 
 Yozilmasa, koordinata to‘yxona xaritasi havolasidan olinadi, u ham bo‘lmasa — Toshkent.
 To‘y yorug‘ paytda boshlansa, osmon o‘sha oqshom yulduzlar to‘liq chiqqan paytdagidek ko‘rsatiladi.
-Namuna: `clients/demo-osmon`. Panelga keyingi bosqichda qo‘shiladi.
+Namuna: `clients/demo-osmon`. Panelda: "Yangi to‘y" → "To‘y kechasining osmoni" (koordinata xarita havolasidan o‘zi olinadi).
 
 Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumlari chiziqlari —
 [d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3, © Olaf Frohn); qayta yaratish:

@@ -75,7 +75,7 @@ const SKY = {
  *  reduced — prefers-reduced-motion
  */
 export async function createSky(o) {
-  const { root, date, lat, lng, reduced = false } = o;
+  const { root, date, lat, lng, reduced = false, instant = false } = o;
 
   const [stars, mw, lines] = await Promise.all(
     [starsUrl, mwUrl, linesUrl].map((u) => fetch(u).then((r) => {
@@ -216,7 +216,7 @@ export async function createSky(o) {
   let namesStart = -1;
   let namesAlpha = 1;
   let namesAlphaTarget = 1;
-  const namesDur = reduced ? 0.01 : 5.2;
+  const namesDur = reduced || instant ? 0.01 : 5.2;
   const wishes = [];
   const wishKeys = new Set();
   let wishFrame = null;
@@ -367,10 +367,10 @@ export async function createSky(o) {
     names.stars.forEach((s, i) => {
       if (P < s.t) return;
       const age = (P - s.t) * namesDur;
-      const flash = reduced ? 0 : Math.exp(-age * 5) * 1.8;
+      const flash = reduced || instant ? 0 : Math.exp(-age * 5) * 1.8;
       const tw = reduced ? 1 : 0.85 + 0.15 * Math.sin(time * 1.7 + s.ph * 6);
       const size = (7 + s.s * 9) * (1 + flash) * tw;
-      fx.globalAlpha = (reduced ? 1 : clamp(age * 4, 0, 1)) * namesAlpha;
+      fx.globalAlpha = (reduced || instant ? 1 : clamp(age * 4, 0, 1)) * namesAlpha;
       fx.drawImage(s.s > 1.4 ? coolSprite : softSprite, pts[i][0] - size / 2, pts[i][1] - size / 2, size, size);
     });
     fx.restore();

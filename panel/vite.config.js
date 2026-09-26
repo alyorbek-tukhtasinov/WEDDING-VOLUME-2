@@ -27,6 +27,7 @@ export default defineConfig({
         panel: path.join(root, 'panel', 'index.html'),
         'preview-v2': path.join(root, 'panel', 'preview-v2.html'),
         'preview-yz': path.join(root, 'panel', 'preview-yz.html'),
+        'preview-osmon': path.join(root, 'panel', 'preview-osmon.html'),
       },
     },
   },

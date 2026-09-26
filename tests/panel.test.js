@@ -106,6 +106,22 @@ test('Yangi mijoz: saqlash → GitHub’ga commit → deploy trigger', async () 
   assert.ok(fs.existsSync(process.env.DEPLOY_TRIGGER));
 });
 
+test('Osmon shabloni: sky bilan saqlanadi, noto‘g‘ri koordinata rad etiladi', async () => {
+  const ok = await api('save', {
+    method: 'POST',
+    body: { slug: 'test-osmon', isNew: true, config: newConfig({ template: 'osmon', sky: { city: 'Samarqand', lat: 39.6542, lng: 66.9597 } }) },
+  });
+  assert.equal(ok.status, 200, JSON.stringify(ok.json));
+  const saved = JSON.parse(git(['show', 'main:clients/test-osmon/config.json'], origin));
+  assert.equal(saved.template, 'osmon');
+  assert.deepEqual(saved.sky, { city: 'Samarqand', lat: 39.6542, lng: 66.9597 });
+  const bad = await api('save', {
+    method: 'POST',
+    body: { slug: 'test-osmon-2', isNew: true, config: newConfig({ template: 'osmon', sky: { lat: 123, lng: 66 } }) },
+  });
+  assert.equal(bad.status, 422);
+});
+
 test('Takroriy nom, band nom va noto‘g‘ri ma’lumot rad etiladi', async () => {
   const dup = await api('save', { method: 'POST', body: { slug: 'test-sinov', isNew: true, config: newConfig() } });
   assert.equal(dup.json.error, 'exists');

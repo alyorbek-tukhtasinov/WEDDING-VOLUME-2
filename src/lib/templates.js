@@ -20,8 +20,6 @@ export const TEMPLATES = [
     title: 'To‘y kechasining osmoni',
     description: 'To‘y kechasining haqiqiy yulduzli osmoni, ismlar — yulduz turkumi, tilaklar — osmondagi yulduzlar',
     features: ['program', 'dressCode', 'contacts', 'sky', 'rsvp', 'wishes'],
-    // Panelga keyingi bosqichda qo'shiladi (hozircha config.json qo'lda yoziladi)
-    panel: false,
   },
 ];
 

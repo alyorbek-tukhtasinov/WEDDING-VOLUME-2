@@ -408,6 +408,21 @@ svg {
   letter-spacing: 0.16em;
   color: var(--gold);
 }
+/* Tor ekranlar: katta sana tepada, hafta kuni va soat — ostida */
+@media (max-width: 440px) {
+  .hero__date {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 16px;
+    max-width: 300px;
+  }
+  .hero__date b {
+    flex-basis: 100%;
+    order: -1;
+    text-align: center;
+    font-size: 19px;
+  }
+}
 .hero__scroll {
   display: flex;
   flex-direction: column;

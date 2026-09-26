@@ -213,6 +213,28 @@ function defaultConfig(template) {
     };
   }
   const kechki = DRESS_PRESETS.find((p) => p.id === 'kechki');
+  if (template === 'osmon') {
+    return {
+      template: 'osmon',
+      couple: { groom: '', bride: '', initials: '' },
+      event: { date, time: '19:00', timezone: '+05:00', durationHours: 5 },
+      hosts: '',
+      texts: {
+        heroCaption: 'Nikoh to‘yiga taklifnoma',
+        greeting: 'Hurmatli mehmonimiz!',
+        invitation: autoInvitation({}),
+        closing: 'Tashrifingiz biz uchun katta sharaf!',
+      },
+      venue: { name: '', address: '', googleMaps: '', yandexMaps: '' },
+      sky: { city: '', lat: '', lng: '' },
+      program: buildProgram('kechki', '19:00'),
+      dressCode: { text: kechki.text, colors: [...kechki.colors] },
+      musicTrack: 'musiqa-3',
+      rsvp: { enabled: true, deadline: addDays(date, -1), maxGuests: 5, showWishes: true },
+      contacts: [],
+      seo: { title: '', description: '', ogImage: '' },
+    };
+  }
   return {
     template: 'volume2',
     couple: { groom: '', bride: '', initials: '' },
@@ -374,7 +396,7 @@ function renderList(filter) {
               return html`
                 <article class="card ${past ? 'card--past' : ''}">
                   <div class="actions-row">
-                    <span class="badge ${c.template === 'yz' ? 'badge--yz' : ''}">${tpl?.title || c.template}</span>
+                    <span class="badge ${c.template === 'yz' ? 'badge--yz' : c.template === 'osmon' ? 'badge--osmon' : ''}">${tpl?.title || c.template}</span>
                     ${soon ? html`<span class="badge badge--soon">Yaqinda</span>` : ''}
                     ${past ? html`<span class="badge">O‘tgan</span>` : ''}
                   </div>
@@ -405,7 +427,7 @@ function renderList(filter) {
 /* ------------------------------------------------------------------ */
 /*  Shablon tanlash                                                     */
 /* ------------------------------------------------------------------ */
-const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg' };
+const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg' };
 
 function showTemplatePicker() {
   root.innerHTML = html`
@@ -539,6 +561,47 @@ function secVenue() {
           ${field('Yandex havolasi', 'venue.yandexMaps')}
         </div>
       </details>
+    `,
+    { open: state.ed.isNew },
+  );
+}
+
+/* --- Osmon (osmon shabloni) --- */
+// Yulduzlar qaysi joy uchun hisoblanadi: sky.lat/lng → xarita havolasidagi koordinata → Toshkent
+function skyStatus(c) {
+  const lat = c.sky?.lat;
+  const lng = c.sky?.lng;
+  if (lat !== '' && lat != null && lng !== '' && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
+    return { ok: true, text: `✓ Osmon shu nuqta uchun hisoblanadi: ${lat}, ${lng}` };
+  }
+  for (const src of [c.venue?.googleMaps, c.venue?.yandexMaps]) {
+    const r = parseMapInput(src || '');
+    if (r.ok && r.lat != null) return { ok: true, text: `✓ Koordinata xarita havolasidan olinadi: ${r.lat}, ${r.lng}` };
+  }
+  return { ok: false, text: '⚠ Koordinata topilmadi — Toshkent osmoni ko‘rsatiladi. Xaritaga koordinata (masalan 40.1461, 65.1949) yoki to‘liq havola kiriting, yoki quyida qo‘lda yozing.' };
+}
+
+function updateSkyStatus() {
+  const el = $('#sky-status');
+  if (!el) return;
+  const st = skyStatus(state.ed.config);
+  el.textContent = st.text;
+  el.className = `hint ${st.ok ? 'hint--ok' : 'hint--warn'}`;
+}
+
+function secSky() {
+  const st = skyStatus(state.ed.config);
+  return section(
+    'sky',
+    'Osmon (yulduzlar qaysi joy uchun)',
+    html`
+      <small class="hint ${st.ok ? 'hint--ok' : 'hint--warn'}" id="sky-status">${st.text}</small>
+      ${field('Shahar nomi', 'sky.city', { placeholder: 'Samarqand', hint: 'Saytda: “… Samarqand osmonida”. Bo‘sh qoldirilsa — to‘yxona nomi' })}
+      <div class="grid2">
+        ${field('Kenglik (lat)', 'sky.lat', { type: 'number', placeholder: '39.6542', attrs: 'step="any"' })}
+        ${field('Uzunlik (lng)', 'sky.lng', { type: 'number', placeholder: '66.9597', attrs: 'step="any"' })}
+      </div>
+      <small class="hint">Xaritaga koordinatali havola kiritilsa, bu yer o‘zi to‘ladi.</small>
     `,
     { open: state.ed.isNew },
   );
@@ -837,7 +900,7 @@ function secMusicRsvp() {
         </label>
         <button class="btn btn--small" type="button" data-action="music-play" style="align-self:end">▶ Tinglash</button>
       </div>
-      <div class="toggle-row">${check('Mehmonlar javob yubora olsin', 'rsvp.enabled', true)} ${c.template !== 'yz' ? check('Tilaklarni saytda ko‘rsatish', 'rsvp.showWishes', true) : ''}</div>
+      <div class="toggle-row">${check('Mehmonlar javob yubora olsin', 'rsvp.enabled', true)} ${c.template === 'volume2' || !c.template ? check('Tilaklarni saytda ko‘rsatish', 'rsvp.showWishes', true) : ''}</div>
       <div class="grid2">
         ${field('Javob qabul qilish muddati', 'rsvp.deadline', { type: 'date', hint: 'Odatda to‘ydan 1 kun oldin' })}
         ${field('Bir javobda ko‘pi bilan necha kishi', 'rsvp.maxGuests', { type: 'number', attrs: 'min="1" max="20"' })}
@@ -891,7 +954,7 @@ async function openExisting(slug, { copy = false } = {}) {
     if (c.seo) c.seo.ogImage = '';
     if (c.music) {
       c.music = '';
-      c.musicTrack ||= c.template === 'yz' ? 'musiqa-4' : 'musiqa-1';
+      c.musicTrack ||= c.template === 'yz' ? 'musiqa-4' : c.template === 'osmon' ? 'musiqa-3' : 'musiqa-1';
     }
     delete c.giftCard;
     state.ed = newEditor({ isNew: true, config: c });
@@ -909,12 +972,15 @@ function showEditor() {
   const c = ed.config;
   const yz = c.template === 'yz';
   const tpl = findTemplate(c.template);
+  const osmon = c.template === 'osmon';
   const sections = yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secYzRu(), secYzTexts(), secSeo()]
-    : [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
+    : osmon
+      ? [secMain(), secTexts(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
+      : [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
 
   root.innerHTML = html`
-    ${topbar(html`<span class="badge ${yz ? 'badge--yz' : ''}">${tpl?.title}</span>`)}
+    ${topbar(html`<span class="badge ${yz ? 'badge--yz' : osmon ? 'badge--osmon' : ''}">${tpl?.title}</span>`)}
     <div class="wrap">
       <div class="list-head">
         <a class="btn btn--small btn--ghost" href="#/">← Ro‘yxat</a>
@@ -936,7 +1002,7 @@ function showEditor() {
           </div>
         </form>
         <aside class="preview" id="preview">
-          <div class="phone"><iframe id="preview-frame" title="Jonli ko‘rinish" src="${yz ? '/preview-yz.html' : '/preview-v2.html'}"></iframe></div>
+          <div class="phone"><iframe id="preview-frame" title="Jonli ko‘rinish" src="${yz ? '/preview-yz.html' : osmon ? '/preview-osmon.html' : '/preview-v2.html'}"></iframe></div>
           <p class="preview__note">Jonli ko‘rinish — saqlanmagan o‘zgarishlar ham ko‘rinadi</p>
           <button class="btn btn--small preview-toggle" type="button" data-action="preview-close">Yopish</button>
         </aside>
@@ -1017,6 +1083,13 @@ function applyMapInput(text) {
   if (r.googleMaps && !r.yandexMaps && r.lat == null) c.venue.yandexMaps = '';
   if (r.yandexMaps && !r.googleMaps && r.lat == null) c.venue.googleMaps = '';
   if (c.template === 'yz') c.venue.mapEmbed = r.embedUrl || '';
+  if (c.template === 'osmon' && r.lat != null) {
+    c.sky = { ...(c.sky || {}), lat: r.lat, lng: r.lng };
+    for (const k of ['lat', 'lng']) {
+      const input = $(`[data-path="sky.${k}"]`);
+      if (input) input.value = c.sky[k];
+    }
+  }
   if (r.placeName && !c.venue.name) c.venue.name = r.placeName;
   note.textContent = r.lat != null ? `✓ Joy aniqlandi: ${r.lat}, ${r.lng}${r.placeName ? ` (${r.placeName})` : ''}` : r.note;
   note.className = `hint ${r.lat != null ? 'hint--ok' : 'hint--warn'}`;
@@ -1031,6 +1104,7 @@ function applyMapInput(text) {
   const box = $('#map-result');
   box.hidden = !parts.length;
   box.textContent = parts.join('  ·  ');
+  updateSkyStatus();
   markDirty();
 }
 
@@ -1125,6 +1199,7 @@ function bindEditor() {
       const oldTime = c.event?.time;
       set(c, path, v);
       if (path === 'backgroundOverlay') $('#veil-val').textContent = `${Math.round(v * 100)}%`;
+      if (path.startsWith('sky.') || path.startsWith('venue.')) updateSkyStatus();
       if (path === 'couple.groom' || path === 'couple.bride') {
         updateSlugFromNames();
         if (!yzTemplate() && !ed.invitationTouched) {
@@ -1341,6 +1416,16 @@ function cleanConfig(c0) {
       for (const [k, v] of Object.entries(c.texts?.[lang] || {})) if (!String(v).trim()) delete c.texts[lang][k];
     }
     for (const [k, v] of Object.entries(c.ru || {})) if (!String(v).trim()) delete c.ru[k];
+  }
+  if (c.sky) {
+    // Bo'sh maydonlar yozilmaydi; koordinata bo'lmasa — xarita havolasidan olinadi
+    if (c.sky.lat === '' || c.sky.lng === '' || c.sky.lat == null || c.sky.lng == null) {
+      delete c.sky.lat;
+      delete c.sky.lng;
+    }
+    if (!String(c.sky.city || '').trim()) delete c.sky.city;
+    else c.sky.city = c.sky.city.trim();
+    if (!Object.keys(c.sky).length) delete c.sky;
   }
   if (c.rsvp?.maxGuests !== undefined) c.rsvp.maxGuests = Number(c.rsvp.maxGuests) || 5;
   return c;

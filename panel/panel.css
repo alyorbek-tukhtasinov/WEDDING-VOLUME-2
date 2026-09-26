@@ -292,6 +292,11 @@ a {
   color: var(--gold);
 }
 
+.badge--osmon {
+  background: #0b1633;
+  color: #e6cc93;
+}
+
 .badge--soon {
   background: #fff4dc;
   color: #7a5200;
