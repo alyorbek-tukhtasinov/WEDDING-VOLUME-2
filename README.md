@@ -212,6 +212,28 @@ Yangi to'y yaratish va tahrirlash kod yozmasdan, brauzerda. Faqat egasining paro
 Panel `config.json` yozadi; qo'lda yozilgan `config.js` mijozlar panelda birinchi saqlanganda
 `config.json` ga o'tadi. Ikkalasi ham ishlaydi.
 
+## "To‘y kechasining osmoni" shabloni (osmon)
+
+Sahifa ortida — to‘y kechasi to‘yxona ustidagi haqiqiy osmon: ~5000 yulduz, Somon yo‘li,
+Oy (fazasi bilan) va sayyoralar astronomik hisoblanadi (`templates/osmon/sky/astro.js`,
+testlar: `tests/astro.test.js`). Kelin-kuyov ismlari yulduz turkumi bo‘lib chiziladi,
+mehmonlar tilaklari fonar bo‘lib ko‘tarilib, osmonda yulduzga aylanadi.
+
+`config.json` da `"template": "osmon"`. Qo‘shimcha maydon (ixtiyoriy):
+
+```json
+"sky": { "city": "Samarqand", "lat": 39.6542, "lng": 66.9597 }
+```
+
+Yozilmasa, koordinata to‘yxona xaritasi havolasidan olinadi, u ham bo‘lmasa — Toshkent.
+To‘y yorug‘ paytda boshlansa, osmon o‘sha oqshom yulduzlar to‘liq chiqqan paytdagidek ko‘rsatiladi.
+Namuna: `clients/demo-osmon`. Panelga keyingi bosqichda qo‘shiladi.
+
+Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumlari chiziqlari —
+[d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3, © Olaf Frohn); qayta yaratish:
+`scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,
+`templates/osmon/fonts` da saytning o‘zida.
+
 ## Javoblarni saqlash (RSVP)
 
 Mehmon javoblari **Upstash Redis** bazasida saqlanadi. Baza bepul va Vercel ichidan

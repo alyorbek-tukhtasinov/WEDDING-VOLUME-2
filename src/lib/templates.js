@@ -15,6 +15,14 @@ export const TEMPLATES = [
     description: 'Qora-tilla kinematik uslub, o‘zbek/rus tillari, 6 ta suratli bo‘lim, sovg‘a kartasi',
     features: ['ru', 'photos', 'giftCard', 'mapEmbed', 'rsvp'],
   },
+  {
+    id: 'osmon',
+    title: 'To‘y kechasining osmoni',
+    description: 'To‘y kechasining haqiqiy yulduzli osmoni, ismlar — yulduz turkumi, tilaklar — osmondagi yulduzlar',
+    features: ['program', 'dressCode', 'contacts', 'sky', 'rsvp', 'wishes'],
+    // Panelga keyingi bosqichda qo'shiladi (hozircha config.json qo'lda yoziladi)
+    panel: false,
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';

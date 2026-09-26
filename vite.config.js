@@ -34,9 +34,9 @@ export default defineConfig(async ({ mode }) => {
     throw err;
   }
 
-  // Shablon: volume2 — ildizdagi index.html (vanilla JS), yz — templates/yz (React)
+  // Shablon: volume2 — ildizdagi index.html (vanilla JS), boshqalari — templates/<id>/index.html
   const template = client.config.template || 'volume2';
-  const mainHtml = template === 'yz' ? path.join(root, 'templates', 'yz', 'index.html') : path.join(root, 'index.html');
+  const mainHtml = template === 'volume2' ? path.join(root, 'index.html') : path.join(root, 'templates', template, 'index.html');
 
   return {
     resolve: {
@@ -84,7 +84,9 @@ function weddingPlugin(client, template) {
         ? `/media/${config.seo.ogImage}`
         : template === 'yz'
           ? config.photos?.hero ? `/media/${config.photos.hero}` : '/images/yz/wedding1.jpg'
-          : '/images/og-default.jpg';
+          : template === 'osmon'
+            ? '/images/og-osmon.jpg'
+            : '/images/og-default.jpg';
       const themeVars = Object.entries(config.theme || {})
         .map(([k, v]) => `--${k}:${v};`)
         .join('');
@@ -106,9 +108,9 @@ function weddingPlugin(client, template) {
 
     // Dev rejimida /media/* va /api/* ni xizmat qilish
     configureServer(server) {
-      if (template === 'yz') {
+      if (template !== 'volume2') {
         server.middlewares.use((req, _res, next) => {
-          if (req.url === '/' || req.url === '/index.html') req.url = '/templates/yz/index.html';
+          if (req.url === '/' || req.url === '/index.html') req.url = `/templates/${template}/index.html`;
           next();
         });
       }
@@ -138,8 +140,8 @@ function weddingPlugin(client, template) {
 
     // Build oxirida mijozning media/ papkasini dist/media ga ko'chirish
     closeBundle() {
-      // yz: templates/yz/index.html saytning bosh sahifasi (index.html) bo'lishi kerak
-      const nested = path.join(outDir, 'templates', 'yz', 'index.html');
+      // templates/<id>/index.html saytning bosh sahifasi (index.html) bo'lishi kerak
+      const nested = path.join(outDir, 'templates', template, 'index.html');
       if (fs.existsSync(nested)) {
         fs.renameSync(nested, path.join(outDir, 'index.html'));
         fs.rmSync(path.join(outDir, 'templates'), { recursive: true, force: true });

@@ -1,0 +1,32 @@
+{
+  "template": "osmon",
+  "couple": { "groom": "Yusuf", "bride": "Zulayho" },
+  "event": { "date": "2026-11-14", "time": "19:00", "timezone": "+05:00", "durationHours": 5 },
+  "hosts": "Karimovlar va Rahimovlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Yusuf va Zulayhoning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Shu kecha osmonidagi har bir yulduz guvoh bo‘ladigan baxtli lahzalarni siz bilan birga nishonlashni istaymiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "“Registon” to‘yxonasi",
+    "address": "Samarqand shahri, Registon ko‘chasi",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=39.654200%2C66.959700",
+    "yandexMaps": "https://yandex.uz/maps/?pt=66.959700,39.654200&z=16&l=map"
+  },
+  "sky": { "city": "Samarqand", "lat": 39.6542, "lng": 66.9597 },
+  "program": [
+    { "time": "19:00", "title": "Mehmonlarni kutib olish" },
+    { "time": "19:30", "title": "Kelin-kuyovning kirib kelishi" },
+    { "time": "20:00", "title": "Tantanali ziyofat" },
+    { "time": "22:30", "title": "To‘y tortini kesish" }
+  ],
+  "dressCode": {
+    "text": "Kechki bayramona libos. Tungi osmon ranglari — to‘q ko‘k, kumush va tilla — ayniqsa mos tushadi.",
+    "colors": ["#0b1633", "#1f2d5c", "#c9ced9", "#d8b976"]
+  },
+  "musicTrack": "musiqa-3",
+  "rsvp": { "enabled": true, "deadline": "2026-11-12", "maxGuests": 5, "showWishes": true },
+  "contacts": []
+}

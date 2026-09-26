@@ -116,6 +116,16 @@ export function validateConfig(c, mediaFiles = null) {
       need(c.ru?.[k] == null || typeof c.ru[k] === 'string', `ru.${k} matn bo'lishi kerak`);
     }
   }
+  // "To'y kechasining osmoni" (osmon): osmon qaysi joydan ko'rsatiladi (yozilmasa — to'yxona xaritasidan)
+  if (c.sky != null) {
+    need(typeof c.sky === 'object', 'sky obyekt bo\'lishi kerak: { city, lat, lng }');
+    const hasLat = c.sky?.lat != null && c.sky.lat !== '';
+    const hasLng = c.sky?.lng != null && c.sky.lng !== '';
+    need(hasLat === hasLng, 'sky.lat va sky.lng birga yozilishi kerak');
+    if (hasLat) need(Number.isFinite(Number(c.sky.lat)) && Math.abs(Number(c.sky.lat)) <= 90, `sky.lat noto'g'ri: "${c.sky.lat}"`);
+    if (hasLng) need(Number.isFinite(Number(c.sky.lng)) && Math.abs(Number(c.sky.lng)) <= 180, `sky.lng noto'g'ri: "${c.sky.lng}"`);
+    need(c.sky?.city == null || typeof c.sky.city === 'string', 'sky.city matn bo\'lishi kerak');
+  }
   // Sahifaga joylanadigan xarita — faqat Google yoki Yandex manzili (boshqa saytni iframe'ga qo'yib bo'lmaydi)
   if (c.venue?.mapEmbed) {
     let ok = false;

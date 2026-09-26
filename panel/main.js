@@ -413,7 +413,7 @@ function showTemplatePicker() {
     <div class="wrap">
       <div class="list-head"><h1>Yangi to‘y — shablonni tanlang</h1></div>
       <div class="templates">
-        ${TEMPLATES.map(
+        ${TEMPLATES.filter((t) => t.panel !== false).map(
           (t) => html`
             <button class="tpl" type="button" data-template="${t.id}">
               <img src="${TEMPLATE_IMAGES[t.id]}" alt="" loading="lazy" />
