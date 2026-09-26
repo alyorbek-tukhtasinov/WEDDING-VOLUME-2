@@ -1,0 +1,79 @@
+{
+  "template": "volume2",
+  "couple": {
+    "groom": "Alyorbek",
+    "bride": "Madinaxon",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-11-09",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "alyorbek-madinaxon",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Alyorbek va Madinaxonning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "tarona",
+    "address": "test",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.268019%2C69.225677",
+    "yandexMaps": "https://yandex.uz/maps/?pt=69.225677,41.268019&z=17&l=map",
+    "image": ""
+  },
+  "program": [
+    {
+      "time": "18:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "18:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "19:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "21:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#7a1f3d"
+    ]
+  },
+  "gallery": [
+    "rasm-muhdfwnu0xs.jpg",
+    "rasm-muhdg0mdozh.jpg",
+    "rasm-muhdg6rl994.jpg",
+    "rasm-muhdgc044zl.jpg"
+  ],
+  "musicTrack": "musiqa-2",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-11-08",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "theme": {},
+  "effects": {
+    "envelope": true,
+    "petals": true,
+    "typing": true
+  }
+}
