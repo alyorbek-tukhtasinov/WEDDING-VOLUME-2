@@ -1,0 +1,80 @@
+{
+  "template": "volume2",
+  "couple": {
+    "groom": "Shoxrux",
+    "bride": "Sevara",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-23",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Dusbayevlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Shoxrux va Sevaraning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "\"Nilufar\" to'yxonasi",
+    "address": "Toshkent viloyati Oqqo'rg'on tumani Alimkent shaharchasi",
+    "googleMaps": "https://maps.app.goo.gl/fFjf1gGcYzQdJseh7?g_st=ac",
+    "yandexMaps": "",
+    "image": ""
+  },
+  "program": [
+    {
+      "time": "18:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "18:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "19:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "21:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "gallery": [],
+  "musicTrack": "musiqa-1",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-22",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [
+    {
+      "name": "Aloqa uchun",
+      "phone": "+998950200210"
+    }
+  ],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "theme": {},
+  "effects": {
+    "envelope": true,
+    "petals": true,
+    "typing": true
+  }
+}
