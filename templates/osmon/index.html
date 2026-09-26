@@ -28,10 +28,13 @@
     <style>
       /* Skript yuklanguncha ham qorong'i osmon (oq chaqnash bo'lmasin) */
       html, body { background: #03050c; margin: 0; }
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg, #16224a, #2c3470 48%, #7a6090 72%, #d9967a 79%, #04050c 79.5%); }
+      .boot i { width: 14px; height: 14px; background: #e6cc93; clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%); animation: boot 1.6s ease-in-out infinite; }
+      @keyframes boot { 50% { opacity: .35; transform: scale(.8); } }
     </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app"><div class="boot" aria-label="Taklifnoma ochilmoqda"><i></i></div></div>
     <noscript>
       <p style="padding: 2rem; text-align: center; font-family: serif; color: #e8e4d8">
         Taklifnomani ko‘rish uchun brauzeringizda JavaScript yoqilgan bo‘lishi kerak.

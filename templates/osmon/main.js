@@ -65,7 +65,28 @@ const ICON = {
   phone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
 };
 
-function renderPage(c, d, place, info) {
+/** "Shu kechaning osmoni" faktlari (osmon hisoblangach to'ldiriladi). */
+function factsHtml(info) {
+  if (!info) {
+    return html`<ul class="facts facts--loading" aria-busy="true">
+      ${['Oy', 'Sayyoralar', 'Yulduzlar'].map((t, i) => html`<li><span class="facts__icon">${raw([ICON.moon, ICON.planet, ICON.stars][i])}</span><div><b>${t}</b><p class="muted">osmon hisoblanmoqda…</p></div></li>`)}
+    </ul>`;
+  }
+  const moonFact = info.moon.alt > 0
+    ? html`${info.moon.phase} · ${Math.round(info.moon.illumination * 100)}% yoritilgan<br /><span class="muted">${directionName(info.moon.az)} tomonda, ufqdan ${Math.round(info.moon.alt)}° balandda</span>`
+    : html`Oy bu kecha ufq ostida<br /><span class="muted">shuning uchun yulduzlar yanada yorqin</span>`;
+  const planetsFact = info.planets.length
+    ? html`${info.planets.map((p) => p.name).join(', ')}<br /><span class="muted">${info.planets.map((p) => `${p.name} — ${directionName(p.az)}da`).join(' · ')}</span>`
+    : html`Bu kecha sayyoralar ufq ostida<br /><span class="muted">osmonda faqat yulduzlar</span>`;
+  return html`<ul class="facts">
+    <li><span class="facts__icon">${raw(ICON.moon)}</span><div><b>Oy</b><p>${moonFact}</p></div></li>
+    <li><span class="facts__icon">${raw(ICON.planet)}</span><div><b>Sayyoralar</b><p>${planetsFact}</p></div></li>
+    <li><span class="facts__icon">${raw(ICON.stars)}</span><div><b>Yulduzlar</b><p>Oddiy ko‘z bilan ${num(info.visibleStars)} ta yulduz<br /><span class="muted">shahar chiroqlari bo‘lmasa, albatta</span></p></div></li>
+  </ul>`;
+}
+
+/** when — { shifted, time }: osmon qaysi payt uchun ko'rsatiladi (osmondan oldin ma'lum). */
+function renderPage(c, d, place, when) {
   const t = c.texts || {};
   const program = (c.program || []).filter((p) => p?.time && p?.title);
   const dress = c.dressCode?.text?.trim() || c.dressCode?.colors?.length ? c.dressCode : null;
@@ -77,13 +98,6 @@ function renderPage(c, d, place, info) {
   const weekday = d.weekdayName.charAt(0).toUpperCase() + d.weekdayName.slice(1);
   const words = (s) => raw(esc(s).split(/(\s+)/).map((w) => (/\S/.test(w) ? `<span class="w">${w}</span>` : w)).join(''));
   const sectionHead = (eyebrow, title) => html`<p class="eyebrow">${eyebrow}</p><h2 class="title">${title}</h2>`;
-
-  const moonFact = info.moon.alt > 0
-    ? html`${info.moon.phase} · ${Math.round(info.moon.illumination * 100)}% yoritilgan<br /><span class="muted">${directionName(info.moon.az)} tomonda, ufqdan ${Math.round(info.moon.alt)}° balandda</span>`
-    : html`Oy bu kecha ufq ostida<br /><span class="muted">shuning uchun yulduzlar yanada yorqin</span>`;
-  const planetsFact = info.planets.length
-    ? html`${info.planets.map((p) => p.name).join(', ')}<br /><span class="muted">${info.planets.map((p) => `${p.name} — ${directionName(p.az)}da`).join(' · ')}</span>`
-    : html`Bu kecha sayyoralar ufq ostida<br /><span class="muted">osmonda faqat yulduzlar</span>`;
 
   return html`
     <div class="sky" id="sky"></div>
@@ -128,15 +142,11 @@ function renderPage(c, d, place, info) {
 
       <section class="scene scene--low" data-view="sky">
         <div class="card reveal">
-          ${sectionHead('Shu kechaning osmoni', info.shifted ? `${dateLine}, soat ${info.time}` : `${dateLine}, soat ${c.event.time}`)}
+          ${sectionHead('Shu kechaning osmoni', when.shifted ? `${dateLine}, soat ${when.time}` : `${dateLine}, soat ${c.event.time}`)}
           <p class="lead">Bu osmon — bezak emas. Yulduzlar, Oy va sayyoralar to‘y kechasi ${place.city ? `${place.city} osmonida` : `${venue.name} ustida`} qanday joylashsa, aynan shunday chizilgan.</p>
-          <ul class="facts">
-            <li><span class="facts__icon">${raw(ICON.moon)}</span><div><b>Oy</b><p>${moonFact}</p></div></li>
-            <li><span class="facts__icon">${raw(ICON.planet)}</span><div><b>Sayyoralar</b><p>${planetsFact}</p></div></li>
-            <li><span class="facts__icon">${raw(ICON.stars)}</span><div><b>Yulduzlar</b><p>Oddiy ko‘z bilan ${num(info.visibleStars)} ta yulduz<br /><span class="muted">shahar chiroqlari bo‘lmasa, albatta</span></p></div></li>
-          </ul>
-          ${info.shifted ? html`<p class="note">To‘y yorug‘ paytda boshlanadi — shuning uchun osmon o‘sha oqshom yulduzlar to‘liq chiqqan paytdagidek (soat ${info.time}) ko‘rsatilgan.</p>` : ''}
-          <button class="btn btn--ghost" type="button" data-explore>${raw(ICON.compass)}<span>Osmonni aylantirib ko‘rish</span></button>
+          <div id="sky-facts">${factsHtml(null)}</div>
+          ${when.shifted ? html`<p class="note">To‘y yorug‘ paytda boshlanadi — shuning uchun osmon o‘sha oqshom yulduzlar to‘liq chiqqan paytdagidek (soat ${when.time}) ko‘rsatilgan.</p>` : ''}
+          <button class="btn btn--ghost" type="button" data-explore hidden>${raw(ICON.compass)}<span>Osmonni aylantirib ko‘rish</span></button>
         </div>
       </section>
 
@@ -345,44 +355,25 @@ async function start() {
   const tz = c.event.timezone || '+05:00';
   const moment = nightMoment(d.start, place.lat, place.lng);
 
-  // Osmon hisoblanmaguncha ham sahifa tuzilishi tayyor bo'lishi uchun avval taxminiy ma'lumot
+  // Sahifa va kirish pardasi darhol chiziladi; osmon (yulduzlar ma'lumoti ~300 KB) orqada yuklanadi —
+  // sekin mobil internetda ham ekran bo'sh turmaydi
   const app = $('#app');
   document.documentElement.classList.add('is-locked');
+  app.innerHTML = renderPage(c, d, place, { shifted: moment.shifted, time: fmtTime(moment.date, tz) });
 
   let sky = null;
-  let info;
-  try {
-    const skyRoot = document.createElement('div');
-    skyRoot.className = 'sky';
-    skyRoot.id = 'sky';
-    // Sahna o'lchami kerak — vaqtincha qo'shamiz, keyin sahifaga ko'chiramiz
-    document.body.prepend(skyRoot);
-    sky = await createSky({ root: skyRoot, date: moment.date, lat: place.lat, lng: place.lng, groom: d.groom, bride: d.bride, reduced });
-    info = { ...sky.stats, moon: sky.stats.moon, shifted: moment.shifted, time: fmtTime(moment.date, tz) };
-    app.innerHTML = renderPage(c, d, place, info);
-    $('#sky', app).replaceWith(skyRoot);
-  } catch (err) {
-    console.error('Osmonni chizib bo‘lmadi:', err);
-    info = { visibleStars: 0, moon: { alt: -1 }, planets: [], shifted: false, time: c.event.time };
-    app.innerHTML = renderPage(c, d, place, info);
-    document.documentElement.classList.add('no-sky');
-  }
-
-  sky?.setNight(0, true);
-  if (sky && new URLSearchParams(location.search).has('debug')) window.__sky = sky;
+  let opened = false;
   initCountdown(d);
   initCalendar(c, d);
   initReveal();
   const music = initMusic(musicUrlOf(c));
-  const scroller = initScroll(sky);
-  initExplore(sky, scroller);
-  if (c.rsvp?.enabled) initWishes(c, d, sky);
+  const scroller = initScroll(() => sky);
+  const wishes = c.rsvp?.enabled ? initWishes(c, d, () => sky) : null;
 
   const gate = $('#gate');
   const openBtn = $('#gate-open');
   requestAnimationFrame(() => gate.classList.add('is-ready'));
   openBtn.focus({ preventScroll: true });
-  let opened = false;
   const open = () => {
     if (opened) return;
     opened = true;
@@ -396,13 +387,32 @@ async function start() {
       document.documentElement.classList.remove('is-locked');
       document.body.classList.add('is-open');
       $$('.fab').forEach((b) => (b.hidden = false));
+      scroller.refresh();
     }, reduced ? 200 : 1400);
   };
   openBtn.addEventListener('click', open);
+
+  try {
+    const s = await createSky({ root: $('#sky'), date: moment.date, lat: place.lat, lng: place.lng, groom: d.groom, bride: d.bride, reduced });
+    sky = s;
+    if (new URLSearchParams(location.search).has('debug')) window.__sky = s;
+    $('#sky-facts').innerHTML = factsHtml({ ...s.stats }).value;
+    s.setNight(opened ? 1 : 0, true);
+    if (opened) s.startNames();
+    initExplore(s, scroller);
+    scroller.refresh();
+    wishes?.skyReady();
+    document.documentElement.classList.add('sky-ready');
+  } catch (err) {
+    console.error('Osmonni chizib bo‘lmadi:', err);
+    $('#sky-facts').innerHTML = '';
+    initExplore(null, scroller);
+    document.documentElement.classList.add('no-sky');
+  }
 }
 
 /* -------------------------- Kamera — sahifa aylantirilishi bilan -------------------------- */
-function initScroll(sky) {
+function initScroll(getSky) {
   const sections = $$('[data-view]');
   let anchors = [];
   let enabled = true;
@@ -423,8 +433,14 @@ function initScroll(sky) {
     for (let i = 1; i < anchors.length; i++) anchors[i] = Math.max(anchors[i], anchors[i - 1] + 1);
   };
   let current = '';
+  let lastSky = null;
   const update = () => {
+    const sky = getSky();
     if (!sky || !enabled) return;
+    if (sky !== lastSky) {
+      lastSky = sky;
+      current = '';
+    }
     const views = sky.views();
     const y = window.scrollY;
     let i = 0;
@@ -450,9 +466,12 @@ function initScroll(sky) {
   measure();
   update();
   window.addEventListener('scroll', update, { passive: true });
+  // Osmon sahnasi o'z o'lchamini ResizeObserver'da yangilaydi — undan keyin (keyingi kadrda) hisoblaymiz
   window.addEventListener('resize', () => {
-    measure();
-    update();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      measure();
+      update();
+    }));
   });
   // Shriftlar yuklanib, balandliklar o'zgarganda
   document.fonts?.ready.then(() => {
@@ -464,6 +483,10 @@ function initScroll(sky) {
     update();
   }).observe($('#story'));
   return {
+    refresh() {
+      measure();
+      update();
+    },
     pause() {
       enabled = false;
     },
@@ -484,6 +507,7 @@ function initExplore(sky, scroller) {
     $$('[data-explore]').forEach((b) => b.remove());
     return;
   }
+  $$('[data-explore]').forEach((b) => (b.hidden = false));
   let active = false;
   let hintTimer = 0;
   const open = () => {
@@ -548,7 +572,7 @@ function initExplore(sky, scroller) {
 }
 
 /* ------------------------------ Javob va tilaklar ------------------------------ */
-function initWishes(c, d, sky) {
+function initWishes(c, d, getSky) {
   const form = $('#rsvp-form');
   const status = $('#rsvp-status');
   const doneBox = $('#rsvp-done');
@@ -643,7 +667,7 @@ function initWishes(c, d, sky) {
       saved = { ...answer, id: guestId };
       store.set(saved);
       setStatus('');
-      if (data.message && sky) {
+      if (data.message && getSky()) {
         await releaseLantern(btn, { name: data.name, message: data.message });
       }
       showDone(thanks(data.attending, data.name));
@@ -659,6 +683,7 @@ function initWishes(c, d, sky) {
   function releaseLantern(fromEl, wish) {
     const key = `mine|${guestId}|${wish.message.slice(0, 24)}`;
     mine = { ...wish, key };
+    const sky = getSky();
     sky.setWishes([{ ...wish, key, self: true, animate: true, delay: 999 }]);
     const r = fromEl.getBoundingClientRect();
     // Sahifa osmon ochiladigan joyga suriladi: tilak yulduzlari karta ustida ko'rinadi
@@ -724,15 +749,23 @@ function initWishes(c, d, sky) {
         if (mine && mine.name === w.name && mine.message === w.message) continue;
         fresh.push({ name: w.name, message: w.message, at: w.at, key: k });
       }
-      sky?.setWishes(fresh);
+      allFresh.push(...fresh);
+      getSky()?.setWishes(fresh);
       renderList();
     } catch {
       /* tarmoq yo'q — keyingi safar */
     }
   }
+  const allFresh = [];
   refresh();
   // Yangi tilaklar — sahifa ochiq turganda ham osmonda paydo bo'ladi
   setInterval(() => !document.hidden && refresh(), 45000);
+  return {
+    // Osmon keyinroq tayyor bo'lsa — oldin yuklangan tilaklar ham yulduz bo'ladi
+    skyReady() {
+      getSky()?.setWishes(allFresh);
+    },
+  };
 }
 
 start();

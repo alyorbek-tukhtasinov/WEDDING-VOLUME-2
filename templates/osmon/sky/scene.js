@@ -196,6 +196,7 @@ export async function createSky(o) {
   /* ------------------------------- Holat ------------------------------- */
   let W = 0;
   let H = 0;
+  let layoutH = 0;
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
   let glDpr = Math.min(dpr, 1.75);
   let portrait = true;
@@ -234,7 +235,8 @@ export async function createSky(o) {
     const S = portrait ? 76 : 66;
     const cam = camOf({ alt: 0, az: az0, S });
     // Ufq ekranning pastki qismida (portretda 79%, kengda 83%)
-    const hf = portrait ? 0.79 : 0.83;
+    // Pastda sana va "Pastga suring" uchun ~150px joy qoladi — sana binolar ustiga tushmaydi
+    const hf = Math.min(portrait ? 0.79 : 0.83, 1 - 150 / H);
     const heroAlt = 2 * Math.atan((hf * H - H / 2) / (2 * cam.scale)) * DEG;
     const nf = portrait ? 0.35 : 0.37;
     const namesAlt = heroAlt + 2 * Math.atan((H / 2 - nf * H) / (2 * cam.scale)) * DEG;
@@ -246,7 +248,9 @@ export async function createSky(o) {
     const w = Math.round(r.width);
     const h = Math.round(r.height);
     if (!w || !h) return;
-    const changedW = w !== W;
+    // Kenglik o'zgarsa yoki balandlik sezilarli o'zgarsa (noutbukda oyna o'lchami) — joylashuv qayta hisoblanadi.
+    // Mobil manzil paneli yashiringandagi kichik o'zgarishlar e'tiborsiz qoldiriladi.
+    const changedW = w !== W || Math.abs(h - layoutH) > h * 0.15;
     W = w;
     H = h;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -257,6 +261,7 @@ export async function createSky(o) {
     setGlDpr(glDpr);
     // Mobil brauzerlarda manzil paneli yashiringanda faqat balandlik o'zgaradi — manzara qayta chizilmaydi
     if (changedW || !skyline) {
+      layoutH = H;
       computeLayout();
       const px = Math.min(18, layout.pxDeg * dpr * 1.15);
       skyline = buildSkyline({ px, seed: 11, scale: layout.skyScale });

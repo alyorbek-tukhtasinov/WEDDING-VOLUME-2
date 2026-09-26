@@ -69,7 +69,15 @@ svg {
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: var(--ink);
+  /* Osmon yuklanguncha — shafaq (kirish pardasi ortida bo'sh qora ekran bo'lmasin) */
+  background: linear-gradient(180deg, #16224a 0%, #2c3470 48%, #7a6090 72%, #d9967a 79%, #04050c 79.5%, #020309 100%);
+}
+.sky__layer {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.sky-ready .sky__layer {
+  opacity: 1;
 }
 .sky__layer {
   position: absolute;
@@ -335,22 +343,28 @@ svg {
 
 .scene {
   position: relative;
+  min-height: 100vh;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 36vh 16px 30vh;
   padding: 36svh 16px 30svh;
 }
 .scene--low {
   justify-content: flex-end;
+  padding-top: 62vh;
   padding-top: 62svh;
+  padding-bottom: 16vh;
   padding-bottom: 16svh;
 }
 
 .scene--hero {
+  height: 100vh;
   height: 100svh;
   min-height: 0;
+  padding: calc(9vh + var(--safe-t)) 16px calc(3vh + var(--safe-b));
   padding: calc(9svh + var(--safe-t)) 16px calc(3svh + var(--safe-b));
   justify-content: space-between;
 }
@@ -373,6 +387,11 @@ svg {
   transform: none;
 }
 .hero__date {
+  position: relative;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(3, 5, 12, 0.72), rgba(3, 5, 12, 0.45) 70%, transparent);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.9);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -572,6 +591,9 @@ svg {
 }
 
 /* --------------------------- Shu kechaning osmoni --------------------------- */
+.facts--loading p {
+  animation: pulse 1.6s ease-in-out infinite;
+}
 .facts {
   list-style: none;
   margin: 22px 0 0;
@@ -1085,9 +1107,11 @@ svg {
 /* ---------------------------------- Yakun ---------------------------------- */
 /* Qahramon kadrining takrori: tepada so'nggi so'z, osmonda ismlar, pastda — oila */
 .scene--final {
+  height: 100vh;
   height: 100svh;
   min-height: 0;
   justify-content: space-between;
+  padding: calc(10vh + var(--safe-t)) 16px calc(3vh + var(--safe-b));
   padding: calc(10svh + var(--safe-t)) 16px calc(3svh + var(--safe-b));
   text-align: center;
 }
