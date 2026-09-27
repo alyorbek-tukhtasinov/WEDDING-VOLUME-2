@@ -234,6 +234,13 @@ Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumla
 `scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,
 `templates/osmon/fonts` da saytning o‘zida.
 
+### Demo saytlar va o‘chirish
+
+Nomi `demo` bilan boshlanadigan saytlar (yoki tahrirda “Demo (namuna) sayt” belgilanganlar) ro‘yxatda
+alohida guruhda turadi va daromad hisobiga kirmaydi (config: `"demo": true`). Kartadagi **O‘chirish**
+tugmasi saytni nomini yozib tasdiqlagandan keyin GitHub’dan o‘chiradi; mehmon javoblari (Redis) va
+daromad yozuvi saqlanib qoladi.
+
 ### Musiqa to‘plami
 
 Panelda **🎵 Musiqalar** → MP3/M4A faylni tanlang, nomini yozing → **Qo‘shish**. Fayl

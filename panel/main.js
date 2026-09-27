@@ -367,6 +367,31 @@ async function showList() {
   renderList('');
 }
 
+function clientCard(c, today) {
+  const past = c.date && c.date < today;
+  const soon = !past && c.date && c.date <= addDays(today, 7);
+  const tpl = findTemplate(c.template);
+  return html`
+    <article class="card ${past && !c.demo ? 'card--past' : ''} ${c.demo ? 'card--demo' : ''}">
+      <div class="actions-row">
+        <span class="badge ${c.template === 'yz' ? 'badge--yz' : c.template === 'osmon' ? 'badge--osmon' : ''}">${tpl?.title || c.template}</span>
+        ${c.demo ? html`<span class="badge badge--demo">Demo</span>` : ''}
+        ${soon && !c.demo ? html`<span class="badge badge--soon">Yaqinda</span>` : ''}
+        ${past && !c.demo ? html`<span class="badge">O‘tgan</span>` : ''}
+      </div>
+      <p class="card__names">${c.groom} & ${c.bride}</p>
+      <p class="card__meta">${prettyDate(c.date)}${c.time ? `, soat ${c.time}` : ''} · ${c.venue}</p>
+      <p class="card__meta">${c.rsvp ? `Javoblar: ${c.rsvp.total} · keladi: ${c.rsvp.attending} (${c.rsvp.guests} kishi)` : 'Javoblar: baza ulanmagan'}</p>
+      <div class="card__actions">
+        <a class="btn btn--small btn--primary" href="#/tahrir/${c.slug}">Tahrirlash</a>
+        <a class="btn btn--small" href="#/nusxa/${c.slug}">Nusxa olish</a>
+        <a class="btn btn--small btn--ghost" href="${siteUrl(c.slug)}" target="_blank" rel="noopener">Saytni ochish ↗</a>
+        <button class="btn btn--small btn--ghost btn--danger" type="button" data-delete="${c.slug}">O‘chirish</button>
+      </div>
+    </article>
+  `;
+}
+
 function renderList(filter) {
   const today = todayIso();
   const q = filter.trim().toLowerCase();
@@ -378,45 +403,34 @@ function renderList(filter) {
       if (pa !== pb) return pa ? 1 : -1;
       return pa ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
     });
+  const real = items.filter((c) => !c.demo);
+  const demos = items.filter((c) => c.demo);
+  const realTotal = state.clients.filter((c) => !c.demo).length;
 
   root.innerHTML = html`
     ${topbar()}
     <div class="wrap">
       <div class="list-head">
-        <h1>To‘ylar (${state.clients.length})</h1>
+        <h1>To‘ylar (${realTotal})</h1>
         <input class="search" id="search" type="search" placeholder="Qidirish: ism, manzil…" value="${filter}" />
         <a class="btn" href="#/daromad">💰 Daromad</a>
         <a class="btn" href="#/musiqa">🎵 Musiqalar</a>
         <a class="btn btn--primary" href="#/yangi">+ Yangi to‘y</a>
       </div>
       <div class="cards">
-        ${items.length
-          ? items.map((c) => {
-              const past = c.date && c.date < today;
-              const soon = !past && c.date && c.date <= addDays(today, 7);
-              const tpl = findTemplate(c.template);
-              return html`
-                <article class="card ${past ? 'card--past' : ''}">
-                  <div class="actions-row">
-                    <span class="badge ${c.template === 'yz' ? 'badge--yz' : c.template === 'osmon' ? 'badge--osmon' : ''}">${tpl?.title || c.template}</span>
-                    ${soon ? html`<span class="badge badge--soon">Yaqinda</span>` : ''}
-                    ${past ? html`<span class="badge">O‘tgan</span>` : ''}
-                  </div>
-                  <p class="card__names">${c.groom} & ${c.bride}</p>
-                  <p class="card__meta">${prettyDate(c.date)}${c.time ? `, soat ${c.time}` : ''} · ${c.venue}</p>
-                  <p class="card__meta">${c.rsvp ? `Javoblar: ${c.rsvp.total} · keladi: ${c.rsvp.attending} (${c.rsvp.guests} kishi)` : 'Javoblar: baza ulanmagan'}</p>
-                  <div class="card__actions">
-                    <a class="btn btn--small btn--primary" href="#/tahrir/${c.slug}">Tahrirlash</a>
-                    <a class="btn btn--small" href="#/nusxa/${c.slug}">Nusxa olish</a>
-                    <a class="btn btn--small btn--ghost" href="${siteUrl(c.slug)}" target="_blank" rel="noopener">Saytni ochish ↗</a>
-                  </div>
-                </article>
-              `;
-            })
-          : html`<p class="empty">Hech narsa topilmadi</p>`}
+        ${real.length ? real.map((c) => clientCard(c, today)) : html`<p class="empty">${q ? 'Hech narsa topilmadi' : 'Hozircha mijoz saytlari yo‘q'}</p>`}
       </div>
+      ${demos.length
+        ? html`
+            <details class="demo-group" ${q || state.demoOpen ? 'open' : ''}>
+              <summary>Demo saytlar (${demos.length}) <small>— namuna uchun, daromad hisobiga kirmaydi</small></summary>
+              <div class="cards">${demos.map((c) => clientCard(c, today))}</div>
+            </details>
+          `
+        : ''}
     </div>
   `;
+  $('.demo-group')?.addEventListener('toggle', (e) => (state.demoOpen = e.target.open));
   const search = $('#search');
   search.addEventListener('input', () => {
     renderList(search.value);
@@ -521,6 +535,7 @@ function secMain() {
         ${field('Vaqt', 'event.time', { type: 'time' })}
         ${field('Muhrdagi harflar', 'couple.initials', { placeholder: 'avtomatik', hint: 'Bo‘sh — ismlardan' })}
       </div>
+      <div class="toggle-row">${check('Demo (namuna) sayt — ro‘yxatda alohida turadi, daromad hisobiga kirmaydi', 'demo', /^demo(-|$)/.test(ed.slug || ''))}</div>
       ${c.template !== 'yz' ? field('Taklif qiluvchilar (oila nomi)', 'hosts', { placeholder: 'To‘rayevlar va Qurbonovlar oilasi', hint: 'Bo‘sh qoldirilsa ko‘rsatilmaydi' }) : ''}
       ${ed.isNew
         ? html`
@@ -1075,7 +1090,7 @@ function financeStats(items, clients) {
   // Oylar bo'yicha (to'y sanasi oyi)
   const months = new Map();
   for (const c of sold) {
-    const m = (c.date || '').slice(0, 7) || '—';
+    const m = c.deleted ? 'o‘chirilgan saytlar' : (c.date || '').slice(0, 7) || 'sanasiz';
     const cur = months.get(m) || { count: 0, sum: 0 };
     cur.count += 1;
     cur.sum += items[c.slug].amount;
@@ -1085,15 +1100,16 @@ function financeStats(items, clients) {
 }
 
 function monthName(ym) {
+  if (!/^\d{4}-\d{2}$/.test(ym)) return ym;
   const [y, m] = ym.split('-').map(Number);
-  return m ? `${MONTHS[m - 1]} ${y}` : ym;
+  return `${MONTHS[m - 1]} ${y}`;
 }
 
 function financeSummary(stats) {
   return html`
     <div class="fin-stats">
       <div class="fin-stat fin-stat--main"><span>Jami daromad</span><b>${fmtSum(stats.total)}</b></div>
-      <div class="fin-stat"><span>Sotilgan saytlar</span><b>${stats.soldCount} / ${state.clients.length}</b></div>
+      <div class="fin-stat"><span>Sotilgan saytlar</span><b>${stats.soldCount} / ${state.clients.filter((c) => !c.demo).length}</b></div>
       <div class="fin-stat"><span>O‘rtacha narx</span><b>${fmtSum(stats.avg)}</b></div>
     </div>
     ${stats.months.length
@@ -1117,7 +1133,13 @@ async function showFinance() {
   const saved = fin.items || {};
   const items = clone(saved);
   let dirty = false;
-  const clients = [...state.clients].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  // Demo saytlar daromad hisobiga kirmaydi. O'chirilgan saytlarning summasi esa saqlanadi va hisoblanadi.
+  const live = state.clients.filter((c) => !c.demo).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const known = new Set(state.clients.map((c) => c.slug));
+  const gone = Object.keys(saved)
+    .filter((slug) => !known.has(slug))
+    .map((slug) => ({ slug, groom: slug, bride: '', date: '', deleted: true }));
+  const clients = [...live, ...gone];
 
   root.innerHTML = html`
     ${topbar()}
@@ -1133,7 +1155,9 @@ async function showFinance() {
           ${clients.map(
             (c) => html`
               <div class="fin-row">
-                <span class="fin-name"><b>${c.groom} &amp; ${c.bride}</b><a href="${siteUrl(c.slug)}" target="_blank" rel="noopener">${c.slug}</a></span>
+                ${c.deleted
+                  ? html`<span class="fin-name"><b>${c.slug}</b><small>o‘chirilgan sayt</small></span>`
+                  : html`<span class="fin-name"><b>${c.groom} &amp; ${c.bride}</b><a href="${siteUrl(c.slug)}" target="_blank" rel="noopener">${c.slug}</a></span>`}
                 <span class="fin-date">${prettyDate(c.date) || '—'}</span>
                 <input class="fin-amount" inputmode="numeric" data-fin="${c.slug}" data-key="amount" placeholder="0" value="${items[c.slug]?.amount != null ? groupDigits(String(items[c.slug].amount)) : ''}" />
                 <input class="fin-note" data-fin="${c.slug}" data-key="note" maxlength="200" placeholder="masalan: to‘landi / avans" value="${items[c.slug]?.note || ''}" />
@@ -1695,6 +1719,8 @@ function cleanConfig(c0) {
     else c.sky.city = c.sky.city.trim();
     if (!Object.keys(c.sky).length) delete c.sky;
   }
+  // demo: false faqat nomi "demo" bilan boshlanadigan saytda kerak (aks holda standart holat — yozilmaydi)
+  if (c.demo === false && !/^demo(-|$)/.test(state.ed?.slug || '')) delete c.demo;
   if (c.rsvp?.maxGuests !== undefined) c.rsvp.maxGuests = Number(c.rsvp.maxGuests) || 5;
   return c;
 }
@@ -1823,6 +1849,68 @@ function humanError(msg) {
     .replace(/^giftCard\.number.*/, 'Karta raqami 16 xonali bo‘lishi kerak')
     .replace(/^rsvp\.deadline.*/, 'Javob muddati to‘y sanasidan oldin bo‘lishi kerak');
 }
+
+/* ------------------------------------------------------------------ */
+/*  Saytni o'chirish                                                    */
+/* ------------------------------------------------------------------ */
+function confirmDelete(slug) {
+  const c = state.clients.find((x) => x.slug === slug);
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = html`
+    <form class="modal__box" id="delete-form">
+      <h3>Saytni o‘chirish</h3>
+      <p><b>${c ? `${c.groom} & ${c.bride}` : slug}</b> — <a href="${siteUrl(slug)}" target="_blank" rel="noopener">${siteUrl(slug)}</a></p>
+      <p class="hint">Sayt 2–3 daqiqada yopiladi va ro‘yxatdan o‘chadi. Mehmonlar javoblari bazada qoladi — shu nom bilan qayta yaratsangiz, qaytadi. Daromad sahifasidagi summasi ham saqlanadi.</p>
+      <label class="f">
+        <span>Tasdiqlash uchun sayt nomini yozing: <b>${slug}</b></span>
+        <input id="delete-confirm" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${slug}" />
+      </label>
+      <div class="actions-row">
+        <button class="btn btn--danger-solid" type="submit" id="delete-go" disabled>O‘chirish</button>
+        <button class="btn" type="button" data-close>Bekor qilish</button>
+      </div>
+    </form>
+  `;
+  document.body.append(modal);
+  const input = $('#delete-confirm', modal);
+  const go = $('#delete-go', modal);
+  input.focus();
+  input.addEventListener('input', () => (go.disabled = input.value.trim() !== slug));
+  modal.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]') || e.target === modal) modal.remove();
+  });
+  $('#delete-form', modal).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (input.value.trim() !== slug) return;
+    go.disabled = true;
+    go.textContent = 'O‘chirilmoqda…';
+    try {
+      const r = await api('delete', { method: 'POST', body: { slug, confirm: input.value.trim() } });
+      if (!r.ok) {
+        toast(r.message || 'O‘chirib bo‘lmadi');
+        go.disabled = false;
+        go.textContent = 'O‘chirish';
+        return;
+      }
+      modal.remove();
+      state.clients = state.clients.filter((x) => x.slug !== slug);
+      toast(`O‘chirildi: ${slug}. Sayt 2–3 daqiqada yopiladi`);
+      refreshStatus();
+      if (location.hash === '#/' || location.hash === '') renderList($('#search')?.value || '');
+      else location.hash = '#/';
+    } catch (err) {
+      if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
+      go.disabled = false;
+      go.textContent = 'O‘chirish';
+    }
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-delete]');
+  if (b) confirmDelete(b.dataset.delete);
+});
 
 /* ------------------------------------------------------------------ */
 /*  Mijoz paroli                                                       */

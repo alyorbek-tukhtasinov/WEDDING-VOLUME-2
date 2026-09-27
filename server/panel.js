@@ -164,6 +164,9 @@ async function rsvpSummary(slug) {
   });
 }
 
+// Demo (namuna) sayt: config'da demo: true/false aniq yozilgan bo'lsa — shu; aks holda nomi "demo" bilan boshlansa
+export const isDemo = (slug, c) => (typeof c?.demo === 'boolean' ? c.demo : /^demo(-|$)/.test(slug));
+
 async function listClients() {
   await syncWork();
   const dir = path.join(WORK(), 'clients');
@@ -175,6 +178,7 @@ async function listClients() {
     out.push({
       slug,
       template: c.template || 'volume2',
+      demo: isDemo(slug, c),
       groom: c.couple?.groom || '',
       bride: c.couple?.bride || '',
       date: c.event?.date || '',
@@ -320,6 +324,35 @@ async function addMusic(body) {
   });
 }
 
+/* ------------------------------------------------------------------ */
+/*  Saytni o'chirish                                                    */
+/* ------------------------------------------------------------------ */
+// clients/<nom> GitHub'dan o'chiriladi → deploy'dan keyin sayt ochilmaydi. Tasodifan bosilmasligi
+// uchun nomni qo'lda yozib tasdiqlash shart. Mehmon javoblari (Redis) o'chirilmaydi — xuddi shu nom
+// bilan qayta yaratilsa, ular qaytadi.
+async function removeClient(body) {
+  const { slug, confirm } = body || {};
+  checkSlug(slug);
+  if (confirm !== slug) throw new UserError('confirm', 'Tasdiqlash uchun sayt nomini aynan yozing');
+  return serial(async () => {
+    await syncWork(true);
+    if (!fs.existsSync(clientDir(slug))) throw new UserError('not_found', `"${slug}" topilmadi`);
+    await git(['rm', '-r', '-q', '--', `clients/${slug}`]);
+    // git rm kuzatilmagan fayllarni qoldirishi mumkin
+    fs.rmSync(clientDir(slug), { recursive: true, force: true });
+    await git(['-c', 'user.name=Taklifnoma panel', '-c', 'user.email=panel@taklifnoma.local', 'commit', '-q', '-m', `Panel: sayt o‘chirildi — ${slug}`]);
+    try {
+      await git(['push', '-q', 'origin', `HEAD:${BRANCH()}`]);
+    } catch (err) {
+      lastFetch = 0;
+      await git(['reset', '-q', '--hard', `origin/${BRANCH()}`]).catch(() => {});
+      throw new UserError('push_failed', `GitHub'ga yozib bo'lmadi: ${err.message}`);
+    }
+    triggerDeploy();
+    return { slug, sha: await git(['rev-parse', 'HEAD']) };
+  });
+}
+
 function triggerDeploy() {
   try {
     fs.mkdirSync(path.dirname(TRIGGER()), { recursive: true });
@@ -436,6 +469,7 @@ export async function panelHandler(req, res, name) {
     if (req.method === 'POST' && name === 'save') return send(res, 200, { ok: true, ...(await save(await readJson(req))) });
     if (req.method === 'GET' && name === 'finance') return send(res, 200, { ok: true, ...(await loadFinance()) });
     if (req.method === 'POST' && name === 'finance') return send(res, 200, { ok: true, ...(await saveFinance(await readJson(req))) });
+    if (req.method === 'POST' && name === 'delete') return send(res, 200, { ok: true, ...(await removeClient(await readJson(req))) });
     if (req.method === 'POST' && name === 'music') return send(res, 200, { ok: true, ...(await addMusic(await readJson(req))) });
     if (req.method === 'POST' && name === 'password') {
       const { slug } = await readJson(req);

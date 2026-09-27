@@ -50,6 +50,7 @@ export function validateConfig(c, mediaFiles = null) {
   if (!c || typeof c !== 'object') return errors;
 
   need(!c.template || TEMPLATES.some((t) => t.id === c.template), `template noma'lum: "${c.template}" (${TEMPLATES.map((t) => t.id).join(', ')})`);
+  need(c.demo == null || typeof c.demo === 'boolean', 'demo faqat true yoki false bo\'lishi mumkin');
   need(c.couple?.groom?.trim(), 'couple.groom (kuyov ismi) kiritilmagan');
   need(c.couple?.bride?.trim(), 'couple.bride (kelin ismi) kiritilmagan');
   need(isValidDate(c.event?.date), `event.date noto'g'ri: "${c.event?.date}" (format: YYYY-MM-DD)`);

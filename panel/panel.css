@@ -987,3 +987,48 @@ a {
     text-align: right;
   }
 }
+
+/* Demo saytlar guruhi */
+.demo-group {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--line);
+}
+
+.demo-group > summary {
+  margin-bottom: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.demo-group > summary small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.card--demo {
+  opacity: 0.85;
+  border-style: dashed;
+}
+
+.badge--demo {
+  background: #e8eefb;
+  color: #2b4a8a;
+}
+
+.btn--danger-solid {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+.btn--danger-solid:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fin-name small {
+  font-size: 0.8rem;
+  color: var(--red);
+}

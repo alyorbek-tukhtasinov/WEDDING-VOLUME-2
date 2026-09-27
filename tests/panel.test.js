@@ -147,6 +147,31 @@ test('Musiqa qo‘shish: fayl va ro‘yxat GitHub’ga yoziladi, noto‘g‘ri f
   assert.equal(anon.status, 401);
 });
 
+test('Demo belgisi va saytni o‘chirish', async () => {
+  const mk = await api('save', { method: 'POST', body: { slug: 'test-ochir', isNew: true, config: newConfig({ demo: true }) } });
+  assert.equal(mk.status, 200, JSON.stringify(mk.json));
+  const list = (await api('clients')).json.clients;
+  assert.equal(list.find((c) => c.slug === 'test-ochir').demo, true);
+  assert.equal(list.find((c) => c.slug === 'test-sinov').demo, false);
+  const bad = await api('save', { method: 'POST', body: { slug: 'test-x', isNew: true, config: newConfig({ demo: 'ha' }) } });
+  assert.equal(bad.status, 422);
+
+  const wrong = await api('delete', { method: 'POST', body: { slug: 'test-ochir', confirm: 'test' } });
+  assert.equal(wrong.json.error, 'confirm');
+  assert.ok(git(['ls-tree', '--name-only', 'main', 'clients/test-ochir'], origin));
+  const missing = await api('delete', { method: 'POST', body: { slug: 'yoq-sayt', confirm: 'yoq-sayt' } });
+  assert.equal(missing.json.error, 'not_found');
+  const anon = await api('delete', { method: 'POST', token: '', body: { slug: 'test-ochir', confirm: 'test-ochir' } });
+  assert.equal(anon.status, 401);
+
+  const ok = await api('delete', { method: 'POST', body: { slug: 'test-ochir', confirm: 'test-ochir' } });
+  assert.equal(ok.status, 200, JSON.stringify(ok.json));
+  assert.equal(git(['ls-tree', '--name-only', 'main', 'clients/test-ochir'], origin), '');
+  assert.ok(git(['log', '-1', '--format=%s', 'main'], origin).includes('o‘chirildi — test-ochir'));
+  assert.ok(git(['ls-tree', '--name-only', 'main', 'clients/test-sinov'], origin), 'boshqa saytlarga tegilmaydi');
+  assert.ok(!(await api('clients')).json.clients.some((c) => c.slug === 'test-ochir'));
+});
+
 test('Takroriy nom, band nom va noto‘g‘ri ma’lumot rad etiladi', async () => {
   const dup = await api('save', { method: 'POST', body: { slug: 'test-sinov', isNew: true, config: newConfig() } });
   assert.equal(dup.json.error, 'exists');
