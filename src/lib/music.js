@@ -6,6 +6,8 @@ export const MUSIC_LIBRARY = [
   { id: 'musiqa-2', title: 'Shohruhxon — Men seni sevaman', file: '/music/musiqa-2.mp3' },
   { id: 'musiqa-3', title: 'Wedding Nasheed', file: '/music/musiqa-3.mp3' },
   { id: 'musiqa-4', title: 'Yusuf & Zulayho shabloni musiqasi', file: '/music/musiqa-4.mp3' },
+  { id: 'musiqa-5', title: 'Ozod Shukrulloyev — Yonimda bo‘l', file: '/music/musiqa-5.m4a' },
+  { id: 'musiqa-6', title: 'Benom guruhi — Olib ketaman', file: '/music/musiqa-6.m4a' },
 ];
 
 export const findTrack = (id) => MUSIC_LIBRARY.find((t) => t.id === id) || null;
