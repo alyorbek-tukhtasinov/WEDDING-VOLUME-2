@@ -1,4 +1,4 @@
-import { html } from './lib/dom.js';
+import { html, raw } from './lib/dom.js';
 import { MONTHS, WEEKDAYS_SHORT, mediaUrl, musicUrlOf } from './lib/config.js';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -150,6 +150,52 @@ function venue(c) {
       <div class="actions" data-reveal>
         ${v.googleMaps ? html`<a class="btn" href="${v.googleMaps}" target="_blank" rel="noopener">Google Maps</a>` : ''}
         ${v.yandexMaps ? html`<a class="btn" href="${v.yandexMaps}" target="_blank" rel="noopener">Yandex Xarita</a>` : ''}
+      </div>
+    </section>
+  `;
+}
+
+// Ixtiyoriy: to'y kechasining maxsus mehmoni (xonanda, shou guruh) — faqat config'da yozilsa chiqadi
+function specialGuest(c) {
+  const g = c.specialGuest;
+  if (!g?.name) return '';
+  return html`
+    <section class="section guest">
+      <p class="guest__eyebrow" data-reveal>${g.eyebrow || 'To‘y kechasi mehmoni'}</p>
+      <p class="guest__name" data-reveal>${g.name}</p>
+      ${g.text ? html`<p class="guest__text" data-reveal data-type>${g.text}</p>` : ''}
+      <img class="guest__heart" src="${img('heart.webp')}" alt="" loading="lazy" data-reveal />
+    </section>
+  `;
+}
+
+const NOTICE_ICONS = {
+  'no-alcohol':
+    '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M16 7h16l-1.6 12.5a6.5 6.5 0 0 1-12.8 0z" /><path d="M24 26v12M17 41h14" /><path d="M8 40L40 8" class="notice__slash" /></svg>',
+  'no-camera':
+    '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 16.5A2.5 2.5 0 0 1 9.5 14H15l3-4h12l3 4h5.5a2.5 2.5 0 0 1 2.5 2.5v18a2.5 2.5 0 0 1-2.5 2.5h-29A2.5 2.5 0 0 1 7 34.5z" /><circle cx="24" cy="25" r="6.5" /><path d="M8 40L40 8" class="notice__slash" /></svg>',
+  heart:
+    '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 39S8 29.5 8 18.5A8 8 0 0 1 24 14a8 8 0 0 1 16 4.5C40 29.5 24 39 24 39z" /></svg>',
+};
+
+// Ixtiyoriy: mehmonlarga muhim iltimoslar (dastur/dress-kod o'rnida ham bo'lishi mumkin)
+function notices(c) {
+  const n = c.notices;
+  if (!n?.items?.length) return '';
+  return html`
+    <section class="section notices torn" id="notices">
+      <h2 class="title" data-reveal>${n.title || 'Muhim iltimoslar'}</h2>
+      ${n.intro ? html`<p class="notices__intro" data-reveal>${n.intro}</p>` : ''}
+      <div class="notices__list">
+        ${n.items.map(
+          (it) => html`
+            <article class="notice" data-reveal>
+              ${NOTICE_ICONS[it.icon] ? html`<span class="notice__icon">${raw(NOTICE_ICONS[it.icon])}</span>` : ''}
+              <h3 class="notice__title">${it.title}</h3>
+              <p class="notice__text" data-type>${it.text}</p>
+            </article>
+          `,
+        )}
       </div>
     </section>
   `;
@@ -378,8 +424,10 @@ export function renderPage(c, d, brand) {
         ${countdown()}
         <div class="band" aria-hidden="true"></div>
         ${venue(c)}
+        ${specialGuest(c)}
         ${program(c)}
         ${dressCode(c)}
+        ${notices(c)}
         ${gallery(c)}
         ${rsvp(c, d)}
         ${wishes(c)}

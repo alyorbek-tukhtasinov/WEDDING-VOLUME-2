@@ -1,0 +1,47 @@
+{
+  "template": "volume2",
+  "couple": { "groom": "Doston", "bride": "Oynura", "initials": "" },
+  "event": { "date": "2026-10-04", "time": "16:00", "timezone": "+05:00", "durationHours": 5 },
+  "hosts": "Doston va Oynura",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni hayotimizdagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "“O‘zbegim” to‘yxonasi",
+    "address": "Namangan viloyati, Chust shahri",
+    "googleMaps": "https://share.google/HiwfeptUlMrdhlSH0",
+    "yandexMaps": "",
+    "image": ""
+  },
+  "specialGuest": {
+    "eyebrow": "To‘y kechasi mehmoni",
+    "name": "Tantana Show Group"
+  },
+  "program": [],
+  "dressCode": { "text": "", "colors": [] },
+  "notices": {
+    "title": "Muhim iltimoslar",
+    "items": [
+      {
+        "icon": "no-alcohol",
+        "title": "Spirtli ichimliklarsiz",
+        "text": "To‘y marosimimizda spirtli ichimliklar taqiqlanadi. Ushbu iltimosimizni hurmat qilganingiz uchun oldindan minnatdormiz."
+      },
+      {
+        "icon": "no-camera",
+        "title": "Rasm va video olinmasin",
+        "text": "Bizning quvonchli kunimizda telefon kameralaridan ko‘ra, sizning samimiy tabassumingizni ko‘rishni istardik. Kelin va kuyovni rasm hamda videoga olmaslikni, shuningdek, to‘ydan yashirincha olingan tasvirlarni ijtimoiy tarmoqlar, jumladan, Telegram guruhlariga va Instagram hikoyalariga joylamaslikni hurmat bilan so‘rab qolamiz. Maxsus taklif etilgan professional fotosuratchilarimiz barcha esdalik lahzalarini muhrlab boradilar."
+      }
+    ]
+  },
+  "gallery": [],
+  "musicTrack": "musiqa-1",
+  "rsvp": { "enabled": true, "deadline": "2026-10-03", "maxGuests": 5, "showWishes": true },
+  "contacts": [],
+  "seo": { "title": "", "description": "", "ogImage": "" },
+  "theme": {},
+  "effects": { "envelope": true, "petals": true, "typing": true }
+}

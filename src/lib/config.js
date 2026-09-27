@@ -96,6 +96,20 @@ export function validateConfig(c, mediaFiles = null) {
     }
   }
 
+  // Ixtiyoriy bo'limlar (volume2): kecha mehmoni va muhim iltimoslar
+  if (c.specialGuest != null) {
+    need(typeof c.specialGuest === 'object' && typeof c.specialGuest.name === 'string' && c.specialGuest.name.trim(), 'specialGuest.name (mehmon nomi) matn bo\'lishi kerak');
+    for (const k of ['eyebrow', 'text']) need(c.specialGuest?.[k] == null || typeof c.specialGuest[k] === 'string', `specialGuest.${k} matn bo'lishi kerak`);
+  }
+  if (c.notices != null) {
+    need(Array.isArray(c.notices?.items), 'notices.items ro\'yxat bo\'lishi kerak: [{ icon, title, text }]');
+    (c.notices?.items || []).forEach((it, i) => {
+      need(typeof it?.title === 'string' && it.title.trim(), `notices.items[${i}].title kiritilmagan`);
+      need(typeof it?.text === 'string' && it.text.trim(), `notices.items[${i}].text kiritilmagan`);
+      need(it?.icon == null || ['no-alcohol', 'no-camera', 'heart'].includes(it.icon), `notices.items[${i}].icon: no-alcohol, no-camera yoki heart`);
+    });
+  }
+
   // "Yusuf & Zulayho" (yz) shabloni maydonlari
   if (c.template === 'yz') {
     const PHOTO_KEYS = ['hero', 'invitation', 'details', 'countdown', 'map', 'gift'];

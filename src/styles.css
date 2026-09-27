@@ -887,6 +887,115 @@ a {
   animation: beat 1.6s ease-in-out infinite;
 }
 
+/* ------------------- Kecha mehmoni (ixtiyoriy) ------------------- */
+.guest {
+  text-align: center;
+}
+
+.guest__eyebrow {
+  font-family: var(--f-caps);
+  font-size: 0.74rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--wine);
+}
+
+.guest__name {
+  margin: 0.35rem 0 0;
+  font-family: var(--f-script);
+  font-size: clamp(2.6rem, 12vw, 3.6rem);
+  line-height: 1.15;
+  color: var(--navy);
+}
+
+.guest__text {
+  max-width: 360px;
+  margin: 0.5rem auto 0;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.guest__heart {
+  width: 26px;
+  margin: 1.1rem auto 0;
+  animation: beat 1.6s ease-in-out infinite;
+}
+
+/* ------------------- Muhim iltimoslar (ixtiyoriy) ------------------- */
+.notices {
+  background: var(--paper);
+}
+
+.notices__intro {
+  max-width: 380px;
+  margin: -0.25rem auto 1.25rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.notices__list {
+  display: grid;
+  gap: 1.1rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.notice {
+  position: relative;
+  padding: 1.6rem 1.25rem 1.5rem;
+  background: var(--cream);
+  border: 1px solid var(--gold-soft);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 5px var(--cream),
+    0 0 0 6px var(--gold-soft),
+    0 14px 30px -18px rgb(11 37 69 / 0.35);
+  text-align: center;
+}
+
+.notice__icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 0.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  background: radial-gradient(circle, rgb(255 255 255 / 0.7), transparent 70%);
+}
+
+.notice__icon svg {
+  width: 32px;
+  height: 32px;
+  fill: none;
+  stroke: var(--navy);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.notice__icon .notice__slash {
+  stroke: var(--wine);
+  stroke-width: 2.6;
+}
+
+.notice__title {
+  margin: 0 0 0.5rem;
+  font-family: var(--f-caps);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--wine);
+}
+
+.notice__text {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
 /* ------------------------------ Dastur ------------------------------- */
 .program {
   background: var(--paper);
