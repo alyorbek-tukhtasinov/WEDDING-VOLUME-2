@@ -930,7 +930,7 @@ function secEffects() {
   return section(
     'effects',
     'Effektlar',
-    html`<div class="toggle-row">${check('Ochiladigan konvert', 'effects.envelope', true)} ${check('Gul barglari', 'effects.petals', true)} ${check('Yozuv effekti (harfma-harf)', 'effects.typing', true)}</div>`,
+    html`<div class="toggle-row">${check('Ochiladigan konvert', 'effects.envelope', true)} ${check('Gul barglari', 'effects.petals', true)} ${check('Yozuv effekti (harfma-harf)', 'effects.typing', true)} ${check('To‘yga qadar sanoq', 'effects.countdown', true)}</div>`,
   );
 }
 

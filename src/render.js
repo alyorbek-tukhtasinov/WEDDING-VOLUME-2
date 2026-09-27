@@ -421,7 +421,7 @@ export function renderPage(c, d, brand) {
       <main>
         ${invite(c, d)}
         ${dateSection(c, d)}
-        ${countdown()}
+        ${c.effects?.countdown === false ? '' : countdown()}
         <div class="band" aria-hidden="true"></div>
         ${venue(c)}
         ${specialGuest(c)}
