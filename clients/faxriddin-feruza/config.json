@@ -6,7 +6,7 @@
     "initials": ""
   },
   "event": {
-    "date": "2026-03-10",
+    "date": "2026-10-03",
     "time": "18:00",
     "timezone": "+05:00",
     "durationHours": 5
@@ -56,7 +56,7 @@
   "musicTrack": "musiqa-1",
   "rsvp": {
     "enabled": true,
-    "deadline": "2026-03-09",
+    "deadline": "2026-10-02",
     "maxGuests": 5,
     "showWishes": true
   },
