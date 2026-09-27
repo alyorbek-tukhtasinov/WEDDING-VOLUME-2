@@ -1,7 +1,16 @@
 {
   "template": "volume2",
-  "couple": { "groom": "Doston", "bride": "Oynura", "initials": "" },
-  "event": { "date": "2026-10-04", "time": "16:00", "timezone": "+05:00", "durationHours": 5 },
+  "couple": {
+    "groom": "Doston",
+    "bride": "Oynura",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-04",
+    "time": "16:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
   "hosts": "Doston va Oynura",
   "texts": {
     "heroCaption": "Nikoh to‘yiga taklifnoma",
@@ -12,8 +21,8 @@
   "venue": {
     "name": "“O‘zbegim” to‘yxonasi",
     "address": "Namangan viloyati, Chust shahri",
-    "googleMaps": "https://share.google/HiwfeptUlMrdhlSH0",
-    "yandexMaps": "",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=40.998426%2C71.258387",
+    "yandexMaps": "https://yandex.uz/maps/?pt=71.258387,40.998426&z=17&l=map",
     "image": ""
   },
   "specialGuest": {
@@ -21,7 +30,10 @@
     "name": "Tantana Show Group"
   },
   "program": [],
-  "dressCode": { "text": "", "colors": [] },
+  "dressCode": {
+    "text": "",
+    "colors": []
+  },
   "notices": {
     "title": "Muhim iltimoslar",
     "items": [
@@ -39,9 +51,22 @@
   },
   "gallery": [],
   "musicTrack": "musiqa-1",
-  "rsvp": { "enabled": true, "deadline": "2026-10-03", "maxGuests": 5, "showWishes": true },
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-03",
+    "maxGuests": 5,
+    "showWishes": true
+  },
   "contacts": [],
-  "seo": { "title": "", "description": "", "ogImage": "" },
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
   "theme": {},
-  "effects": { "envelope": true, "petals": true, "typing": true }
+  "effects": {
+    "envelope": true,
+    "petals": true,
+    "typing": true
+  }
 }
