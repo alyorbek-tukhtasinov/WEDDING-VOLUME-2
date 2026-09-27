@@ -836,3 +836,154 @@ a {
   flex: 1;
   min-width: 0;
 }
+
+/* Daromad sahifasi */
+.fin-summary {
+  margin-bottom: 1.25rem;
+}
+
+.fin-stats {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.fin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.1rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.fin-stat span {
+  font-size: 0.82rem;
+  color: var(--muted, #6b7280);
+}
+
+.fin-stat b {
+  font-size: 1.25rem;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-stat--main {
+  background: var(--navy);
+  border-color: var(--navy);
+}
+
+.fin-stat--main span {
+  color: rgb(255 255 255 / 0.7);
+}
+
+.fin-stat--main b {
+  font-size: 1.7rem;
+  color: #f3dfb0;
+}
+
+.fin-months {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.fin-month {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.45rem 0.8rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.fin-month b {
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-table {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.fin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.fin-row:last-child {
+  border-bottom: 0;
+}
+
+.fin-row--head {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #6b7280);
+}
+
+.fin-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fin-name b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fin-name a {
+  font-size: 0.8rem;
+  color: var(--muted, #6b7280);
+}
+
+.fin-date {
+  font-size: 0.9rem;
+}
+
+.fin-amount,
+.fin-note {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+
+.fin-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .fin-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fin-stat--main {
+    grid-column: 1 / -1;
+  }
+  .fin-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fin-row--head {
+    display: none;
+  }
+  .fin-date {
+    text-align: right;
+  }
+}

@@ -385,6 +385,7 @@ function renderList(filter) {
       <div class="list-head">
         <h1>To‘ylar (${state.clients.length})</h1>
         <input class="search" id="search" type="search" placeholder="Qidirish: ism, manzil…" value="${filter}" />
+        <a class="btn" href="#/daromad">💰 Daromad</a>
         <a class="btn" href="#/musiqa">🎵 Musiqalar</a>
         <a class="btn btn--primary" href="#/yangi">+ Yangi to‘y</a>
       </div>
@@ -1061,6 +1062,143 @@ function showMusic() {
   });
 }
 
+/* ------------------------------------------------------------------ */
+/*  Daromad (faqat egasi uchun)                                         */
+/* ------------------------------------------------------------------ */
+const fmtSum = (n) => `${String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} so‘m`;
+const digits = (v) => String(v ?? '').replace(/\D/g, '');
+const groupDigits = (d) => d.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+function financeStats(items, clients) {
+  const sold = clients.filter((c) => items[c.slug]?.amount > 0);
+  const total = sold.reduce((s, c) => s + items[c.slug].amount, 0);
+  // Oylar bo'yicha (to'y sanasi oyi)
+  const months = new Map();
+  for (const c of sold) {
+    const m = (c.date || '').slice(0, 7) || '—';
+    const cur = months.get(m) || { count: 0, sum: 0 };
+    cur.count += 1;
+    cur.sum += items[c.slug].amount;
+    months.set(m, cur);
+  }
+  return { total, soldCount: sold.length, avg: sold.length ? total / sold.length : 0, months: [...months.entries()].sort((a, b) => b[0].localeCompare(a[0])) };
+}
+
+function monthName(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  return m ? `${MONTHS[m - 1]} ${y}` : ym;
+}
+
+function financeSummary(stats) {
+  return html`
+    <div class="fin-stats">
+      <div class="fin-stat fin-stat--main"><span>Jami daromad</span><b>${fmtSum(stats.total)}</b></div>
+      <div class="fin-stat"><span>Sotilgan saytlar</span><b>${stats.soldCount} / ${state.clients.length}</b></div>
+      <div class="fin-stat"><span>O‘rtacha narx</span><b>${fmtSum(stats.avg)}</b></div>
+    </div>
+    ${stats.months.length
+      ? html`<div class="fin-months">
+          ${stats.months.map(([m, v]) => html`<div class="fin-month"><span>${monthName(m)}</span><span>${v.count} ta</span><b>${fmtSum(v.sum)}</b></div>`)}
+        </div>`
+      : ''}
+  `;
+}
+
+async function showFinance() {
+  state.ed = null;
+  root.innerHTML = html`${topbar()}<div class="wrap"><p class="empty">Yuklanmoqda…</p></div>`;
+  const [cl, fin] = await Promise.all([api('clients').catch(() => null), api('finance').catch(() => null)]);
+  if (!cl?.ok) return;
+  state.clients = cl.clients;
+  if (!fin?.ok) {
+    root.innerHTML = html`${topbar()}<div class="wrap"><div class="list-head"><a class="btn btn--small btn--ghost" href="#/">← Ro‘yxat</a><h1>Daromad</h1></div><p class="empty">${fin?.message || 'Ma’lumotlarni o‘qib bo‘lmadi'}</p></div>`;
+    return;
+  }
+  const saved = fin.items || {};
+  const items = clone(saved);
+  let dirty = false;
+  const clients = [...state.clients].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  root.innerHTML = html`
+    ${topbar()}
+    <div class="wrap">
+      <div class="list-head">
+        <a class="btn btn--small btn--ghost" href="#/">← Ro‘yxat</a>
+        <h1>Daromad</h1>
+      </div>
+      <section class="fin-summary" id="fin-summary">${financeSummary(financeStats(items, clients))}</section>
+      <form id="fin-form" autocomplete="off">
+        <div class="fin-table">
+          <div class="fin-row fin-row--head"><span>Sayt</span><span>To‘y sanasi</span><span>Narxi (so‘m)</span><span>Izoh</span></div>
+          ${clients.map(
+            (c) => html`
+              <div class="fin-row">
+                <span class="fin-name"><b>${c.groom} &amp; ${c.bride}</b><a href="${siteUrl(c.slug)}" target="_blank" rel="noopener">${c.slug}</a></span>
+                <span class="fin-date">${prettyDate(c.date) || '—'}</span>
+                <input class="fin-amount" inputmode="numeric" data-fin="${c.slug}" data-key="amount" placeholder="0" value="${items[c.slug]?.amount != null ? groupDigits(String(items[c.slug].amount)) : ''}" />
+                <input class="fin-note" data-fin="${c.slug}" data-key="note" maxlength="200" placeholder="masalan: to‘landi / avans" value="${items[c.slug]?.note || ''}" />
+              </div>
+            `,
+          )}
+        </div>
+        <div class="savebar">
+          <div class="savebar__row">
+            <button class="btn btn--primary" type="submit" id="fin-save">Saqlash</button>
+            <span class="progress" id="fin-progress">${fin.updatedAt ? `Oxirgi saqlash: ${new Date(fin.updatedAt).toLocaleString('uz-UZ')}` : ''}</span>
+          </div>
+        </div>
+      </form>
+      <p class="hint">Bu ma’lumotlar faqat sizga ko‘rinadi: serverdagi bazada saqlanadi, GitHub’ga va mijoz saytlariga chiqmaydi.</p>
+    </div>
+  `;
+
+  const form = $('#fin-form');
+  const refreshSummary = () => ($('#fin-summary').innerHTML = financeSummary(financeStats(items, clients)));
+  form.addEventListener('input', (e) => {
+    const t = e.target;
+    const slug = t.dataset.fin;
+    if (!slug) return;
+    items[slug] ||= {};
+    if (t.dataset.key === 'amount') {
+      const d = digits(t.value).replace(/^0+(?=\d)/, '').slice(0, 12);
+      t.value = groupDigits(d);
+      if (d) items[slug].amount = Number(d);
+      else delete items[slug].amount;
+      refreshSummary();
+    } else {
+      items[slug].note = t.value;
+    }
+    dirty = true;
+    $('#fin-progress').textContent = 'Saqlanmagan o‘zgarishlar bor';
+  });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('#fin-save');
+    btn.disabled = true;
+    $('#fin-progress').textContent = 'Saqlanmoqda…';
+    try {
+      const r = await api('finance', { method: 'POST', body: { items } });
+      if (!r.ok) {
+        $('#fin-progress').textContent = '';
+        toast(r.message || 'Saqlab bo‘lmadi');
+        return;
+      }
+      dirty = false;
+      $('#fin-progress').textContent = `✓ Saqlandi. Jami: ${fmtSum(financeStats(r.items, clients).total)}`;
+      toast('Saqlandi');
+    } catch (err) {
+      if (err.message !== 'unauthorized') {
+        $('#fin-progress').textContent = '';
+        toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  // Saqlanmagan narxlar bilan sahifadan chiqib ketmaslik uchun
+  state.finDirty = () => dirty;
+}
+
 async function openExisting(slug, { copy = false } = {}) {
   root.innerHTML = html`${topbar()}<div class="wrap"><p class="empty">Yuklanmoqda…</p></div>`;
   const r = await api('client', { query: `?slug=${encodeURIComponent(slug)}` }).catch(() => null);
@@ -1729,6 +1867,7 @@ function route() {
   let m;
   if (h === '/yangi') return showTemplatePicker();
   if (h === '/musiqa') return showMusic();
+  if (h === '/daromad') return showFinance();
   if ((m = /^\/tahrir\/([a-z0-9-]+)$/.exec(h))) {
     if (state.ed && !state.ed.isNew && state.ed.slug === m[1]) return; // saqlashdan keyingi URL almashishi
     return openExisting(m[1]);
@@ -1739,15 +1878,16 @@ function route() {
 
 let currentHash = location.hash;
 window.addEventListener('hashchange', () => {
-  if (state.ed?.dirty && !confirm('Saqlanmagan o‘zgarishlar bor. Chiqib ketilsinmi?')) {
+  if ((state.ed?.dirty || state.finDirty?.()) && !confirm('Saqlanmagan o‘zgarishlar bor. Chiqib ketilsinmi?')) {
     history.replaceState(null, '', currentHash || '#/');
     return;
   }
+  state.finDirty = null;
   currentHash = location.hash;
   route();
 });
 window.addEventListener('beforeunload', (e) => {
-  if (state.ed?.dirty) e.preventDefault();
+  if (state.ed?.dirty || state.finDirty?.()) e.preventDefault();
 });
 
 route();

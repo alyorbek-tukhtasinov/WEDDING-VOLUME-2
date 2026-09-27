@@ -195,3 +195,24 @@ export async function getAdminHash() {
 export async function setAdminHash(hash) {
   await redis('SET', adminKey(), hash);
 }
+
+// Boshqaruv paneli egasining daromad yozuvlari (qaysi sayt qanchaga sotilgan).
+// "boshqaruv" nomi mijozlar uchun band — kalit hech bir mijoz kaliti bilan to'qnashmaydi;
+// mijoz saytlari bu kalitni o'qimaydi.
+const FINANCE_KEY = 'taklifnoma:boshqaruv:finance';
+export const storeConfigured = () => Boolean(backend());
+
+export async function getFinance() {
+  const raw = await redis('GET', FINANCE_KEY);
+  if (!raw) return { items: {}, updatedAt: null };
+  try {
+    const v = JSON.parse(String(raw));
+    return { items: v.items && typeof v.items === 'object' ? v.items : {}, updatedAt: v.updatedAt || null };
+  } catch {
+    return { items: {}, updatedAt: null };
+  }
+}
+
+export async function setFinance(data) {
+  await redis('SET', FINANCE_KEY, JSON.stringify(data));
+}

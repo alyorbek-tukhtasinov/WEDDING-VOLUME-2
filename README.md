@@ -241,6 +241,13 @@ Panelda **🎵 Musiqalar** → MP3/M4A faylni tanlang, nomini yozing → **Qo‘
 hamma to‘ylarning "Fon musiqasi" ro‘yxatida va mijozlarning /admin sahifasida tanlash uchun chiqadi.
 Qo‘shish faqat panel egasiga mumkin — mijozlar faqat tanlaydi.
 
+### Daromad
+
+Panelda **💰 Daromad** — barcha saytlar ro‘yxati; har biriga qanchaga sotilganini (va izoh) yozib
+**Saqlash** bosiladi. Tepada: jami daromad, sotilgan saytlar soni, o‘rtacha narx va to‘y oylari bo‘yicha
+summalar. Ma’lumot Redis’da `taklifnoma:boshqaruv:finance` kalitida saqlanadi — GitHub’ga (ochiq repo)
+va mijoz saytlariga chiqmaydi.
+
 ## Javoblarni saqlash (RSVP)
 
 Mehmon javoblari **Upstash Redis** bazasida saqlanadi. Baza bepul va Vercel ichidan

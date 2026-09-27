@@ -205,3 +205,62 @@ test('Panel yo‘li oddiy mijoz saytlarida ishlamaydi va aksincha', async () => 
   const r2 = await fetch(`${base}/api/rsvp`, { headers: { 'X-Wedding-Slug': 'boshqaruv' } });
   assert.equal(r2.status, 404);
 });
+
+test('Daromad: faqat egasi saqlaydi va o‘qiydi, noto‘g‘ri summa rad etiladi, GitHub’ga yozilmaydi', async () => {
+  // Upstash REST'ga o'xshash soxta baza (xotirada)
+  const http = await import('node:http');
+  const mem = new Map();
+  const fake = http.createServer((req, res) => {
+    let b = '';
+    req.on('data', (c) => (b += c));
+    req.on('end', () => {
+      const [cmd, key, val] = JSON.parse(b);
+      let result = null;
+      if (cmd === 'GET') result = mem.get(key) ?? null;
+      if (cmd === 'SET') {
+        mem.set(key, val);
+        result = 'OK';
+      }
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ result }));
+    });
+  });
+  await new Promise((r) => fake.listen(0, '127.0.0.1', r));
+  process.env.KV_REST_API_URL = `http://127.0.0.1:${fake.address().port}`;
+  process.env.KV_REST_API_TOKEN = 'soxta-token';
+  const headBefore = git(['rev-parse', 'main'], origin);
+  try {
+    const empty = await api('finance');
+    assert.equal(empty.status, 200, JSON.stringify(empty.json));
+    assert.deepEqual(empty.json.items, {});
+
+    const saved = await api('finance', {
+      method: 'POST',
+      body: { items: { 'test-sinov': { amount: 350000, note: ' to‘landi ' }, 'test-osmon': { amount: '', note: '' }, boshqa: { amount: 1200000 } } },
+    });
+    assert.equal(saved.status, 200, JSON.stringify(saved.json));
+    assert.deepEqual(saved.json.items, { 'test-sinov': { amount: 350000, note: 'to‘landi' }, boshqa: { amount: 1200000 } });
+    assert.ok([...mem.keys()].includes('taklifnoma:boshqaruv:finance'));
+
+    const again = await api('finance');
+    assert.deepEqual(again.json.items, saved.json.items);
+    assert.ok(again.json.updatedAt);
+
+    for (const amount of [-5, 1.5, 'abc', 1e13]) {
+      const bad = await api('finance', { method: 'POST', body: { items: { 'test-sinov': { amount } } } });
+      assert.equal(bad.json.error, 'bad_amount', String(amount));
+    }
+    const badSlug = await api('finance', { method: 'POST', body: { items: { '../x': { amount: 1 } } } });
+    assert.equal(badSlug.json.error, 'bad_slug');
+    const anon = await api('finance', { token: '' });
+    assert.equal(anon.status, 401);
+    // Narxlar GitHub'ga (ochiq repo) yozilmaydi
+    assert.equal(git(['rev-parse', 'main'], origin), headBefore);
+  } finally {
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+    fake.close();
+  }
+  const noStore = await api('finance');
+  assert.equal(noStore.json.error, 'store');
+});

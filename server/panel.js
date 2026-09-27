@@ -16,7 +16,7 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { requestContext } from '../api/_lib/context.js';
 import { safeEqual, hashPassword } from '../api/_lib/http.js';
-import { storeReady, listEntries, setAdminHash } from '../api/_lib/store.js';
+import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance } from '../api/_lib/store.js';
 import { SLUG_RE } from '../api/_lib/slug.js';
 import { validateConfig } from '../src/lib/config.js';
 
@@ -367,6 +367,45 @@ async function createPassword(slug) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Daromad (faqat egasi): qaysi sayt qanchaga sotilgan                 */
+/* ------------------------------------------------------------------ */
+// Ma'lumot Redis'da (GitHub'ga yozilmaydi — repo ochiq). Kalit "boshqaruv" nomi ostida.
+function withFinanceStore(fn) {
+  return requestContext.run({ slug: PANEL_SLUG, adminPassword: '' }, async () => {
+    if (!storeConfigured()) throw new UserError('store', 'Baza ulanmagan — daromad ma’lumotlarini saqlab bo‘lmaydi');
+    return fn();
+  });
+}
+
+const MAX_AMOUNT = 1e12;
+function cleanFinance(items) {
+  if (!items || typeof items !== 'object' || Array.isArray(items)) throw new UserError('bad_request', "Ma'lumot noto'g'ri");
+  const entries = Object.entries(items);
+  if (entries.length > 2000) throw new UserError('too_large', 'Yozuvlar juda ko‘p');
+  const out = {};
+  for (const [slug, v] of entries) {
+    if (!SLUG_RE.test(slug) || slug.length > 60) throw new UserError('bad_slug', `Noto'g'ri sayt nomi: ${slug}`);
+    const amount = v?.amount === '' || v?.amount == null ? null : Number(v.amount);
+    if (amount !== null && (!Number.isInteger(amount) || amount < 0 || amount > MAX_AMOUNT)) {
+      throw new UserError('bad_amount', `${slug}: summa butun musbat son bo'lishi kerak`);
+    }
+    const note = String(v?.note ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 200);
+    if (amount === null && !note) continue; // bo'sh qator saqlanmaydi
+    out[slug] = { ...(amount !== null ? { amount } : {}), ...(note ? { note } : {}) };
+  }
+  return out;
+}
+
+const loadFinance = () => withFinanceStore(() => getFinance());
+const saveFinance = (body) =>
+  withFinanceStore(async () => {
+    const items = cleanFinance(body?.items);
+    const data = { items, updatedAt: new Date().toISOString() };
+    await setFinance(data);
+    return data;
+  });
+
+/* ------------------------------------------------------------------ */
 /*  Kirish nuqtasi                                                     */
 /* ------------------------------------------------------------------ */
 export async function panelHandler(req, res, name) {
@@ -395,6 +434,8 @@ export async function panelHandler(req, res, name) {
     }
     if (req.method === 'GET' && name === 'status') return send(res, 200, { ok: true, ...status() });
     if (req.method === 'POST' && name === 'save') return send(res, 200, { ok: true, ...(await save(await readJson(req))) });
+    if (req.method === 'GET' && name === 'finance') return send(res, 200, { ok: true, ...(await loadFinance()) });
+    if (req.method === 'POST' && name === 'finance') return send(res, 200, { ok: true, ...(await saveFinance(await readJson(req))) });
     if (req.method === 'POST' && name === 'music') return send(res, 200, { ok: true, ...(await addMusic(await readJson(req))) });
     if (req.method === 'POST' && name === 'password') {
       const { slug } = await readJson(req);
