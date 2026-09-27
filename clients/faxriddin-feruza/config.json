@@ -21,8 +21,8 @@
   "venue": {
     "name": "Shabi Shabnam toʻyxonasi",
     "address": "Buxoro shahri",
-    "googleMaps": "",
-    "yandexMaps": "",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=39.768105%2C64.403987",
+    "yandexMaps": "https://yandex.uz/maps/?pt=64.403987,39.768105&z=17&l=map",
     "image": ""
   },
   "program": [
