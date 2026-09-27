@@ -268,6 +268,58 @@ async function save(body) {
   });
 }
 
+/* ------------------------------------------------------------------ */
+/*  Musiqa to'plami (faqat egasi — boshqaruv paneli orqali)             */
+/* ------------------------------------------------------------------ */
+const MAX_MUSIC = 15 * 1024 * 1024;
+const MUSIC_JS = () => path.join(WORK(), 'src', 'lib', 'music.js');
+
+// Qo'shiq nomi: oddiy matn, boshqaruv belgilarisiz
+function cleanTitle(t) {
+  return String(t || '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function addMusic(body) {
+  const title = cleanTitle(body?.title);
+  if (title.length < 2 || title.length > 80) throw new UserError('bad_title', 'Qo‘shiq nomi 2–80 belgidan iborat bo‘lsin');
+  const buf = Buffer.from(String(body?.file || ''), 'base64');
+  if (!buf.length) throw new UserError('bad_media', 'Fayl tanlanmagan');
+  if (buf.length > MAX_MUSIC) throw new UserError('bad_media', 'Fayl 15 MB dan katta — qisqaroq yoki siqilgan versiyasini yuklang');
+  // Kengaytma nomdan emas, fayl mazmunidan aniqlanadi (".mp3" nomli M4A fayllar ham to'g'ri saqlanadi)
+  const ext = sniff(buf);
+  if (ext !== 'mp3' && ext !== 'm4a') throw new UserError('bad_media', 'Faqat MP3 yoki M4A audio fayl yuklash mumkin');
+
+  return serial(async () => {
+    await syncWork(true);
+    const src = fs.readFileSync(MUSIC_JS(), 'utf8');
+    const titles = [...src.matchAll(/title:\s*(['"])(.*?)\1/g)].map((m) => m[2].toLowerCase());
+    if (titles.includes(title.toLowerCase())) throw new UserError('exists', `"${title}" allaqachon ro‘yxatda bor`);
+    const nums = [...src.matchAll(/id:\s*'musiqa-(\d+)'/g)].map((m) => Number(m[1]));
+    const id = `musiqa-${Math.max(0, ...nums) + 1}`;
+    const end = src.indexOf('\n];', src.indexOf('export const MUSIC_LIBRARY'));
+    if (end < 0) throw new Error('music.js tuzilishi kutilganidek emas');
+    const line = `\n  { id: '${id}', title: ${JSON.stringify(title)}, file: '/music/${id}.${ext}' },`;
+    fs.writeFileSync(MUSIC_JS(), src.slice(0, end) + line + src.slice(end));
+    fs.mkdirSync(path.join(WORK(), 'public', 'music'), { recursive: true });
+    fs.writeFileSync(path.join(WORK(), 'public', 'music', `${id}.${ext}`), buf);
+
+    await git(['add', '--', 'src/lib/music.js', `public/music/${id}.${ext}`]);
+    await git(['-c', 'user.name=Taklifnoma panel', '-c', 'user.email=panel@taklifnoma.local', 'commit', '-q', '-m', `Panel: musiqa qo‘shildi — ${title}`]);
+    try {
+      await git(['push', '-q', 'origin', `HEAD:${BRANCH()}`]);
+    } catch (err) {
+      lastFetch = 0;
+      await git(['reset', '-q', '--hard', `origin/${BRANCH()}`]).catch(() => {});
+      throw new UserError('push_failed', `GitHub'ga yozib bo'lmadi: ${err.message}`);
+    }
+    triggerDeploy();
+    return { id, title, file: `/music/${id}.${ext}`, sha: await git(['rev-parse', 'HEAD']) };
+  });
+}
+
 function triggerDeploy() {
   try {
     fs.mkdirSync(path.dirname(TRIGGER()), { recursive: true });
@@ -343,6 +395,7 @@ export async function panelHandler(req, res, name) {
     }
     if (req.method === 'GET' && name === 'status') return send(res, 200, { ok: true, ...status() });
     if (req.method === 'POST' && name === 'save') return send(res, 200, { ok: true, ...(await save(await readJson(req))) });
+    if (req.method === 'POST' && name === 'music') return send(res, 200, { ok: true, ...(await addMusic(await readJson(req))) });
     if (req.method === 'POST' && name === 'password') {
       const { slug } = await readJson(req);
       return send(res, 200, { ok: true, password: await createPassword(slug) });

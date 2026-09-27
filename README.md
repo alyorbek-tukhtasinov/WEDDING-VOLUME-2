@@ -234,6 +234,13 @@ Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumla
 `scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,
 `templates/osmon/fonts` da saytning o‘zida.
 
+### Musiqa to‘plami
+
+Panelda **🎵 Musiqalar** → MP3/M4A faylni tanlang, nomini yozing → **Qo‘shish**. Fayl
+`public/music/` ga, nomi `src/lib/music.js` ro‘yxatiga yoziladi (GitHub commit), 2–3 daqiqada
+hamma to‘ylarning "Fon musiqasi" ro‘yxatida va mijozlarning /admin sahifasida tanlash uchun chiqadi.
+Qo‘shish faqat panel egasiga mumkin — mijozlar faqat tanlaydi.
+
 ## Javoblarni saqlash (RSVP)
 
 Mehmon javoblari **Upstash Redis** bazasida saqlanadi. Baza bepul va Vercel ichidan

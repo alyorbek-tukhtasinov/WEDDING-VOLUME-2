@@ -385,6 +385,7 @@ function renderList(filter) {
       <div class="list-head">
         <h1>To‘ylar (${state.clients.length})</h1>
         <input class="search" id="search" type="search" placeholder="Qidirish: ism, manzil…" value="${filter}" />
+        <a class="btn" href="#/musiqa">🎵 Musiqalar</a>
         <a class="btn btn--primary" href="#/yangi">+ Yangi to‘y</a>
       </div>
       <div class="cards">
@@ -931,6 +932,135 @@ function secSeo() {
 /* ------------------------------------------------------------------ */
 /*  Tahrirlash sahifasi                                                 */
 /* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*  Musiqa to'plami (faqat egasi uchun)                                 */
+/* ------------------------------------------------------------------ */
+// Shu sessiyada qo'shilganlar: panel qayta yig'ilguncha ro'yxatda "yangilanmoqda" belgisi bilan turadi
+state.addedMusic ||= [];
+
+// "Benom_guruhi_-_Olib_ketaman.mp3" → "Benom guruhi — Olib ketaman"
+function titleFromFile(name) {
+  return name
+    .replace(/\.[^.]+$/, '')
+    .replace(/_/g, ' ')
+    .replace(/\s+-\s+/g, ' — ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function musicRows() {
+  const known = new Set(MUSIC_LIBRARY.map((t) => t.id));
+  const list = [...MUSIC_LIBRARY, ...state.addedMusic.filter((t) => !known.has(t.id)).map((t) => ({ ...t, pending: true }))];
+  return html`
+    ${list.map(
+      (t) => html`
+        <div class="music-row">
+          <button class="icon-btn" type="button" data-music-play="${t.file}" aria-label="Tinglash">▶</button>
+          <span class="music-row__title">${t.title}</span>
+          ${t.pending ? html`<span class="badge badge--soon">2–3 daqiqada saytlarda</span>` : ''}
+        </div>
+      `,
+    )}
+  `;
+}
+
+function showMusic() {
+  state.ed = null;
+  root.innerHTML = html`
+    ${topbar()}
+    <div class="wrap">
+      <div class="list-head">
+        <a class="btn btn--small btn--ghost" href="#/">← Ro‘yxat</a>
+        <h1>Musiqalar</h1>
+      </div>
+      <section class="sec" style="padding:1rem 1.1rem">
+        <h2 style="margin:0 0 .75rem;font-size:1.05rem">Yangi qo‘shiq qo‘shish</h2>
+        <form id="music-form" class="form" autocomplete="off">
+          <label class="f">
+            <span>Audio fayl (MP3 yoki M4A, 15 MB gacha)</span>
+            <input type="file" id="music-file" accept=".mp3,.m4a,audio/mpeg,audio/mp4" />
+          </label>
+          <label class="f">
+            <span>Qo‘shiq nomi (ro‘yxatda shunday ko‘rinadi)</span>
+            <input id="music-title" maxlength="80" placeholder="Ijrochi — Qo‘shiq nomi" />
+            <small class="hint">Fayl nomidan avtomatik to‘ldiriladi — kerak bo‘lsa tuzating</small>
+          </label>
+          <div class="actions-row">
+            <button class="btn btn--primary" type="submit" id="music-save">Qo‘shish</button>
+            <span class="progress" id="music-progress"></span>
+          </div>
+        </form>
+      </section>
+      <section class="sec" style="padding:1rem 1.1rem;margin-top:1rem">
+        <h2 style="margin:0 0 .75rem;font-size:1.05rem">To‘plamdagi qo‘shiqlar</h2>
+        <div id="music-list">${musicRows()}</div>
+        <small class="hint">Qo‘shilgan qo‘shiq har bir to‘yning “Fon musiqasi” ro‘yxatida va mijozlarning /admin sahifasida tanlash uchun chiqadi.</small>
+      </section>
+    </div>
+  `;
+  const fileInput = $('#music-file');
+  const titleInput = $('#music-title');
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files[0];
+    if (f && !titleInput.value.trim()) titleInput.value = titleFromFile(f.name);
+  });
+  $('#music-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-music-play]');
+    if (!b) return;
+    if (audio && !audio.paused && audio.dataset.src === b.dataset.musicPlay) {
+      audio.pause();
+      b.textContent = '▶';
+      return;
+    }
+    audio?.pause();
+    $$('[data-music-play]').forEach((x) => (x.textContent = '▶'));
+    audio = new Audio(b.dataset.musicPlay);
+    audio.dataset.src = b.dataset.musicPlay;
+    audio.play().catch(() => toast('Ijro etib bo‘lmadi (hali saytlarga chiqmagan bo‘lishi mumkin)'));
+    b.textContent = '⏸';
+    audio.onended = () => (b.textContent = '▶');
+  });
+  $('#music-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = fileInput.files[0];
+    const title = titleInput.value.trim();
+    const progress = $('#music-progress');
+    if (!f) return toast('Audio faylni tanlang');
+    if (title.length < 2) return toast('Qo‘shiq nomini yozing');
+    if (f.size > 15 * 1024 * 1024) return toast('Fayl 15 MB dan katta');
+    const btn = $('#music-save');
+    btn.disabled = true;
+    progress.textContent = 'Yuklanmoqda…';
+    try {
+      const b64 = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+        fr.onerror = reject;
+        fr.readAsDataURL(f);
+      });
+      const r = await api('music', { method: 'POST', body: { title, file: b64 } });
+      if (!r.ok) {
+        progress.textContent = '';
+        toast(r.message || 'Qo‘shib bo‘lmadi');
+        return;
+      }
+      state.addedMusic.push({ id: r.id, title: r.title, file: r.file });
+      $('#music-list').innerHTML = musicRows();
+      fileInput.value = '';
+      titleInput.value = '';
+      progress.textContent = `✓ Qo‘shildi: ${r.title}. 2–3 daqiqada saytlarda chiqadi`;
+      refreshStatus();
+    } catch (err) {
+      if (err.message !== 'unauthorized') {
+        progress.textContent = '';
+        toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
 async function openExisting(slug, { copy = false } = {}) {
   root.innerHTML = html`${topbar()}<div class="wrap"><p class="empty">Yuklanmoqda…</p></div>`;
   const r = await api('client', { query: `?slug=${encodeURIComponent(slug)}` }).catch(() => null);
@@ -1598,6 +1728,7 @@ function route() {
   const h = location.hash.replace(/^#/, '') || '/';
   let m;
   if (h === '/yangi') return showTemplatePicker();
+  if (h === '/musiqa') return showMusic();
   if ((m = /^\/tahrir\/([a-z0-9-]+)$/.exec(h))) {
     if (state.ed && !state.ed.isNew && state.ed.slug === m[1]) return; // saqlashdan keyingi URL almashishi
     return openExisting(m[1]);

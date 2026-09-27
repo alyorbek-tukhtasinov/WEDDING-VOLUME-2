@@ -818,3 +818,21 @@ a {
     grid-template-columns: 80px 1fr auto;
   }
 }
+
+/* Musiqalar sahifasi */
+.music-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.music-row:last-child {
+  border-bottom: 0;
+}
+
+.music-row__title {
+  flex: 1;
+  min-width: 0;
+}

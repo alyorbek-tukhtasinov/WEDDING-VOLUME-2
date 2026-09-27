@@ -122,6 +122,31 @@ test('Osmon shabloni: sky bilan saqlanadi, noto‘g‘ri koordinata rad etiladi'
   assert.equal(bad.status, 422);
 });
 
+test('Musiqa qo‘shish: fayl va ro‘yxat GitHub’ga yoziladi, noto‘g‘ri fayl va takroriy nom rad etiladi', async () => {
+  const mp3 = Buffer.concat([Buffer.from('ID3', 'latin1'), Buffer.alloc(4000, 7)]).toString('base64');
+  const before = git(['show', 'main:src/lib/music.js'], origin);
+  const next = Math.max(...[...before.matchAll(/musiqa-(\d+)/g)].map((m) => Number(m[1]))) + 1;
+  const ok = await api('music', { method: 'POST', body: { title: 'Sinov Ijrochi — Sinov qo‘shig‘i', file: mp3 } });
+  assert.equal(ok.status, 200, JSON.stringify(ok.json));
+  assert.equal(ok.json.id, `musiqa-${next}`);
+  assert.equal(ok.json.file, `/music/musiqa-${next}.mp3`);
+  const after = git(['show', 'main:src/lib/music.js'], origin);
+  assert.ok(after.includes(`{ id: 'musiqa-${next}', title: "Sinov Ijrochi — Sinov qo‘shig‘i", file: '/music/musiqa-${next}.mp3' },`));
+  assert.ok(git(['ls-tree', '--name-only', 'main', `public/music/musiqa-${next}.mp3`], origin));
+  // Yangi ro'yxat JavaScript sifatida to'g'ri o'qiladi
+  const mod = await import(`data:text/javascript,${encodeURIComponent(after)}`);
+  assert.equal(mod.MUSIC_LIBRARY.at(-1).title, 'Sinov Ijrochi — Sinov qo‘shig‘i');
+
+  const dup = await api('music', { method: 'POST', body: { title: 'sinov ijrochi — sinov qo‘shig‘i', file: mp3 } });
+  assert.equal(dup.json.error, 'exists');
+  const fake = await api('music', { method: 'POST', body: { title: 'Rasm', file: Buffer.from('<html>').toString('base64') } });
+  assert.equal(fake.json.error, 'bad_media');
+  const noTitle = await api('music', { method: 'POST', body: { title: ' ', file: mp3 } });
+  assert.equal(noTitle.json.error, 'bad_title');
+  const anon = await api('music', { method: 'POST', token: '', body: { title: 'X y', file: mp3 } });
+  assert.equal(anon.status, 401);
+});
+
 test('Takroriy nom, band nom va noto‘g‘ri ma’lumot rad etiladi', async () => {
   const dup = await api('save', { method: 'POST', body: { slug: 'test-sinov', isNew: true, config: newConfig() } });
   assert.equal(dup.json.error, 'exists');
