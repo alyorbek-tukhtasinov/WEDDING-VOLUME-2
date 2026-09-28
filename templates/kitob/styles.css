@@ -128,7 +128,7 @@ body:not(.is-open) .stage {
 body:not(.is-spread) .book-wrap.is-end {
   translate: var(--pw) 0;
 }
-body:not(.is-spread) .book-wrap.is-end::before {
+body:not(.is-spread) .book-wrap.is-shut-end::before {
   left: -100%;
   right: 100%;
   border-radius: 12px 4px 4px 12px;
@@ -158,6 +158,8 @@ body:not(.is-spread) .book-wrap.is-end::before {
 .book {
   position: absolute;
   inset: 0;
+  -webkit-user-select: none;
+  user-select: none;
   perspective: calc(var(--pw) * 4.2);
   perspective-origin: 50% 45%;
 }
@@ -188,7 +190,7 @@ body:not(.is-spread) .book-wrap.is-end::before {
 .is-spread .book-wrap::before {
   left: 50%;
 }
-.is-spread .book-wrap:not(.is-closed)::before {
+.is-spread .book-wrap:not(.is-shut)::before {
   left: 0;
   border-radius: 12px;
   box-shadow:
@@ -201,7 +203,7 @@ body:not(.is-spread) .book-wrap.is-end::before {
     0 30px 50px -10px rgba(0, 0, 0, 0.65),
     0 10px 20px rgba(0, 0, 0, 0.35);
 }
-.is-spread .book-wrap.is-end::before {
+.is-spread .book-wrap.is-shut-end::before {
   left: 0;
   right: 50%;
 }
@@ -305,8 +307,10 @@ body:not(.is-spread) .book-wrap.is-end::before {
   right: 0;
   border-radius: 3px 12px 12px 3px;
 }
-.book-wrap.is-closed .book__under--l,
-.book-wrap.is-end .book__under--r {
+.book.is-closed .book__under--l,
+.book.is-cover-turning .book__under--l,
+.book.is-end .book__under--r,
+.book.is-back-turning .book__under--r {
   visibility: hidden;
 }
 
@@ -982,6 +986,8 @@ body:not(.is-spread) .book-wrap.is-end::before {
 .field input,
 .field select,
 .field textarea {
+  -webkit-user-select: text;
+  user-select: text;
   width: 100%;
   padding: 9px 12px;
   border: 1.5px solid rgba(142, 44, 67, 0.25);
