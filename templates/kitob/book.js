@@ -155,6 +155,9 @@ export function createBook(el, o) {
       l.el.classList.toggle('is-turning', i === turning);
     });
     el.classList.toggle('is-closed', cur === 0);
+    // Muqova (yoki orqa muqova) aylanayotganda uning ostidagi ichki qog'oz hali ko'rinmasin
+    el.classList.toggle('is-cover-turning', turning === 0);
+    el.classList.toggle('is-back-turning', !!back && turning === n - 1);
     el.classList.toggle('is-end', !!back && cur === n);
     el.style.setProperty('--progress', String(cur / Math.max(1, maxCur)));
   }

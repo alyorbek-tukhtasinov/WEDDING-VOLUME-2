@@ -628,6 +628,9 @@ export async function mountKitob(c, { preview = false } = {}) {
     $('#next').disabled = info.cur >= info.max;
     $$('button', tabs).forEach((b) => b.classList.toggle('is-on', vis.includes(Number(b.dataset.page))));
     wrapState(info);
+    // Kitob qalinligi (qirra soyasi) varaq to'liq aylangandan keyin o'zgaradi
+    $('#book-wrap').classList.toggle('is-shut', info.cur === 0);
+    $('#book-wrap').classList.toggle('is-shut-end', !!info.end);
     if (first >= 0) lastPage = Math.max(...vis);
     if (info.cur > 0 && !opened) onOpened();
     if (info.cur > 0) {
