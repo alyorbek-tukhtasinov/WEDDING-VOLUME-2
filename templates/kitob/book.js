@@ -62,9 +62,15 @@ function paperSound(strength = 1) {
  * @param {(page) => boolean} o.canLeave  false — bu sahifadan oldinga o'tib bo'lmaydi (muqova)
  * @param {boolean} o.backCover  true — pages'ning oxirgisi orqa muqova: oxirgi varaq aylantirilganda
  *                               kitob yopiladi va orqa muqova ko'rinadi
+ * @param {boolean} o.vbook  telefon rejimi: bitta sahifa o'qiladi, lekin kitob to'liq ko'rinadi —
+ *                           o'qilgan varaqlar chap tomonda qiya tik turadi (qo'lda ushlangan kitobdek)
+ * @param {() => HTMLElement} o.paperBack  varaqning orqa yuzi (telefon rejimida)
  */
 export function createBook(el, o) {
   const { pages, endpaper, spread, reduced, onChange } = o;
+  const vbook = !spread && !!o.vbook;
+  // Aylantirilgan varaq qaysi burchakda yotadi: ochiq kitobda tekis (-180), telefonda qiya tik
+  const TILT = vbook ? -106 : -180;
   const ac = new AbortController();
   const on = (t, ty, fn, opts = {}) => t.addEventListener(ty, fn, { ...opts, signal: ac.signal });
 
@@ -79,14 +85,15 @@ export function createBook(el, o) {
     for (let i = 0; i < rest.length; i += 2) defs.push({ front: rest[i], back: rest[i + 1] || back || endpaper() });
     if (back && rest.length % 2 === 0) defs.push({ front: endpaper(), back });
   } else {
-    body.forEach((p, i) => defs.push({ front: p, back: back && i === body.length - 1 ? back : endpaper() }));
+    body.forEach((p, i) => defs.push({ front: p, back: back && i === body.length - 1 ? back : i > 0 && o.paperBack ? o.paperBack() : endpaper() }));
   }
   const n = defs.length;
   const maxCur = back ? n : n - 1;
 
   el.innerHTML = '';
-  el.classList.toggle('book--spread', spread);
-  el.classList.toggle('book--single', !spread);
+  el.classList.toggle('book--spread', spread || vbook);
+  el.classList.toggle('book--single', !spread && !vbook);
+  el.classList.toggle('book--v', vbook);
   if (spread) {
     const ul = endpaper();
     ul.classList.add('book__under', 'book__under--l');
@@ -131,6 +138,12 @@ export function createBook(el, o) {
     return [defs[c - 1]?.back, defs[c]?.front].filter((p) => p && pages.includes(p));
   }
 
+  // c holatda i-varaqning tinch burchagi. Kitob oxirida yopilganda hamma varaq tekis yotadi.
+  function restAngle(i, c = cur) {
+    if (i >= c) return 0;
+    return vbook && c < n ? TILT : -180;
+  }
+
   function setAngle(l, a) {
     l.angle = a;
     l.el.style.transform = a === 0 ? '' : `rotateY(${a.toFixed(2)}deg)`;
@@ -144,10 +157,10 @@ export function createBook(el, o) {
   function layout(turning = -1) {
     leaves.forEach((l, i) => {
       const flipped = i < cur;
-      if (i !== turning) setAngle(l, flipped ? -180 : 0);
+      if (i !== turning) setAngle(l, restAngle(i));
       l.el.style.zIndex = String(i === turning ? 1000 : flipped ? i + 1 : n - i + 1);
       let vis;
-      if (spread) vis = i >= cur - 2 && i <= cur + 1;
+      if (spread || vbook) vis = i >= cur - 2 && i <= cur + 1;
       else vis = i === cur || i === cur + 1 || (cur === n && i === n - 1) || (turning >= 0 && (i === turning || i === turning + 1));
       if (i === turning) vis = true;
       l.el.style.visibility = vis ? '' : 'hidden';
@@ -218,7 +231,13 @@ export function createBook(el, o) {
       setTimeout(() => el.classList.remove('is-fade'), 320);
     }
     const start = from ?? l.angle;
-    await tween(l, start, dir > 0 ? -180 : 0, ms * (Math.abs((dir > 0 ? -180 : 0) - start) / 180));
+    const to = restAngle(idx, target);
+    // Telefonda kitob yopilayotganda (yoki qayta ochilayotganda) tik turgan varaqlar ham yotadi/turadi
+    const others = vbook && (target === n || cur === n)
+      ? leaves.slice(0, idx).map((o2, i) => tween(o2, o2.angle, restAngle(i, target), ms))
+      : [];
+    const span = Math.abs(to - restAngle(idx, cur)) || 180;
+    await Promise.all([tween(l, start, to, ms * Math.max(0.35, Math.abs(to - start) / span)), ...others]);
     cur = target;
     busy = false;
     if (ac.signal.aborted) return false;
@@ -286,6 +305,9 @@ export function createBook(el, o) {
       drag.active = true;
       drag.dir = dir;
       drag.idx = dir > 0 ? cur : cur - 1;
+      // Varaq qaysi burchakdan qaysi burchakka boradi
+      drag.from = restAngle(drag.idx, cur);
+      drag.to = restAngle(drag.idx, cur + dir);
       busy = true;
       layout(drag.idx);
       markOpen(visiblePages(cur + dir));
@@ -300,9 +322,9 @@ export function createBook(el, o) {
     drag.v = (e.clientX - drag.lastX) / Math.max(1, now - drag.t);
     drag.lastX = e.clientX;
     drag.t = now;
-    const w = pageW() * (spread ? 1.6 : 1.1);
+    const w = pageW() * (spread ? 1.6 : vbook ? 1.2 : 1.1);
     const k = clamp(Math.abs(dx) / w, 0, 1);
-    setAngle(leaves[drag.idx], drag.dir > 0 ? -180 * k : -180 + 180 * k);
+    setAngle(leaves[drag.idx], drag.from + (drag.to - drag.from) * k);
     e.preventDefault();
   });
   const endDrag = async (e) => {
@@ -313,7 +335,7 @@ export function createBook(el, o) {
     el.dataset.dragged = '1';
     setTimeout(() => delete el.dataset.dragged, 60);
     const l = leaves[d.idx];
-    const k = d.dir > 0 ? -l.angle / 180 : (180 + l.angle) / 180;
+    const k = (l.angle - d.from) / (d.to - d.from || 1);
     const fling = d.dir > 0 ? d.v < -0.45 : d.v > 0.45;
     busy = false;
     if (k > 0.28 || fling) {
@@ -321,7 +343,7 @@ export function createBook(el, o) {
       await turn(d.dir, { from: l.angle, ms: 700, silent: true });
     } else {
       busy = true;
-      await tween(l, l.angle, d.dir > 0 ? 0 : -180, 360);
+      await tween(l, l.angle, d.from, 360);
       busy = false;
       if (!ac.signal.aborted) {
         layout();

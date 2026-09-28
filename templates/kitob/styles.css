@@ -115,8 +115,24 @@ body:not(.is-open) .stage {
   height: var(--ph);
   transition: translate 0.9s cubic-bezier(0.45, 0.05, 0.25, 1);
 }
-.is-spread .book-wrap {
+.is-spread .book-wrap,
+.is-vbook .book-wrap {
   width: calc(var(--pw) * 2);
+}
+/* Telefon: chapdagi qiya varaqlar ham ekranga sig'ishi uchun kitob biroz chapga suriladi.
+   Kitob ekrandan keng (2 sahifa) — grid uni chetga taqab qo'ymasligi uchun manfiy chekka bilan markazlanadi. */
+.is-vbook .book-wrap {
+  margin-inline: calc(50% - var(--pw));
+  translate: calc(var(--pw) * -0.33) 0;
+}
+.is-vbook .book-wrap.is-closed {
+  translate: calc(var(--pw) * -0.5) 0;
+}
+.is-vbook .book-wrap.is-end {
+  translate: calc(var(--pw) * 0.5) 0;
+}
+.is-vbook .book {
+  perspective: calc(var(--pw) * 5);
 }
 .is-spread .book-wrap.is-closed {
   translate: calc(var(--pw) * -0.5) 0;
@@ -124,13 +140,9 @@ body:not(.is-open) .stage {
 .is-spread .book-wrap.is-end {
   translate: calc(var(--pw) * 0.5) 0;
 }
-/* Telefonda: oxirgi varaq chapga yotadi, kitob esa o'ngga suriladi — orqa muqova joyida qoladi */
-body:not(.is-spread) .book-wrap.is-end {
-  translate: var(--pw) 0;
-}
-body:not(.is-spread) .book-wrap.is-shut-end::before {
-  left: -100%;
-  right: 100%;
+body.is-vbook .book-wrap.is-shut-end::before {
+  left: 0;
+  right: 50%;
   border-radius: 12px 4px 4px 12px;
 }
 .book-wrap.is-end .book__ribbon {
@@ -160,6 +172,9 @@ body:not(.is-spread) .book-wrap.is-shut-end::before {
   inset: 0;
   -webkit-user-select: none;
   user-select: none;
+  /* Gorizontal surish — varaqlash (JS), vertikal — sahifa ichini aylantirish (brauzer).
+     Busiz telefon brauzeri gorizontal harakatni o'zi egallab, varaqlashni bekor qiladi. */
+  touch-action: pan-y;
   perspective: calc(var(--pw) * 4.2);
   perspective-origin: 50% 45%;
 }
@@ -187,7 +202,8 @@ body:not(.is-spread) .book-wrap.is-shut-end::before {
     0 10px 20px rgba(0, 0, 0, 0.35);
   transition: opacity 0.4s;
 }
-.is-spread .book-wrap::before {
+.is-spread .book-wrap::before,
+.is-vbook .book-wrap::before {
   left: 50%;
 }
 .is-spread .book-wrap:not(.is-shut)::before {
@@ -221,7 +237,8 @@ body:not(.is-spread) .book-wrap.is-shut-end::before {
   animation: sway 4s ease-in-out infinite alternate;
   z-index: -1;
 }
-.is-spread .book__ribbon {
+.is-spread .book__ribbon,
+.is-vbook .book__ribbon {
   left: calc(50% - 8px);
 }
 @keyframes sway {
@@ -312,6 +329,22 @@ body:not(.is-spread) .book-wrap.is-shut-end::before {
 .book.is-end .book__under--r,
 .book.is-back-turning .book__under--r {
   visibility: hidden;
+}
+
+/* Varaqning orqa yuzi (telefon rejimi) */
+.paperback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(120% 90% at 50% 40%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 70%),
+    repeating-linear-gradient(180deg, transparent 0 22px, rgba(157, 187, 151, 0.12) 22px 23px),
+    linear-gradient(180deg, var(--paper), var(--paper-2));
+}
+.paperback span {
+  font-size: calc(var(--pw) * 0.14);
+  color: rgba(142, 44, 67, 0.18);
 }
 
 /* Ichki bezakli qog'oz (forzats) */
@@ -590,6 +623,7 @@ body:not(.is-spread) .book-wrap.is-shut-end::before {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   scrollbar-width: thin;
   scrollbar-color: rgba(142, 44, 67, 0.3) transparent;
 }

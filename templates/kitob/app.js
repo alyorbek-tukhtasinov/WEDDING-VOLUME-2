@@ -334,10 +334,12 @@ function measure() {
   } else {
     // Past ekranlarda musiqa tugmasi sahifa ustiga tushmasin
     top = H < 780 ? 48 : 0;
+    // Kitob to'liq ko'rinadi: o'ng sahifa tekis, o'qilgan varaqlar chapda qiya turadi
+    // (qiya varaq perspektivada ~0.34 sahifa eni va ~1.25 baland ko'rinadi)
     const availH = H - navH - 26 - top;
-    pw = Math.min(W - 28, 480);
-    ph = Math.min(availH, pw * 1.72);
-    pw = Math.min(pw, ph / 1.3);
+    pw = Math.min((W - 22) / 1.34, 440);
+    ph = Math.min(pw * 1.55, availH / 1.22);
+    pw = Math.min(pw, ph / 1.35);
   }
   const root = document.documentElement.style;
   root.setProperty('--pw', `${Math.round(pw)}px`);
@@ -646,12 +648,22 @@ export async function mountKitob(c, { preview = false } = {}) {
     w.classList.toggle('is-end', !!info.end);
   }
 
+  // Telefonda varaqning orqa yuzi: bo'sh qog'oz, o'rtada kichik bezak
+  const paperBack = () => {
+    const e = document.createElement('div');
+    e.className = 'paperback';
+    e.innerHTML = '<span aria-hidden="true">❦</span>';
+    return e;
+  };
+
   function build(spread, startPage) {
     book?.destroy();
     book = createBook(bookEl, {
       pages: pageEls,
       endpaper,
       spread,
+      vbook: !spread,
+      paperBack,
       reduced,
       start: startPage,
       backCover: true,
@@ -659,6 +671,7 @@ export async function mountKitob(c, { preview = false } = {}) {
       onChange: updateNav,
     });
     document.body.classList.toggle('is-spread', spread);
+    document.body.classList.toggle('is-vbook', !spread);
   }
 
   tabs.innerHTML = pages.map((p, i) => html`<button type="button" data-page="${i}" aria-label="${p.title}" title="${p.title}">${p.icon}</button>`.value).join('');
