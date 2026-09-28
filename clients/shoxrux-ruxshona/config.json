@@ -1,29 +1,31 @@
 {
-  "template": "volume2",
+  "template": "osmon",
   "couple": {
-    "groom": "Faxriddin",
-    "bride": "Feruza",
+    "groom": "Shoxrux",
+    "bride": "Ruxshona",
     "initials": ""
   },
   "event": {
-    "date": "2026-10-03",
+    "date": "2026-12-28",
     "time": "18:00",
     "timezone": "+05:00",
     "durationHours": 5
   },
-  "hosts": "Fatoyevlar va Rahimovlar oilasi",
+  "hosts": "Muzaffarovlar va Saidovlar oilasi",
   "texts": {
     "heroCaption": "Nikoh to‘yiga taklifnoma",
     "greeting": "Hurmatli mehmonimiz!",
-    "invitation": "Sizni farzandlarimiz Faxriddin va Feruzaning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "invitation": "Sizni farzandlarimiz Shoxrux va Ruxshonaning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
     "closing": "Tashrifingiz biz uchun katta sharaf!"
   },
   "venue": {
-    "name": "Shabi Shabnam toʻyxonasi",
-    "address": "Buxoro shahri",
-    "googleMaps": "https://www.google.com/maps/search/?api=1&query=39.768105%2C64.403987",
-    "yandexMaps": "https://yandex.uz/maps/?pt=64.403987,39.768105&z=17&l=map",
-    "image": ""
+    "name": "\"Yakkasaroy\" to'yxonasi",
+    "address": "Buxoro viloyati Jondor tumani",
+    "googleMaps": "",
+    "yandexMaps": ""
+  },
+  "sky": {
+    "city": "Buxoro"
   },
   "program": [
     {
@@ -39,7 +41,7 @@
       "title": "Tantanali ziyofat"
     },
     {
-      "time": "20:30",
+      "time": "21:30",
       "title": "To‘y tortini kesish"
     }
   ],
@@ -52,11 +54,10 @@
       "#7a1f3d"
     ]
   },
-  "gallery": [],
-  "musicTrack": "musiqa-8",
+  "musicTrack": "musiqa-3",
   "rsvp": {
     "enabled": true,
-    "deadline": "2026-10-02",
+    "deadline": "2026-12-27",
     "maxGuests": 5,
     "showWishes": true
   },
@@ -65,12 +66,5 @@
     "title": "",
     "description": "",
     "ogImage": ""
-  },
-  "theme": {},
-  "effects": {
-    "envelope": true,
-    "petals": true,
-    "typing": true,
-    "countdown": false
   }
 }
