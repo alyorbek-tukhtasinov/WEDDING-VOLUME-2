@@ -268,18 +268,28 @@ function renderPages(c, d) {
           ${c.hosts ? html`<p class="final__hosts">${c.hosts}</p>` : ''}
           <button class="btn btn--gold no-drag" id="congrats" type="button">🎉 Tabriklash</button>
           ${contacts.length ? html`<div class="contacts">${contacts.map((ct) => html`<a class="btn no-drag" href="tel:${ct.phone.replace(/[^\d+]/g, '')}">${raw(ICON.phone)}<span>${ct.name}: ${ct.phone}</span></a>`)}</div>` : ''}
-          ${brandLink()}
         </div>
       </div>
       ${stk('🎊', 'left:5%;top:5%', -12, 0.5)}${stk('🕊️', 'right:5%;top:8%', 12, 0.7)}
     </article>`);
 
-  // Sahifa raqamlari (muqovadan tashqari)
+  // Orqa muqova: kitob yopilganda ko'rinadi (buyurtma uchun Instagram shu yerda)
+  add('back', '📕', 'Orqa muqova', html`
+    <article class="pg cover cover--back" data-page="back">
+      <div class="cover__frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="cover__mono cover__mono--small" aria-hidden="true"><span>${d.initials}</span></div>
+      <p class="back__quote">Bu kitob — ikki qalbning<br />eng go‘zal hikoyasi</p>
+      <p class="back__thanks">Tashrifingiz uchun rahmat!</p>
+      <button class="back__again no-drag" type="button" data-goto="cover">↺ Qaytadan o‘qish</button>
+      ${brandLink()}
+    </article>`);
+
+  // Sahifa raqamlari (muqovalardan tashqari)
   return pages.map((p, i) => {
     const tpl = document.createElement('template');
     tpl.innerHTML = p.body.value.trim();
     const el = tpl.content.firstElementChild;
-    if (i > 0) (el.querySelector('.pg__scroll') || el).insertAdjacentHTML('beforeend', `<span class="pg__num" aria-hidden="true">— ${i} —</span>`);
+    if (i > 0 && p.id !== 'back') (el.querySelector('.pg__scroll') || el).insertAdjacentHTML('beforeend', `<span class="pg__num" aria-hidden="true">— ${i} —</span>`);
     return { ...p, el };
   });
 }
@@ -617,14 +627,20 @@ export async function mountKitob(c, { preview = false } = {}) {
     $('#prev').disabled = info.cur <= 0;
     $('#next').disabled = info.cur >= info.max;
     $$('button', tabs).forEach((b) => b.classList.toggle('is-on', vis.includes(Number(b.dataset.page))));
-    $('#book-wrap').classList.toggle('is-closed', info.cur === 0);
-    $('#book-wrap').classList.toggle('is-end', info.spread && info.cur === info.max && info.pages.length === 1 && info.cur > 0);
+    wrapState(info);
     if (first >= 0) lastPage = Math.max(...vis);
     if (info.cur > 0 && !opened) onOpened();
     if (info.cur > 0) {
       turnedOnce ||= opened && info.cur > 1;
       $('#swipe-hint').classList.remove('is-on');
     }
+  }
+
+  // Kitob surilishi varaq aylanishi bilan bir vaqtda boshlanadi (ochilish/yopilish)
+  function wrapState(info) {
+    const w = $('#book-wrap');
+    w.classList.toggle('is-closed', info.cur === 0);
+    w.classList.toggle('is-end', !!info.end);
   }
 
   function build(spread, startPage) {
@@ -635,6 +651,8 @@ export async function mountKitob(c, { preview = false } = {}) {
       spread,
       reduced,
       start: startPage,
+      backCover: true,
+      onTurn: wrapState,
       onChange: updateNav,
     });
     document.body.classList.toggle('is-spread', spread);
@@ -667,7 +685,7 @@ export async function mountKitob(c, { preview = false } = {}) {
 
   // Sahifa chetini bosish — varaqlash (telefonda qulay)
   scope.on(bookEl, 'click', (e) => {
-    if (!opened || book.busy || e.target.closest('a, button, input, textarea, select, label, .note')) return;
+    if (!opened || book.busy || e.target.closest('a, button, input, textarea, select, label, .note, .cover--back')) return;
     const leaf = e.target.closest('.leaf');
     if (!leaf) return;
     const r = bookEl.getBoundingClientRect();
