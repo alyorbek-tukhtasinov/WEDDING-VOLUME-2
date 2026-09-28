@@ -124,6 +124,18 @@ body:not(.is-open) .stage {
 .is-spread .book-wrap.is-end {
   translate: calc(var(--pw) * 0.5) 0;
 }
+/* Telefonda: oxirgi varaq chapga yotadi, kitob esa o'ngga suriladi — orqa muqova joyida qoladi */
+body:not(.is-spread) .book-wrap.is-end {
+  translate: var(--pw) 0;
+}
+body:not(.is-spread) .book-wrap.is-end::before {
+  left: -100%;
+  right: 100%;
+  border-radius: 12px 4px 4px 12px;
+}
+.book-wrap.is-end .book__ribbon {
+  opacity: 0;
+}
 /* Kitob stolga "tushadi" */
 .book-wrap {
   opacity: 0;
@@ -488,6 +500,70 @@ body:not(.is-open) .stage {
 .is-open .cover__btn,
 .is-open .cover__hint {
   visibility: hidden;
+}
+
+/* Orqa muqova */
+.pg.cover--back {
+  cursor: default;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .32 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(90% 70% at 65% 25%, #b33a55 0%, #8e2c43 42%, #5e1528 100%);
+}
+.cover--back::after {
+  left: auto;
+  right: 0;
+  background: linear-gradient(270deg, rgba(0, 0, 0, 0.35), rgba(255, 255, 255, 0.08) 40%, rgba(0, 0, 0, 0.25) 70%, rgba(0, 0, 0, 0));
+}
+.cover__mono--small {
+  width: calc(var(--pw) * 0.2);
+  font-size: calc(var(--pw) * 0.065);
+}
+.back__quote {
+  margin: 0;
+  font-style: italic;
+  font-size: calc(var(--pw) * 0.05);
+  line-height: 1.35;
+  color: rgba(244, 217, 142, 0.9);
+}
+.back__thanks {
+  margin: 0;
+  font-family: var(--script);
+  font-size: calc(var(--pw) * 0.085);
+  line-height: 1.2;
+  color: var(--gold-light);
+}
+.back__again {
+  padding: 7px 16px;
+  border: 1px solid rgba(214, 168, 75, 0.6);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--gold-light);
+  font: italic 14px var(--serif);
+  cursor: pointer;
+}
+.cover--back .brand {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(var(--ph) * 0.04);
+  padding: 7px 18px 7px 7px;
+  border: 1.5px solid var(--gold);
+  background: rgba(255, 250, 240, 0.96);
+  font-size: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  animation: brandGlow 2.6s ease-in-out infinite;
+}
+.cover--back .brand img,
+.cover--back .brand__icon {
+  width: 36px;
+  height: 36px;
+}
+.cover--back .brand b {
+  font-size: 12px;
+}
+@keyframes brandGlow {
+  50% {
+    box-shadow: 0 6px 26px rgba(244, 217, 142, 0.55);
+  }
 }
 
 /* ---------------------------- Sahifa ---------------------------- */
@@ -1370,6 +1446,7 @@ body:not(.is-open) .stage {
 @media (prefers-reduced-motion: reduce) {
   .bokeh i,
   .cover__btn,
+  .cover--back .brand,
   .book__ribbon,
   .cover__mono span,
   .cover__names span,

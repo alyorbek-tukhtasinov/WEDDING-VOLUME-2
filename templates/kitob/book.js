@@ -60,25 +60,29 @@ function paperSound(strength = 1) {
  * @param {boolean} o.reduced  harakatsiz rejim
  * @param {(info) => void} o.onChange  sahifa almashganda
  * @param {(page) => boolean} o.canLeave  false — bu sahifadan oldinga o'tib bo'lmaydi (muqova)
+ * @param {boolean} o.backCover  true — pages'ning oxirgisi orqa muqova: oxirgi varaq aylantirilganda
+ *                               kitob yopiladi va orqa muqova ko'rinadi
  */
 export function createBook(el, o) {
   const { pages, endpaper, spread, reduced, onChange } = o;
   const ac = new AbortController();
   const on = (t, ty, fn, opts = {}) => t.addEventListener(ty, fn, { ...opts, signal: ac.signal });
 
-  // Varaqlar ro'yxati
+  // Varaqlar ro'yxati. Orqa muqova oxirgi varaqning orqa yuzi bo'ladi: u aylantirilganda
+  // chap tomonga yotadi va kitob o'sha tomonga suriladi — kitob yopilgandek ko'rinadi.
+  const back = o.backCover ? pages[pages.length - 1] : null;
+  const body = back ? pages.slice(0, -1) : pages;
   const defs = [];
   if (spread) {
-    defs.push({ front: pages[0], back: endpaper() });
-    const rest = pages.slice(1);
-    for (let i = 0; i < rest.length; i += 2) defs.push({ front: rest[i], back: rest[i + 1] || endpaper() });
+    defs.push({ front: body[0], back: endpaper() });
+    const rest = body.slice(1);
+    for (let i = 0; i < rest.length; i += 2) defs.push({ front: rest[i], back: rest[i + 1] || back || endpaper() });
+    if (back && rest.length % 2 === 0) defs.push({ front: endpaper(), back });
   } else {
-    pages.forEach((p) => defs.push({ front: p, back: endpaper() }));
+    body.forEach((p, i) => defs.push({ front: p, back: back && i === body.length - 1 ? back : endpaper() }));
   }
   const n = defs.length;
-  // Oxirgi varaqning orqasida sahifa bo'lsa, uni ham ochib ko'rish mumkin
-  const lastBackIsPage = spread && pages.length > 1 && (pages.length - 1) % 2 === 0;
-  const maxCur = spread ? (lastBackIsPage ? n : n - 1) : n - 1;
+  const maxCur = back ? n : n - 1;
 
   el.innerHTML = '';
   el.classList.toggle('book--spread', spread);
@@ -117,12 +121,13 @@ export function createBook(el, o) {
   let peeking = false;
 
   function pageToCur(p) {
+    if (back && p >= pages.length - 1) return maxCur;
     if (!spread) return p;
     // 1-varaq old yuzi = 1-sahifa; k-varaq orqasi (2k) va (k+1)-varaq old yuzi (2k+1) bir yoyilmada
     return p === 0 ? 0 : Math.floor(p / 2) + 1;
   }
   function visiblePages(c = cur) {
-    if (!spread) return [defs[c]?.front].filter(Boolean);
+    if (!spread) return [c < n ? defs[c].front : defs[n - 1].back];
     return [defs[c - 1]?.back, defs[c]?.front].filter((p) => p && pages.includes(p));
   }
 
@@ -143,14 +148,14 @@ export function createBook(el, o) {
       l.el.style.zIndex = String(i === turning ? 1000 : flipped ? i + 1 : n - i + 1);
       let vis;
       if (spread) vis = i >= cur - 2 && i <= cur + 1;
-      else vis = i === cur || i === cur + 1 || (turning >= 0 && (i === turning || i === turning + 1));
+      else vis = i === cur || i === cur + 1 || (cur === n && i === n - 1) || (turning >= 0 && (i === turning || i === turning + 1));
       if (i === turning) vis = true;
       l.el.style.visibility = vis ? '' : 'hidden';
       l.el.classList.toggle('is-flat', i === cur && i !== turning && !flipped);
       l.el.classList.toggle('is-turning', i === turning);
     });
     el.classList.toggle('is-closed', cur === 0);
-    el.classList.toggle('is-end', spread && cur === n);
+    el.classList.toggle('is-end', !!back && cur === n);
     el.style.setProperty('--progress', String(cur / Math.max(1, maxCur)));
   }
 
@@ -164,7 +169,7 @@ export function createBook(el, o) {
   }
 
   function emit() {
-    onChange?.({ cur, max: maxCur, pages: visiblePages(), spread });
+    onChange?.({ cur, max: maxCur, pages: visiblePages(), spread, end: !!back && cur === n });
   }
 
   // Burchakni silliq o'zgartirish
@@ -203,6 +208,7 @@ export function createBook(el, o) {
     layout(idx);
     // Ochilayotgan sahifalarning pop-up rasmlari varaq ochilishi bilan tik turadi
     markOpen(visiblePages(target));
+    o.onTurn?.({ cur: target, max: maxCur, end: !!back && target === n });
     if (!silent) paperSound(1);
     if (reduced) {
       el.classList.add('is-fade');
