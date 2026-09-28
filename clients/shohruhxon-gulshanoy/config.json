@@ -1,0 +1,70 @@
+{
+  "template": "osmon",
+  "couple": {
+    "groom": "Shohruhxon",
+    "bride": "Gulshanoy",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-10",
+    "time": "21:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Olimovlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Shohruhxon va Gulshanoyning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "Olimovlar xonadoni",
+    "address": "Surxondaryo viloyati, Denov tumani Ohunboboyev Qorako'z mahallasi",
+    "googleMaps": "",
+    "yandexMaps": ""
+  },
+  "sky": {
+    "city": "Surxondaryo"
+  },
+  "program": [
+    {
+      "time": "21:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "21:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "22:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "00:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "musicTrack": "musiqa-3",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-09",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  }
+}
