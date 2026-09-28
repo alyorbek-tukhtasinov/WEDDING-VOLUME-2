@@ -84,8 +84,8 @@ function weddingPlugin(client, template) {
         ? `/media/${config.seo.ogImage}`
         : template === 'yz'
           ? config.photos?.hero ? `/media/${config.photos.hero}` : '/images/yz/wedding1.jpg'
-          : template === 'osmon'
-            ? '/images/og-osmon.jpg'
+          : template === 'osmon' || template === 'suzani'
+            ? `/images/og-${template}.jpg`
             : '/images/og-default.jpg';
       const themeVars = Object.entries(config.theme || {})
         .map(([k, v]) => `--${k}:${v};`)

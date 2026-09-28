@@ -21,6 +21,12 @@ export const TEMPLATES = [
     description: 'To‘y kechasining haqiqiy yulduzli osmoni, ismlar — yulduz turkumi, tilaklar — osmondagi yulduzlar',
     features: ['program', 'dressCode', 'contacts', 'sky', 'rsvp', 'wishes'],
   },
+  {
+    id: 'suzani',
+    title: 'Tirik suzani',
+    description: 'O‘zbek suzanisi: igna naqshlarni ko‘z oldingizda tikadi, anorlar yoriladi, tilaklar gul bo‘lib tikiladi',
+    features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';
