@@ -6,6 +6,7 @@ import './styles.css';
 import { deriveConfig, musicUrlOf, MONTHS } from '../../src/lib/config.js';
 import { parseMapInput } from '../../src/lib/maps.js';
 import { html, raw, esc } from '../../src/lib/dom.js';
+import brand from '@brand-config';
 import { nightMoment, directionName } from './sky/astro.js';
 import { createSky } from './sky/scene.js';
 
@@ -69,6 +70,18 @@ const fmtTime = (date, tz) => {
   return `${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}`;
 };
 const num = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+
+
+/** Buyurtma uchun: taklifnoma muallifining Instagram manzili (brand.config.js). */
+function brandLink() {
+  if (!brand?.enabled) return '';
+  return html`<a class="brand" href="${brand.url}" target="_blank" rel="noopener">
+    ${brand.logo
+      ? html`<img src="${brand.logo}" alt="" width="30" height="30" loading="lazy" />`
+      : raw('<svg class="brand__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" /></svg>')}
+    <span>${brand.text}<b>${brand.name}</b></span>
+  </a>`;
+}
 
 /* --------------------------------- Sahifa --------------------------------- */
 const ICON = {
@@ -243,6 +256,7 @@ function renderPage(c, d, place, when) {
         <div class="final__foot">
           ${c.hosts ? html`<p class="final__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
           ${contacts.length ? html`<div class="contacts">${contacts.map((ct) => html`<a href="tel:${ct.phone.replace(/[^\d+]/g, '')}">${raw(ICON.phone)}<span><b>${ct.name}</b>${ct.phone}</span></a>`)}</div>` : ''}
+          ${brandLink()}
           <p class="credit">Osmon to‘y kechasi uchun astronomik hisoblangan · Yulduzlar katalogi: Yale BSC</p>
         </div>
       </section>

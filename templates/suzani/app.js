@@ -6,6 +6,7 @@ import '../osmon/fonts/fonts.css';
 import './styles.css';
 import { deriveConfig, musicUrlOf, MONTHS } from '../../src/lib/config.js';
 import { html, raw } from '../../src/lib/dom.js';
+import brand from '@brand-config';
 import { PALETTE, medallion, rosette, pomegranate, tulip, heart, rings, DOVE, spoolSvg, wishFlower } from './motifs.js';
 import { installDefs, renderMotif, track, setReduced, resetTracks } from './stitch.js';
 import { burstSeeds, celebrate, drizzle, swingTassels, tasselsHtml, setReducedFx } from './fx.js';
@@ -62,6 +63,18 @@ const ICON = {
 };
 
 const BLESSINGS = ['Baxt! 💛', 'Baraka! 🌾', 'Farovonlik! 🏡', 'Mehr-oqibat! 🤝', 'Farzandlar! 👶', 'Totuvlik! 🕊️', 'Uzoq umr! 🌳', 'Muhabbat! ❤️'];
+
+
+/** Buyurtma uchun: taklifnoma muallifining Instagram manzili (brand.config.js). */
+function brandLink() {
+  if (!brand?.enabled) return '';
+  return html`<a class="brand" href="${brand.url}" target="_blank" rel="noopener">
+    ${brand.logo
+      ? html`<img src="${brand.logo}" alt="" width="30" height="30" loading="lazy" />`
+      : raw('<svg class="brand__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" /></svg>')}
+    <span>${brand.text}<b>${brand.name}</b></span>
+  </a>`;
+}
 
 /* ------------------------------------ Sahifa ------------------------------------ */
 function renderPage(c, d) {
@@ -213,6 +226,7 @@ function renderPage(c, d) {
         ${c.hosts ? html`<p class="final__hosts">${c.hosts}</p>` : ''}
         <button class="btn btn--gold final__btn" id="congrats" type="button">🎉 Tabriklash</button>
         ${contacts.length ? html`<div class="contacts">${contacts.map((ct) => html`<a class="btn" href="tel:${ct.phone.replace(/[^\d+]/g, '')}">${raw(ICON.phone)}<span>${ct.name}: ${ct.phone}</span></a>`)}</div>` : ''}
+        ${brandLink()}
         ${raw(tasselsHtml(11))}
       </section>
     </main>

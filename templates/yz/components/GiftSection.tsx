@@ -5,6 +5,8 @@ import { useLanguage } from './LanguageContext';
 import { CoupleIllustration } from './decor/CoupleIllustration';
 import { RsvpForm } from './RsvpForm';
 import { wedding } from '../wedding';
+// @ts-ignore — vite alias (brand.config.js)
+import brand from '@brand-config';
 
 const CONFETTI_COLORS = ['#C9A96E', '#F8F0E3', '#a07840', '#efe3cd'];
 
@@ -506,6 +508,25 @@ export const GiftSection: React.FC = () => {
         >
           ♡ {t.giftNote} ♡
         </motion.p>
+
+        {/* Buyurtma uchun: taklifnoma muallifining Instagram manzili (brand.config.js) */}
+        {brand?.enabled && (
+          <a
+            href={brand.url}
+            target="_blank"
+            rel="noopener"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '6px 16px 6px 6px',
+              border: '1px solid rgba(201,169,110,0.35)', borderRadius: '999px', textDecoration: 'none',
+              color: 'rgba(240,230,210,0.75)', fontSize: '13px', lineHeight: 1.25, textAlign: 'left',
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" style={{ padding: 6, borderRadius: '50%', background: '#C9A96E', fill: 'none', stroke: '#0b0b0b', strokeWidth: 1.8 }}>
+              <rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" />
+            </svg>
+            <span>{brand.text}<b style={{ display: 'block', color: '#C9A96E', fontWeight: 600 }}>{brand.name}</b></span>
+          </a>
+        )}
 
         {/* Closing scene */}
         <motion.div

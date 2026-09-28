@@ -1328,3 +1328,49 @@ svg {
     transition-delay: 0s !important;
   }
 }
+
+/* Buyurtma uchun (brand.config.js) */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 6px 16px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(5, 9, 22, 0.55);
+  color: var(--soft);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.25;
+  text-align: left;
+  pointer-events: auto;
+  transition: border-color 0.3s, background 0.3s;
+}
+.brand:hover,
+.brand:focus-visible {
+  border-color: rgba(230, 204, 147, 0.6);
+  background: rgba(230, 204, 147, 0.1);
+  outline: none;
+}
+.brand img,
+.brand__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+.brand__icon {
+  padding: 6px;
+  background: var(--gold);
+  fill: none;
+  stroke: #0b1024;
+  stroke-width: 1.8;
+}
+.brand b {
+  display: block;
+  font-family: var(--caps);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+}
