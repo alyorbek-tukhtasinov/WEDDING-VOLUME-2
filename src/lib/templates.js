@@ -27,6 +27,12 @@ export const TEMPLATES = [
     description: 'O‘zbek suzanisi: igna naqshlarni ko‘z oldingizda tikadi, anorlar yoriladi, tilaklar gul bo‘lib tikiladi',
     features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
   },
+  {
+    id: 'kitob',
+    title: '3D sehrli kitob',
+    description: 'Charm muqovali kitob: varaqlar 3D aylanadi, har sahifada pop-up manzara, emoji-stikerlar, mehmonlar tilaklari devori',
+    features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';

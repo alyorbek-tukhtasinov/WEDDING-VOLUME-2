@@ -29,6 +29,7 @@ export default defineConfig({
         'preview-yz': path.join(root, 'panel', 'preview-yz.html'),
         'preview-osmon': path.join(root, 'panel', 'preview-osmon.html'),
         'preview-suzani': path.join(root, 'panel', 'preview-suzani.html'),
+        'preview-kitob': path.join(root, 'panel', 'preview-kitob.html'),
       },
     },
   },

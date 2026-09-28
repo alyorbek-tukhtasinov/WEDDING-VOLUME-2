@@ -234,6 +234,15 @@ Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumla
 `scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,
 `templates/osmon/fonts` da saytning o‘zida.
 
+### "3D sehrli kitob" shabloni (kitob)
+
+Taklifnoma — charm muqovali kitob (`templates/kitob/`). Muqova bosilganda musiqa yoqiladi va
+kitob ochiladi; varaqlar barmoq bilan tortib, sahifa chetini bosib, pastdagi tugmalar yoki
+klaviatura (← →) bilan 3D aylantiriladi. Telefonda bitta sahifa, kompyuterda ochiq kitob (ikki sahifa).
+Har sahifada qog'ozdan kesilgan pop-up manzara tik turadi (`art.js`), emoji-stikerlar bosilsa sachraydi.
+Javob sahifasida mehmon tilagiga stiker tanlaydi (xabar boshiga qo'shiladi), tilaklar "Mehmonlar devori"
+sahifasida rangli xatcha bo'lib ko'rinadi. Namuna: `clients/demo-kitob`.
+
 ### Demo saytlar va o‘chirish
 
 Nomi `demo` bilan boshlanadigan saytlar (yoki tahrirda “Demo (namuna) sayt” belgilanganlar) ro‘yxatda

@@ -302,6 +302,11 @@ a {
   color: #f6ecd6;
 }
 
+.badge--kitob {
+  background: #5e1528;
+  color: #f4d98e;
+}
+
 .badge--soon {
   background: #fff4dc;
   color: #7a5200;

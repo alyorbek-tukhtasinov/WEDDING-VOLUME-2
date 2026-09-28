@@ -1,0 +1,64 @@
+{
+  "template": "kitob",
+  "couple": {
+    "groom": "Jasur",
+    "bride": "Madina"
+  },
+  "event": {
+    "date": "2026-12-12",
+    "time": "17:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Aliyevlar va Karimovlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Hayotimizning eng baxtli sahifasini siz bilan birga ochmoqchimiz. Sizni farzandlarimiz Jasur va Madinaning nikoh to‘yi marosimiga taklif etamiz.",
+    "closing": "Bu kitobning eng go‘zal sahifasi — siz bilan o‘tadigan kun!"
+  },
+  "venue": {
+    "name": "“Navro‘z” to‘yxonasi",
+    "address": "Toshkent shahri, Amir Temur ko‘chasi",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.311100%2C69.279700",
+    "yandexMaps": "https://yandex.uz/maps/?pt=69.279700,41.311100&z=16&l=map"
+  },
+  "program": [
+    {
+      "time": "17:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "17:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "18:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "20:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Bayramona libos. Pushti, qizg‘ish va krem ranglar ayniqsa mos tushadi.",
+    "colors": [
+      "#8e2c43",
+      "#f2c4c0",
+      "#fffaf0",
+      "#2f3a5c"
+    ]
+  },
+  "musicTrack": "musiqa-5",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-12-10",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "effects": {
+    "countdown": true
+  }
+}
