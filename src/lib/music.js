@@ -10,6 +10,7 @@ export const MUSIC_LIBRARY = [
   { id: 'musiqa-6', title: 'Benom guruhi — Olib ketaman', file: '/music/musiqa-6.m4a' },
   { id: 'musiqa-7', title: "Shaxriyor — Meni sev", file: '/music/musiqa-7.m4a' },
   { id: 'musiqa-8', title: "A Thousand Years — Jada Facer", file: '/music/musiqa-8.mp3' },
+  { id: 'musiqa-9', title: "Aytekin Ataş — Çalıkuşu Jenerik", file: '/music/musiqa-9.m4a' },
 ];
 
 export const findTrack = (id) => MUSIC_LIBRARY.find((t) => t.id === id) || null;
