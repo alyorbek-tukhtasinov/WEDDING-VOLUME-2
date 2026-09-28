@@ -184,6 +184,32 @@ svg {
   transition: opacity 0.5s ease 1s;
 }
 
+.gate__corner {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+}
+
+.gate__corner--1 {
+  top: 14px;
+  left: 14px;
+}
+
+.gate__corner--2 {
+  top: 14px;
+  right: 14px;
+}
+
+.gate__corner--3 {
+  bottom: 14px;
+  left: 14px;
+}
+
+.gate__corner--4 {
+  bottom: 14px;
+  right: 14px;
+}
+
 .gate__inner {
   display: flex;
   flex-direction: column;
@@ -632,6 +658,25 @@ svg {
   color: var(--red);
 }
 
+.hero__garden {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6vw;
+  margin-top: 18px;
+}
+
+.hero__garden > div {
+  width: min(16vw, 74px);
+  aspect-ratio: 80 / 140;
+}
+
+.hero__garden > div:nth-child(2) {
+  width: min(22vw, 104px);
+  aspect-ratio: 120 / 132;
+  margin-bottom: 14px;
+}
+
 .hero__hint {
   margin: 10px 0 0;
   font-size: 15px;
@@ -785,9 +830,10 @@ svg {
 .hoops {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  max-width: 460px;
-  margin: 26px auto 0;
+  gap: 18px;
+  max-width: 440px;
+  margin: 30px auto 0;
+  padding: 0 8px;
 }
 
 .hoop {
@@ -839,7 +885,7 @@ svg {
 }
 
 .hoop__cloth b.is-stitch {
-  animation: stitchIn 0.5s steps(7, end);
+  animation: stitchIn 0.3s steps(5, end);
 }
 
 @keyframes stitchIn {

@@ -78,6 +78,7 @@ function renderPage(c, d) {
     <div class="gate" id="gate">
       <div class="gate__rod" aria-hidden="true"><i></i></div>
       <div class="gate__cloth">
+        ${[1, 2, 3, 4].map((i) => html`<div class="gate__corner gate__corner--${i}" aria-hidden="true"></div>`)}
         <div class="gate__inner">
           <p class="eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
           <p class="gate__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
@@ -99,6 +100,7 @@ function renderPage(c, d) {
         <p class="hero__date"><span>${weekday}</span><b>${pad(d.day)} · ${pad(d.month)} · ${d.year}</b><span>soat ${c.event.time}</span></p>
         <div class="patch patch--round patch--a" style="--rot:-10deg">💍</div>
         <div class="patch patch--ribbon patch--b" style="--rot:6deg">Nikoh to‘yi</div>
+        <div class="hero__garden" aria-hidden="true"><div id="hg-1"></div><div id="hg-2"></div><div id="hg-3"></div></div>
         <p class="hero__hint" aria-hidden="true">✨ Suzaniga bosing — gul tikiladi</p>
         ${raw(tasselsHtml(9))}
       </section>
@@ -249,7 +251,27 @@ function buildStitches(c, d, { preview }) {
   const med = medallion();
   med.parts = [...fitNames(d.groom, d.bride), ...med.parts];
   const hero = mountMotif($('#medallion'), med, { title: d.names });
-  auto.push(track(hero, { mode: 'auto', speed: preview ? 50 : 0.16 }));
+  // Medalyondan keyin pastdagi lola–anor–lola birin-ketin tikiladi
+  const garden = [
+    [$('#hg-1'), tulip('red')],
+    [$('#hg-2'), pomegranate()],
+    [$('#hg-3'), tulip('rose')],
+  ]
+    .map(([host, motif]) => mountMotif(host, motif))
+    .filter(Boolean)
+    .map((m) => track(m, { mode: 'auto', speed: preview ? 50 : 0.9 }));
+  const chain = (i) => {
+    if (!garden[i]) return;
+    garden[i].start();
+    setTimeout(() => chain(i + 1), preview ? 0 : 1100);
+  };
+  auto.push(track(hero, { mode: 'auto', speed: preview ? 50 : 0.16, onDone: () => chain(0) }));
+
+  // Kirish oynasi burchaklaridagi tayyor (tikilgan) gullar
+  $$('.gate__corner').forEach((host, i) => {
+    const m = mountMotif(host, rosette({ petals: 8, color: i % 2 ? 'indigo' : 'red', inner: 'gold' }));
+    m?.setProgress(1);
+  });
 
   // 2) Kaptarlar va yurak
   const doves = $('#doves');
