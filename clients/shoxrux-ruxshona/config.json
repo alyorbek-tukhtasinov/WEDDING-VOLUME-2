@@ -21,11 +21,13 @@
   "venue": {
     "name": "\"Yakkasaroy\" to'yxonasi",
     "address": "Buxoro viloyati Jondor tumani",
-    "googleMaps": "",
-    "yandexMaps": ""
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=39.722058%2C64.103621",
+    "yandexMaps": "https://yandex.uz/maps/?pt=64.103621,39.722058&z=17&l=map"
   },
   "sky": {
-    "city": "Buxoro"
+    "city": "Buxoro",
+    "lat": 39.722058,
+    "lng": 64.103621
   },
   "program": [
     {
