@@ -130,6 +130,20 @@ function renderPage(c, d, place, when) {
   const weekday = d.weekdayName.charAt(0).toUpperCase() + d.weekdayName.slice(1);
   const words = (s) => raw(esc(s).split(/(\s+)/).map((w) => (/\S/.test(w) ? `<span class="w">${w}</span>` : w)).join(''));
   const sectionHead = (eyebrow, title) => html`<p class="eyebrow">${eyebrow}</p><h2 class="title">${title}</h2>`;
+  // Islomiy matnlar (ixtiyoriy): Bismilloh, oyat, duo. Berilmasa sahifa avvalgidek
+  const isl = c.islamic || {};
+  const bismillah = isl.bismillah?.trim() || '';
+  const hasQuote = (q) => !!(q?.arabic?.trim() || q?.text?.trim());
+  const verse = hasQuote(isl.verse) ? isl.verse : null;
+  const skyVerse = hasQuote(isl.skyVerse) ? isl.skyVerse : null;
+  const dua = hasQuote(isl.dua) ? isl.dua : null;
+  const quote = (q, { big = false } = {}) => html`<figure class="ayah ${big ? 'ayah--big' : ''}">
+    ${q.arabic?.trim() ? html`<p class="ayah__ar" lang="ar" dir="rtl" data-type>${q.arabic}</p>` : ''}
+    ${q.reading?.trim() ? html`<p class="ayah__read" data-type>${q.reading}</p>` : ''}
+    ${q.text?.trim() ? html`<blockquote class="ayah__text" data-type>${q.text}</blockquote>` : ''}
+    ${q.source?.trim() ? html`<figcaption class="ayah__src" data-type>${q.source}</figcaption>` : ''}
+  </figure>`;
+  const ornament = raw(`<p class="ornament" aria-hidden="true"><i></i>${ICON.star}<i></i></p>`);
 
   return html`
     <div class="sky" id="sky"></div>
@@ -137,6 +151,7 @@ function renderPage(c, d, place, when) {
 
     <div class="gate" id="gate">
       <div class="gate__inner">
+        ${bismillah ? html`<p class="bismillah gate__bismillah" data-type>${bismillah}</p>` : ''}
         <span class="gate__star">${raw(ICON.star)}</span>
         <p class="eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
         <p class="gate__lead">Sizni bir kechaga<br />taklif qilamiz</p>
@@ -159,14 +174,26 @@ function renderPage(c, d, place, when) {
         </div>
       </section>
 
+      ${verse ? html`
+      <section class="scene" data-view="verse">
+        <div class="card card--verse reveal">
+          <span class="card__star">${raw(ICON.star)}</span>
+          ${bismillah ? html`<p class="bismillah" data-type>${bismillah}</p><hr class="rule" />` : ''}
+          ${quote(verse, { big: true })}
+        </div>
+      </section>` : ''}
+
       <section class="scene" data-view="invite">
         <div class="card reveal">
           <span class="card__star">${raw(ICON.star)}</span>
           <p class="eyebrow">${t.greeting || 'Hurmatli mehmonimiz!'}</p>
+          ${t.inviteTitle ? html`<h2 class="title">${t.inviteTitle}</h2>` : ''}
           <p class="invite__text words">${words(t.invitation || `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`)}</p>
+          ${t.namesCaption ? html`${ornament}<p class="eyebrow invite__caption">${t.namesCaption}</p>` : ''}
           <div class="invite__names">
             <span>${d.groom}</span><em>&amp;</em><span>${d.bride}</span>
           </div>
+          ${t.namesNote ? html`<p class="invite__note" data-type>${t.namesNote}</p>` : ''}
           <p class="invite__meta">${weekday}, ${dateLine} · soat ${c.event.time}</p>
           ${c.hosts ? html`<p class="invite__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
         </div>
@@ -176,6 +203,7 @@ function renderPage(c, d, place, when) {
         <div class="card reveal">
           ${sectionHead('Shu kechaning osmoni', when.shifted ? `${dateLine}, soat ${when.time}` : `${dateLine}, soat ${c.event.time}`)}
           <p class="lead">Bu osmon — bezak emas. Yulduzlar, Oy va sayyoralar to‘y kechasi ${place.city ? `${place.city} osmonida` : `${venue.name} ustida`} qanday joylashsa, aynan shunday chizilgan.</p>
+          ${skyVerse ? quote(skyVerse) : ''}
           <div id="sky-facts">${factsHtml(null)}</div>
           ${when.shifted ? html`<p class="note">To‘y yorug‘ paytda boshlanadi — shuning uchun osmon o‘sha oqshom yulduzlar to‘liq chiqqan paytdagidek (soat ${when.time}) ko‘rsatilgan.</p>` : ''}
           <button class="btn btn--ghost" type="button" data-explore hidden>${raw(ICON.compass)}<span>Osmonni aylantirib ko‘rish</span></button>
@@ -184,7 +212,7 @@ function renderPage(c, d, place, when) {
 
       <section class="scene" data-view="countdown">
         <div class="card card--clear reveal">
-          ${sectionHead('To‘yga qadar', 'Har bir yulduz — kutilgan bir lahza')}
+          ${sectionHead('To‘yga qadar', t.countdownTitle || 'Har bir yulduz — kutilgan bir lahza')}
           <div class="countdown" id="countdown" role="timer" aria-live="off">
             ${['kun', 'soat', 'daqiqa', 'soniya'].map((u) => html`<div class="countdown__cell"><b data-unit="${u}">00</b><span>${u}</span></div>`)}
           </div>
@@ -208,8 +236,13 @@ function renderPage(c, d, place, when) {
 
       <section class="scene" data-view="venue">
         <div class="card reveal">
-          ${sectionHead('Manzil', venue.name)}
-          <p class="venue__address">${raw(ICON.pin)}<span>${venue.address}</span></p>
+          ${t.detailsTitle ? html`${sectionHead('To‘y kechasi', t.detailsTitle)}
+          <ul class="details">
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Sana</p><b>${dateLine}</b><span>${weekday} kuni</span></li>
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Vaqt</p><b>Soat ${c.event.time}</b>${t.timeNote ? html`<span>${t.timeNote}</span>` : ''}</li>
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Manzil</p><b>${venue.name}</b><span>${venue.address}</span></li>
+          </ul>` : html`${sectionHead('Manzil', venue.name)}
+          <p class="venue__address">${raw(ICON.pin)}<span>${venue.address}</span></p>`}
           ${gmap || ymap ? html`<div class="btn-row">
             ${gmap ? html`<a class="btn" href="${gmap}" target="_blank" rel="noopener">Google xarita</a>` : ''}
             ${ymap ? html`<a class="btn" href="${ymap}" target="_blank" rel="noopener">Yandex xarita</a>` : ''}
@@ -248,6 +281,18 @@ function renderPage(c, d, place, when) {
             <p class="eyebrow"><span id="wish-count">0</span> ta tilak — osmonda yulduz bo‘lib yonmoqda</p>
             <ul></ul>
           </div>
+        </div>
+      </section>` : ''}
+
+      ${dua ? html`
+      <section class="scene" data-view="dua">
+        <div class="card card--verse reveal">
+          <span class="card__star">${raw(ICON.star)}</span>
+          ${sectionHead(dua.eyebrow || 'Duo', dua.title || 'Duo va ezgu tilaklar')}
+          <hr class="rule" />
+          ${quote(dua, { big: true })}
+          ${dua.note?.trim() ? html`<hr class="rule" /><p class="lead dua__note" data-type>${dua.note}</p>` : ''}
+          <p class="dua__sign"><span>${d.groom}</span><em>♡</em><span>${d.bride}</span></p>
         </div>
       </section>` : ''}
 
@@ -380,6 +425,79 @@ function initReveal() {
   els.forEach((el) => io.observe(el));
 }
 
+/* ------------------------- Yozuv effekti (oyat va duolar) ------------------------- */
+// Lotin matni harfma-harf yoziladi: har harf tilla nur bo'lib chaqnab, so'ng tinchiydi.
+// Arabcha matn harflarga bo'linmaydi (bog'lanishi buzilmasin) — har so'z o'ngdan chapga
+// siyoh bilan chizilgandek ochiladi. Kartadagi matnlar ketma-ket yoziladi.
+const TYPE_LATIN = { step: 0.022, tail: 0.9 };
+const TYPE_ARABIC = { step: 0.2, tail: 0.8 };
+
+function prepType(el) {
+  const text = el.textContent.trim();
+  const ar = el.getAttribute('lang') === 'ar';
+  const vis = document.createElement('span');
+  vis.setAttribute('aria-hidden', 'true');
+  let n = 0;
+  for (const tok of text.split(/(\s+)/)) {
+    if (!tok) continue;
+    if (/^\s+$/.test(tok)) {
+      vis.append(' ');
+      continue;
+    }
+    const w = document.createElement('span');
+    w.className = ar ? 'tw tw--ink' : 'tw';
+    if (ar) {
+      w.textContent = tok;
+      w.style.setProperty('--d', n++);
+    } else {
+      for (const ch of tok) {
+        const c = document.createElement('span');
+        c.className = 'tc';
+        c.textContent = ch;
+        c.style.setProperty('--d', n++);
+        w.append(c);
+      }
+    }
+    vis.append(w);
+  }
+  const sr = Object.assign(document.createElement('span'), { className: 'sr-only', textContent: text });
+  el.replaceChildren(sr, vis);
+  el.classList.add('type');
+  const { step, tail } = ar ? TYPE_ARABIC : TYPE_LATIN;
+  el.style.setProperty('--step', `${step}s`);
+  return Math.max(0, n - 1) * step + tail;
+}
+
+/** Elementlarni ketma-ket yozish; delay — birinchisi boshlanguncha (soniya). */
+function typeSeq(els, delay = 0) {
+  let t = delay;
+  for (const el of els) {
+    const dur = prepType(el);
+    el.style.setProperty('--start', `${t.toFixed(2)}s`);
+    // Keyingi matn oldingisi deyarli tugaganda boshlanadi
+    t += Math.max(0.3, dur - 0.45);
+  }
+  requestAnimationFrame(() => els.forEach((el) => el.classList.add('is-typing')));
+}
+
+function initTyping() {
+  const groups = $$('.card').filter((card) => $('[data-type]', card));
+  if (reduced || !('IntersectionObserver' in window)) return;
+  const io = scope.observe(new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        io.unobserve(e.target);
+        typeSeq($$('[data-type]', e.target), 0.55);
+      }
+    },
+    { threshold: 0.2 },
+  ));
+  groups.forEach((g) => io.observe(g));
+  const gateText = $$('#gate [data-type]');
+  if (gateText.length) typeSeq(gateText, 0.9);
+}
+
 /* ----------------------------------- Ishga tushirish ----------------------------------- */
 // Oldingi chizishdagi osmon: sana, joy va ismlar o'zgarmasa qayta hisoblanmaydi (panel ko'rinishi)
 let kept = null;
@@ -421,6 +539,8 @@ export async function mountOsmon(c, { preview = false } = {}) {
   initCountdown(d);
   initCalendar(c, d);
   initReveal();
+  // Panel ko'rinishida har tahrirda qayta yozilmasin — matn darhol ko'rinadi
+  if (!preview) initTyping();
   const music = preview ? { play() {} } : initMusic(musicUrlOf(c));
   const scroller = initScroll(() => sky);
   const wishes = c.rsvp?.enabled ? initWishes(c, d, () => sky, preview) : null;
@@ -530,7 +650,7 @@ function initScroll(getSky) {
     if (name !== current) {
       current = name;
       sky.showLabels(name === 'sky');
-      sky.setNamesAlpha(name === 'hero' || name === 'final' ? 1 : name === 'invite' ? 0.3 : 0.08);
+      sky.setNamesAlpha(name === 'hero' || name === 'final' ? 1 : name === 'invite' || name === 'dua' ? 0.3 : 0.08);
       document.body.dataset.active = name;
     }
   };

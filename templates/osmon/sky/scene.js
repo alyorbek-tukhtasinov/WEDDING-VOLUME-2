@@ -929,12 +929,14 @@ export async function createSky(o) {
     const wa = wishAnchor();
     return {
       hero,
+      verse: { alt: 78, az: az0 + 70, S: P ? 72 : 68 },
       invite: { alt: layout.heroAlt + 22, az: az0 + 12, S: P ? 70 : 64 },
       sky: frame(focus, P ? 0.2 : 0.3, P ? 58 : 56),
       countdown: { alt: 72, az: az0 - 60, S: P ? 66 : 70 },
       program: { alt: 56, az: az0 - 115, S: P ? 64 : 66 },
       venue: { alt: 26, az: az0 - 170, S: P ? 64 : 62 },
       wishes: frame(wa, P ? 0.22 : 0.3, P ? 66 : 64),
+      dua: { alt: 62, az: az0 + 150, S: P ? 70 : 66 },
       final: hero,
     };
   }
