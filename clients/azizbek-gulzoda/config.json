@@ -1,0 +1,67 @@
+{
+  "template": "osmon",
+  "couple": {
+    "groom": "Azizbek",
+    "bride": "Gulzoda",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-07",
+    "time": "19:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Allaberganovlar va Murtazoyevlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Azizbek va Gulzodaning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "\"Zangari Osiyo\" to'yxonasi",
+    "address": "Buxoro viloyati G'ijduvon tumani",
+    "googleMaps": "",
+    "yandexMaps": ""
+  },
+  "program": [
+    {
+      "time": "19:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "19:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "20:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "22:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "musicTrack": "musiqa-3",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-06",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  }
+}
