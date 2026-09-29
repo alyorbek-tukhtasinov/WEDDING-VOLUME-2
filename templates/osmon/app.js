@@ -130,6 +130,20 @@ function renderPage(c, d, place, when) {
   const weekday = d.weekdayName.charAt(0).toUpperCase() + d.weekdayName.slice(1);
   const words = (s) => raw(esc(s).split(/(\s+)/).map((w) => (/\S/.test(w) ? `<span class="w">${w}</span>` : w)).join(''));
   const sectionHead = (eyebrow, title) => html`<p class="eyebrow">${eyebrow}</p><h2 class="title">${title}</h2>`;
+  // Islomiy matnlar (ixtiyoriy): Bismilloh, oyat, duo. Berilmasa sahifa avvalgidek
+  const isl = c.islamic || {};
+  const bismillah = isl.bismillah?.trim() || '';
+  const hasQuote = (q) => !!(q?.arabic?.trim() || q?.text?.trim());
+  const verse = hasQuote(isl.verse) ? isl.verse : null;
+  const skyVerse = hasQuote(isl.skyVerse) ? isl.skyVerse : null;
+  const dua = hasQuote(isl.dua) ? isl.dua : null;
+  const quote = (q, { big = false } = {}) => html`<figure class="ayah ${big ? 'ayah--big' : ''}">
+    ${q.arabic?.trim() ? html`<p class="ayah__ar" lang="ar" dir="rtl">${q.arabic}</p>` : ''}
+    ${q.reading?.trim() ? html`<p class="ayah__read">${q.reading}</p>` : ''}
+    ${q.text?.trim() ? html`<blockquote class="ayah__text">${q.text}</blockquote>` : ''}
+    ${q.source?.trim() ? html`<figcaption class="ayah__src">${q.source}</figcaption>` : ''}
+  </figure>`;
+  const ornament = raw(`<p class="ornament" aria-hidden="true"><i></i>${ICON.star}<i></i></p>`);
 
   return html`
     <div class="sky" id="sky"></div>
@@ -137,6 +151,7 @@ function renderPage(c, d, place, when) {
 
     <div class="gate" id="gate">
       <div class="gate__inner">
+        ${bismillah ? html`<p class="bismillah gate__bismillah">${bismillah}</p>` : ''}
         <span class="gate__star">${raw(ICON.star)}</span>
         <p class="eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
         <p class="gate__lead">Sizni bir kechaga<br />taklif qilamiz</p>
@@ -159,14 +174,26 @@ function renderPage(c, d, place, when) {
         </div>
       </section>
 
+      ${verse ? html`
+      <section class="scene" data-view="verse">
+        <div class="card card--verse reveal">
+          <span class="card__star">${raw(ICON.star)}</span>
+          ${bismillah ? html`<p class="bismillah">${bismillah}</p><hr class="rule" />` : ''}
+          ${quote(verse, { big: true })}
+        </div>
+      </section>` : ''}
+
       <section class="scene" data-view="invite">
         <div class="card reveal">
           <span class="card__star">${raw(ICON.star)}</span>
           <p class="eyebrow">${t.greeting || 'Hurmatli mehmonimiz!'}</p>
+          ${t.inviteTitle ? html`<h2 class="title">${t.inviteTitle}</h2>` : ''}
           <p class="invite__text words">${words(t.invitation || `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`)}</p>
+          ${t.namesCaption ? html`${ornament}<p class="eyebrow invite__caption">${t.namesCaption}</p>` : ''}
           <div class="invite__names">
             <span>${d.groom}</span><em>&amp;</em><span>${d.bride}</span>
           </div>
+          ${t.namesNote ? html`<p class="invite__note">${t.namesNote}</p>` : ''}
           <p class="invite__meta">${weekday}, ${dateLine} · soat ${c.event.time}</p>
           ${c.hosts ? html`<p class="invite__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
         </div>
@@ -176,6 +203,7 @@ function renderPage(c, d, place, when) {
         <div class="card reveal">
           ${sectionHead('Shu kechaning osmoni', when.shifted ? `${dateLine}, soat ${when.time}` : `${dateLine}, soat ${c.event.time}`)}
           <p class="lead">Bu osmon — bezak emas. Yulduzlar, Oy va sayyoralar to‘y kechasi ${place.city ? `${place.city} osmonida` : `${venue.name} ustida`} qanday joylashsa, aynan shunday chizilgan.</p>
+          ${skyVerse ? quote(skyVerse) : ''}
           <div id="sky-facts">${factsHtml(null)}</div>
           ${when.shifted ? html`<p class="note">To‘y yorug‘ paytda boshlanadi — shuning uchun osmon o‘sha oqshom yulduzlar to‘liq chiqqan paytdagidek (soat ${when.time}) ko‘rsatilgan.</p>` : ''}
           <button class="btn btn--ghost" type="button" data-explore hidden>${raw(ICON.compass)}<span>Osmonni aylantirib ko‘rish</span></button>
@@ -184,7 +212,7 @@ function renderPage(c, d, place, when) {
 
       <section class="scene" data-view="countdown">
         <div class="card card--clear reveal">
-          ${sectionHead('To‘yga qadar', 'Har bir yulduz — kutilgan bir lahza')}
+          ${sectionHead('To‘yga qadar', t.countdownTitle || 'Har bir yulduz — kutilgan bir lahza')}
           <div class="countdown" id="countdown" role="timer" aria-live="off">
             ${['kun', 'soat', 'daqiqa', 'soniya'].map((u) => html`<div class="countdown__cell"><b data-unit="${u}">00</b><span>${u}</span></div>`)}
           </div>
@@ -208,8 +236,13 @@ function renderPage(c, d, place, when) {
 
       <section class="scene" data-view="venue">
         <div class="card reveal">
-          ${sectionHead('Manzil', venue.name)}
-          <p class="venue__address">${raw(ICON.pin)}<span>${venue.address}</span></p>
+          ${t.detailsTitle ? html`${sectionHead('To‘y kechasi', t.detailsTitle)}
+          <ul class="details">
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Sana</p><b>${dateLine}</b><span>${weekday} kuni</span></li>
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Vaqt</p><b>Soat ${c.event.time}</b>${t.timeNote ? html`<span>${t.timeNote}</span>` : ''}</li>
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Manzil</p><b>${venue.name}</b><span>${venue.address}</span></li>
+          </ul>` : html`${sectionHead('Manzil', venue.name)}
+          <p class="venue__address">${raw(ICON.pin)}<span>${venue.address}</span></p>`}
           ${gmap || ymap ? html`<div class="btn-row">
             ${gmap ? html`<a class="btn" href="${gmap}" target="_blank" rel="noopener">Google xarita</a>` : ''}
             ${ymap ? html`<a class="btn" href="${ymap}" target="_blank" rel="noopener">Yandex xarita</a>` : ''}
@@ -248,6 +281,18 @@ function renderPage(c, d, place, when) {
             <p class="eyebrow"><span id="wish-count">0</span> ta tilak — osmonda yulduz bo‘lib yonmoqda</p>
             <ul></ul>
           </div>
+        </div>
+      </section>` : ''}
+
+      ${dua ? html`
+      <section class="scene" data-view="dua">
+        <div class="card card--verse reveal">
+          <span class="card__star">${raw(ICON.star)}</span>
+          ${sectionHead(dua.eyebrow || 'Duo', dua.title || 'Duo va ezgu tilaklar')}
+          <hr class="rule" />
+          ${quote(dua, { big: true })}
+          ${dua.note?.trim() ? html`<hr class="rule" /><p class="lead dua__note">${dua.note}</p>` : ''}
+          <p class="dua__sign"><span>${d.groom}</span><em>♡</em><span>${d.bride}</span></p>
         </div>
       </section>` : ''}
 
@@ -530,7 +575,7 @@ function initScroll(getSky) {
     if (name !== current) {
       current = name;
       sky.showLabels(name === 'sky');
-      sky.setNamesAlpha(name === 'hero' || name === 'final' ? 1 : name === 'invite' ? 0.3 : 0.08);
+      sky.setNamesAlpha(name === 'hero' || name === 'final' ? 1 : name === 'invite' || name === 'dua' ? 0.3 : 0.08);
       document.body.dataset.active = name;
     }
   };

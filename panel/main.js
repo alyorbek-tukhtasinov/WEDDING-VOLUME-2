@@ -510,12 +510,12 @@ function field(label, path, { type = 'text', placeholder = '', hint = '', attrs 
   `;
 }
 
-function area(label, path, { rows = 3, placeholder = '', hint = '' } = {}) {
+function area(label, path, { rows = 3, placeholder = '', hint = '', attrs = '' } = {}) {
   const v = get(state.ed.config, path) ?? '';
   return html`
     <label class="f" data-field="${path}">
       <span>${label}</span>
-      <textarea data-path="${path}" rows="${rows}" placeholder="${placeholder}">${v}</textarea>
+      <textarea data-path="${path}" rows="${rows}" placeholder="${placeholder}" ${raw(attrs)}>${v}</textarea>
       ${hint ? html`<small class="hint">${hint}</small>` : ''}
     </label>
   `;
@@ -643,6 +643,71 @@ function secSky() {
       <small class="hint">Xaritaga koordinatali havola kiritilsa, bu yer o‘zi to‘ladi.</small>
     `,
     { open: state.ed.isNew },
+  );
+}
+
+/* --- Islomiy matnlar (osmon shabloni) --- */
+// Yoqilganda — tayyor, tekshirilgan matnlar: Bismilloh, Rum 21, Mulk 5 (osmon bo'limida), nikoh duosi
+const ISLAMIC_DEFAULT = {
+  bismillah: 'Bismillahir Rohmanir Rohiym',
+  verse: {
+    arabic: 'وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُمْ مِنْ أَنْفُسِكُمْ أَزْوَاجًا لِتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُمْ مَوَدَّةً وَرَحْمَةً إِنَّ فِي ذَلِكَ لَآيَاتٍ لِقَوْمٍ يَتَفَكَّرُونَ',
+    text: '“U Zotning oyat-belgilaridan biri shuki, sizlar uchun o‘z jinsingizdan juftlar yaratdi — toki ular bilan xotirjamlik topgaysiz. Va U orangizga muhabbat va rahm-shafqat joyladi. Albatta, bunda tafakkur qiluvchi qavm uchun ibratlar bordir.”',
+    source: 'Qur’oni Karim, Rum surasi — 21-oyat',
+  },
+  skyVerse: {
+    arabic: 'وَلَقَدْ زَيَّنَّا السَّمَاءَ الدُّنْيَا بِمَصَابِيحَ',
+    text: '“Albatta, Biz eng yaqin osmonni chiroqlar — yulduzlar bilan ziynatladik.”',
+    source: 'Qur’oni Karim, Mulk surasi — 5-oyat',
+  },
+  dua: {
+    eyebrow: 'Muborak duo',
+    title: 'Duo va ezgu tilaklar',
+    arabic: 'بَارَكَ اللَّهُ لَكَ، وَبَارَكَ عَلَيْكَ، وَجَمَعَ بَيْنَكُمَا فِي خَيْرٍ',
+    reading: 'Barakallohu laka, va baroka ’alayka, va jama’a baynakuma fi xoyr',
+    text: '“Alloh senga baraka bersin, seni barakotli qilsin va ikkovingizni ezgulikda jamlasin.”',
+    source: 'Rasululloh (s.a.v.) duosi — Termiziy, Abu Dovud, Ibn Moja rivoyati (sahih)',
+    note: 'Ushbu duo bilan sizlarni to‘yimizga chorlaymiz. Qalbimizdagi shu quvonchni siz aziz mehmonlarimiz bilan baham ko‘rishni istaymiz — tashrifingiz bizga eng katta tuhfa.',
+  },
+};
+// Islomiy uslubdagi taklif matnlari — bo'sh maydonlarga qo'yiladi
+const ISLAMIC_TEXTS = {
+  greeting: 'Aziz mehmonimiz',
+  inviteTitle: 'Hurmat bilan taklif etamiz',
+  namesCaption: 'Bir umrga birlashmoqdamiz',
+  namesNote: 'Alloh nasib etsa, nikoh to‘yimiz quyidagi kunda bo‘lib o‘tadi',
+  countdownTitle: 'To‘yimizgacha qolgan vaqt',
+  detailsTitle: 'Marosim tafsilotlari',
+  timeNote: 'Kechki ziyofat',
+};
+
+function secIslamic() {
+  const c = state.ed.config;
+  const on = !!c.islamic;
+  const ar = 'dir="rtl" lang="ar" style="font-size:18px;line-height:1.8"';
+  const quote = (key, title) => html`
+    <p class="hint"><b>${title}</b></p>
+    ${area('Arabcha matn', `islamic.${key}.arabic`, { rows: 3, attrs: ar })}
+    ${key === 'dua' ? field('O‘qilishi (lotincha)', 'islamic.dua.reading') : ''}
+    ${area('Ma’nosi (o‘zbekcha)', `islamic.${key}.text`, { rows: 3 })}
+    ${field('Manba', `islamic.${key}.source`)}
+  `;
+  return section(
+    'islamic',
+    'Islomiy matnlar (oyat va duo)',
+    html`
+      <small class="hint">Bo‘sh qoldirilgan bo‘lim saytda ko‘rinmaydi. Oyat — taklifdan oldin, duo — oxirida chiqadi.</small>
+      ${field('Bismilloh', 'islamic.bismillah', { hint: 'Kirish sahifasida va oyat tepasida' })}
+      ${quote('verse', 'Asosiy oyat (taklifdan oldin)')}
+      ${quote('skyVerse', 'Osmon haqidagi oyat (“Shu kechaning osmoni” bo‘limida)')}
+      <div class="grid2">
+        ${field('Duo — kichik sarlavha', 'islamic.dua.eyebrow')}
+        ${field('Duo — sarlavha', 'islamic.dua.title')}
+      </div>
+      ${quote('dua', 'Duo (sahifa oxirida)')}
+      ${area('Duo ostidagi matn', 'islamic.dua.note', { rows: 3 })}
+    `,
+    { toggle: { on, label: 'Saytda oyat va duolarni ko‘rsatish' } },
   );
 }
 
@@ -915,6 +980,18 @@ function secTexts() {
       </div>
       ${area('Asosiy matn', 'texts.invitation', { rows: 4, hint: 'Ismlar o‘zgarsa, o‘zi yangilanadi (qo‘lda tahrirlamaguncha)' })}
       <div><button class="link" type="button" data-action="invitation-auto">Matnni ismlardan qayta tuzish</button></div>
+      ${state.ed.config.template === 'osmon' ? html`
+        <small class="hint">Qo‘shimcha sarlavhalar (ixtiyoriy) — bo‘sh bo‘lsa ko‘rinmaydi yoki asl matn turadi.</small>
+        <div class="grid2">
+          ${field('Taklif sarlavhasi', 'texts.inviteTitle', { placeholder: 'Hurmat bilan taklif etamiz' })}
+          ${field('Ismlar ustidagi yozuv', 'texts.namesCaption', { placeholder: 'Bir umrga birlashmoqdamiz' })}
+        </div>
+        ${field('Ismlar ostidagi yozuv', 'texts.namesNote', { placeholder: 'Alloh nasib etsa, nikoh to‘yimiz quyidagi kunda bo‘lib o‘tadi' })}
+        <div class="grid2">
+          ${field('Hisoblagich sarlavhasi', 'texts.countdownTitle', { placeholder: 'Har bir yulduz — kutilgan bir lahza' })}
+          ${field('Tafsilotlar sarlavhasi', 'texts.detailsTitle', { placeholder: 'Marosim tafsilotlari', hint: 'Yozilsa, manzil bo‘limi Sana · Vaqt · Manzil ko‘rinishida' })}
+        </div>
+        ${field('Vaqt ostidagi yozuv', 'texts.timeNote', { placeholder: 'Kechki ziyofat' })}` : ''}
       ${field('Yakuniy so‘z', 'texts.closing')}
     `,
   );
@@ -1299,7 +1376,7 @@ function showEditor() {
   const sections = yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secYzRu(), secYzTexts(), secSeo()]
     : osmon
-      ? [secMain(), secTexts(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
+      ? [secMain(), secTexts(), secIslamic(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
       : suzani || kitob
         ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secEffects(), secSeo()]
         : [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
@@ -1478,6 +1555,20 @@ function setToggle(id, on) {
         if (el) el.value = c.giftNote[k];
       }
     } else delete c.giftNote;
+  }
+  if (id === 'islamic') {
+    if (on) {
+      c.islamic = structuredClone(ISLAMIC_DEFAULT);
+      c.texts ||= {};
+      for (const [k, v] of Object.entries(ISLAMIC_TEXTS)) {
+        if (!c.texts[k] || (k === 'greeting' && c.texts[k] === 'Hurmatli mehmonimiz!')) c.texts[k] = v;
+      }
+    } else delete c.islamic;
+    $('#sec-islamic').outerHTML = secIslamic();
+    $('#sec-islamic').open = on;
+    const textsOpen = $('#sec-texts')?.open;
+    $('#sec-texts').outerHTML = secTexts();
+    $('#sec-texts').open = !!textsOpen;
   }
   if (id === 'card') {
     if (on) c.giftCard = { holder: c.couple.groom || '', bank: 'Uzcard', number: '', ...(c.giftCard || {}) };

@@ -229,6 +229,13 @@ Yozilmasa, koordinata to‘yxona xaritasi havolasidan olinadi, u ham bo‘lmasa 
 To‘y yorug‘ paytda boshlansa, osmon o‘sha oqshom yulduzlar to‘liq chiqqan paytdagidek ko‘rsatiladi.
 Namuna: `clients/demo-osmon`. Panelda: "Yangi to‘y" → "To‘y kechasining osmoni" (koordinata xarita havolasidan o‘zi olinadi).
 
+**Islomiy matnlar (ixtiyoriy).** `"islamic"` bloki yozilsa: kirish sahifasida va oyat tepasida
+Bismilloh, taklifdan oldin oyat (arabcha + ma’nosi + manba), "Shu kechaning osmoni" bo‘limida
+osmon haqidagi oyat (`skyVerse`), oxirida nikoh duosi (`dua`). Arab yozuvi — Amiri shrifti (SIL OFL),
+saytning o‘zida. Qo‘shimcha sarlavhalar: `texts.inviteTitle`, `namesCaption`, `namesNote`,
+`countdownTitle`, `detailsTitle` (manzil bo‘limi Sana · Vaqt · Manzil ko‘rinishida), `timeNote`.
+Panelda: "Islomiy matnlar (oyat va duo)" → yoqilsa tayyor matnlar qo‘yiladi. Namuna: `clients/baxtiyor-shaxrizoda`.
+
 Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumlari chiziqlari —
 [d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3, © Olaf Frohn); qayta yaratish:
 `scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,
