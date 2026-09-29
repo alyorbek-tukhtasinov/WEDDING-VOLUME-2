@@ -24,8 +24,6 @@
     "googleMaps": "https://www.google.com/maps/search/?api=1&query=39.811352%2C64.430728",
     "image": ""
   },
-  "backgroundImage": "bg.jpg",
-  "backgroundOverlay": 0.84,
   "program": [
     {
       "time": "19:00",
@@ -63,12 +61,8 @@
   },
   "contacts": [
     {
-      "name": "Kuyov",
-      "phone": "+998 97 300 37 03"
-    },
-    {
-      "name": "Kelin",
-      "phone": "+998778131899"
+      "name": "Kuyov tomoni",
+      "phone": "+998973003703"
     }
   ],
   "seo": {
