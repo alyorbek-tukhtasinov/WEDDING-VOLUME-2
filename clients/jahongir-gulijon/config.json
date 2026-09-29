@@ -1,0 +1,84 @@
+{
+  "couple": {
+    "groom": "Jahongir",
+    "bride": "Gulijon",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-11-07",
+    "time": "19:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Jahongir va Gulijonning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "“Vazi Nur” to‘yxonasi",
+    "address": "Buxoro viloyati, Buxoro shahri",
+    "yandexMaps": "https://yandex.uz/maps/org/vazi_nur/67423394555/",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=39.811352%2C64.430728",
+    "image": ""
+  },
+  "backgroundImage": "bg.jpg",
+  "backgroundOverlay": 0.84,
+  "program": [
+    {
+      "time": "19:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "19:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "20:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "22:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "gallery": [],
+  "music": "music.m4a",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-11-06",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [
+    {
+      "name": "Kuyov",
+      "phone": "+998 97 300 37 03"
+    },
+    {
+      "name": "Kelin",
+      "phone": "+998778131899"
+    }
+  ],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "theme": {},
+  "effects": {
+    "envelope": true,
+    "petals": true
+  }
+}
