@@ -138,10 +138,10 @@ function renderPage(c, d, place, when) {
   const skyVerse = hasQuote(isl.skyVerse) ? isl.skyVerse : null;
   const dua = hasQuote(isl.dua) ? isl.dua : null;
   const quote = (q, { big = false } = {}) => html`<figure class="ayah ${big ? 'ayah--big' : ''}">
-    ${q.arabic?.trim() ? html`<p class="ayah__ar" lang="ar" dir="rtl">${q.arabic}</p>` : ''}
-    ${q.reading?.trim() ? html`<p class="ayah__read">${q.reading}</p>` : ''}
-    ${q.text?.trim() ? html`<blockquote class="ayah__text">${q.text}</blockquote>` : ''}
-    ${q.source?.trim() ? html`<figcaption class="ayah__src">${q.source}</figcaption>` : ''}
+    ${q.arabic?.trim() ? html`<p class="ayah__ar" lang="ar" dir="rtl" data-type>${q.arabic}</p>` : ''}
+    ${q.reading?.trim() ? html`<p class="ayah__read" data-type>${q.reading}</p>` : ''}
+    ${q.text?.trim() ? html`<blockquote class="ayah__text" data-type>${q.text}</blockquote>` : ''}
+    ${q.source?.trim() ? html`<figcaption class="ayah__src" data-type>${q.source}</figcaption>` : ''}
   </figure>`;
   const ornament = raw(`<p class="ornament" aria-hidden="true"><i></i>${ICON.star}<i></i></p>`);
 
@@ -151,7 +151,7 @@ function renderPage(c, d, place, when) {
 
     <div class="gate" id="gate">
       <div class="gate__inner">
-        ${bismillah ? html`<p class="bismillah gate__bismillah">${bismillah}</p>` : ''}
+        ${bismillah ? html`<p class="bismillah gate__bismillah" data-type>${bismillah}</p>` : ''}
         <span class="gate__star">${raw(ICON.star)}</span>
         <p class="eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
         <p class="gate__lead">Sizni bir kechaga<br />taklif qilamiz</p>
@@ -178,7 +178,7 @@ function renderPage(c, d, place, when) {
       <section class="scene" data-view="verse">
         <div class="card card--verse reveal">
           <span class="card__star">${raw(ICON.star)}</span>
-          ${bismillah ? html`<p class="bismillah">${bismillah}</p><hr class="rule" />` : ''}
+          ${bismillah ? html`<p class="bismillah" data-type>${bismillah}</p><hr class="rule" />` : ''}
           ${quote(verse, { big: true })}
         </div>
       </section>` : ''}
@@ -193,7 +193,7 @@ function renderPage(c, d, place, when) {
           <div class="invite__names">
             <span>${d.groom}</span><em>&amp;</em><span>${d.bride}</span>
           </div>
-          ${t.namesNote ? html`<p class="invite__note">${t.namesNote}</p>` : ''}
+          ${t.namesNote ? html`<p class="invite__note" data-type>${t.namesNote}</p>` : ''}
           <p class="invite__meta">${weekday}, ${dateLine} · soat ${c.event.time}</p>
           ${c.hosts ? html`<p class="invite__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
         </div>
@@ -291,7 +291,7 @@ function renderPage(c, d, place, when) {
           ${sectionHead(dua.eyebrow || 'Duo', dua.title || 'Duo va ezgu tilaklar')}
           <hr class="rule" />
           ${quote(dua, { big: true })}
-          ${dua.note?.trim() ? html`<hr class="rule" /><p class="lead dua__note">${dua.note}</p>` : ''}
+          ${dua.note?.trim() ? html`<hr class="rule" /><p class="lead dua__note" data-type>${dua.note}</p>` : ''}
           <p class="dua__sign"><span>${d.groom}</span><em>♡</em><span>${d.bride}</span></p>
         </div>
       </section>` : ''}
@@ -425,6 +425,79 @@ function initReveal() {
   els.forEach((el) => io.observe(el));
 }
 
+/* ------------------------- Yozuv effekti (oyat va duolar) ------------------------- */
+// Lotin matni harfma-harf yoziladi: har harf tilla nur bo'lib chaqnab, so'ng tinchiydi.
+// Arabcha matn harflarga bo'linmaydi (bog'lanishi buzilmasin) — har so'z o'ngdan chapga
+// siyoh bilan chizilgandek ochiladi. Kartadagi matnlar ketma-ket yoziladi.
+const TYPE_LATIN = { step: 0.022, tail: 0.9 };
+const TYPE_ARABIC = { step: 0.2, tail: 0.8 };
+
+function prepType(el) {
+  const text = el.textContent.trim();
+  const ar = el.getAttribute('lang') === 'ar';
+  const vis = document.createElement('span');
+  vis.setAttribute('aria-hidden', 'true');
+  let n = 0;
+  for (const tok of text.split(/(\s+)/)) {
+    if (!tok) continue;
+    if (/^\s+$/.test(tok)) {
+      vis.append(' ');
+      continue;
+    }
+    const w = document.createElement('span');
+    w.className = ar ? 'tw tw--ink' : 'tw';
+    if (ar) {
+      w.textContent = tok;
+      w.style.setProperty('--d', n++);
+    } else {
+      for (const ch of tok) {
+        const c = document.createElement('span');
+        c.className = 'tc';
+        c.textContent = ch;
+        c.style.setProperty('--d', n++);
+        w.append(c);
+      }
+    }
+    vis.append(w);
+  }
+  const sr = Object.assign(document.createElement('span'), { className: 'sr-only', textContent: text });
+  el.replaceChildren(sr, vis);
+  el.classList.add('type');
+  const { step, tail } = ar ? TYPE_ARABIC : TYPE_LATIN;
+  el.style.setProperty('--step', `${step}s`);
+  return Math.max(0, n - 1) * step + tail;
+}
+
+/** Elementlarni ketma-ket yozish; delay — birinchisi boshlanguncha (soniya). */
+function typeSeq(els, delay = 0) {
+  let t = delay;
+  for (const el of els) {
+    const dur = prepType(el);
+    el.style.setProperty('--start', `${t.toFixed(2)}s`);
+    // Keyingi matn oldingisi deyarli tugaganda boshlanadi
+    t += Math.max(0.3, dur - 0.45);
+  }
+  requestAnimationFrame(() => els.forEach((el) => el.classList.add('is-typing')));
+}
+
+function initTyping() {
+  const groups = $$('.card').filter((card) => $('[data-type]', card));
+  if (reduced || !('IntersectionObserver' in window)) return;
+  const io = scope.observe(new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        io.unobserve(e.target);
+        typeSeq($$('[data-type]', e.target), 0.55);
+      }
+    },
+    { threshold: 0.2 },
+  ));
+  groups.forEach((g) => io.observe(g));
+  const gateText = $$('#gate [data-type]');
+  if (gateText.length) typeSeq(gateText, 0.9);
+}
+
 /* ----------------------------------- Ishga tushirish ----------------------------------- */
 // Oldingi chizishdagi osmon: sana, joy va ismlar o'zgarmasa qayta hisoblanmaydi (panel ko'rinishi)
 let kept = null;
@@ -466,6 +539,8 @@ export async function mountOsmon(c, { preview = false } = {}) {
   initCountdown(d);
   initCalendar(c, d);
   initReveal();
+  // Panel ko'rinishida har tahrirda qayta yozilmasin — matn darhol ko'rinadi
+  if (!preview) initTyping();
   const music = preview ? { play() {} } : initMusic(musicUrlOf(c));
   const scroller = initScroll(() => sky);
   const wishes = c.rsvp?.enabled ? initWishes(c, d, () => sky, preview) : null;
