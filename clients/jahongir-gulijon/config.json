@@ -59,12 +59,7 @@
     "maxGuests": 5,
     "showWishes": true
   },
-  "contacts": [
-    {
-      "name": "Kuyov tomoni",
-      "phone": "+998973003703"
-    }
-  ],
+  "contacts": [],
   "seo": {
     "title": "",
     "description": "",
