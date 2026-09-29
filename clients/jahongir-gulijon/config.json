@@ -69,5 +69,7 @@
   "effects": {
     "envelope": true,
     "petals": true
-  }
+  },
+  "backgroundImage": "fon-mun2nw7xay4.jpg",
+  "backgroundOverlay": 0.84
 }
