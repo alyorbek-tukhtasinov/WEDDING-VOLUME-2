@@ -1,0 +1,72 @@
+{
+  "template": "osmon",
+  "couple": {
+    "groom": "Azizjon",
+    "bride": "Dilshodaxon",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-26",
+    "time": "17:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Qosimovlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Azizjon va Dilshodaxonning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "\"Elbrus\" to'yxonasi",
+    "address": "Sergeli tumani, Qo'yliq dahasi, 7-mavze, 11G Mo'ljal: \"Tolariq\" metro bekati",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.245106%2C69.283285",
+    "yandexMaps": "https://yandex.uz/maps/?pt=69.283285,41.245106&z=17&l=map"
+  },
+  "sky": {
+    "city": "Toshkent",
+    "lat": 41.245106,
+    "lng": 69.283285
+  },
+  "program": [
+    {
+      "time": "17:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "17:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "18:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "20:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "musicTrack": "musiqa-3",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-25",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  }
+}
