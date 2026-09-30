@@ -3,11 +3,12 @@
 // mountOsmon() ham saytda (main.js), ham boshqaruv panelining jonli ko'rinishida ishlatiladi.
 import './fonts/fonts.css';
 import './styles.css';
-import { deriveConfig, musicUrlOf, mediaUrl, MONTHS } from '../../src/lib/config.js';
+import { deriveConfig, musicUrlOf, mediaUrl } from '../../src/lib/config.js';
 import { parseMapInput } from '../../src/lib/maps.js';
 import { html, raw, esc } from '../../src/lib/dom.js';
 import brand from '@brand-config';
-import { nightMoment, directionName } from './sky/astro.js';
+import { nightMoment } from './sky/astro.js';
+import { STR, LANGS, siteLangs, localize, phaseName, dirName, brandText } from './i18n.js';
 import { createSky } from './sky/scene.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -17,6 +18,8 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const smooth = (t) => t * t * (3 - 2 * t);
 const pad = (n) => String(n).padStart(2, '0');
 const TASHKENT = { lat: 41.3111, lng: 69.2797 };
+// Joriy til matnlari (mountOsmon'da o'rnatiladi)
+let T = STR.uz;
 
 /* ---------------------------- Qayta chizish uchun tozalash ---------------------------- */
 // Panel ko'rinishida sahifa har o'zgarishda qayta chiziladi: eski hodisalar, taymerlar va
@@ -79,7 +82,7 @@ function brandLink() {
     ${brand.logo
       ? html`<img src="${brand.logo}" alt="" width="30" height="30" loading="lazy" />`
       : raw('<svg class="brand__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" /></svg>')}
-    <span>${brand.text}<b>${brand.name}</b></span>
+    <span>${brandText(T, brand.text)}<b>${brand.name}</b></span>
   </a>`;
 }
 
@@ -101,19 +104,20 @@ const ICON = {
 function factsHtml(info) {
   if (!info) {
     return html`<ul class="facts facts--loading" aria-busy="true">
-      ${['Oy', 'Sayyoralar', 'Yulduzlar'].map((t, i) => html`<li><span class="facts__icon">${raw([ICON.moon, ICON.planet, ICON.stars][i])}</span><div><b>${t}</b><p class="muted">osmon hisoblanmoqda…</p></div></li>`)}
+      ${[T.moon, T.planets, T.stars].map((t, i) => html`<li><span class="facts__icon">${raw([ICON.moon, ICON.planet, ICON.stars][i])}</span><div><b>${t}</b><p class="muted">${T.computing}</p></div></li>`)}
     </ul>`;
   }
   const moonFact = info.moon.alt > 0
-    ? html`${info.moon.phase} · ${Math.round(info.moon.illumination * 100)}% yoritilgan<br /><span class="muted">${directionName(info.moon.az)} tomonda, ufqdan ${Math.round(info.moon.alt)}° balandda</span>`
-    : html`Oy bu kecha ufq ostida<br /><span class="muted">shuning uchun yulduzlar yanada yorqin</span>`;
+    ? html`${phaseName(T, info.moon.illumination, info.moon.waxing)} · ${T.moonLit(Math.round(info.moon.illumination * 100))}<br /><span class="muted">${T.moonWhere(dirName(T, info.moon.az), Math.round(info.moon.alt))}</span>`
+    : html`${T.moonDown}<br /><span class="muted">${T.moonDownNote}</span>`;
+  const pname = (p) => T.planetNames[p.id] || p.name;
   const planetsFact = info.planets.length
-    ? html`${info.planets.map((p) => p.name).join(', ')}<br /><span class="muted">${info.planets.map((p) => `${p.name} — ${directionName(p.az)}da`).join(' · ')}</span>`
-    : html`Bu kecha sayyoralar ufq ostida<br /><span class="muted">osmonda faqat yulduzlar</span>`;
+    ? html`${info.planets.map(pname).join(', ')}<br /><span class="muted">${info.planets.map((p) => T.planetWhere(pname(p), dirName(T, p.az))).join(' · ')}</span>`
+    : html`${T.planetsDown}<br /><span class="muted">${T.planetsDownNote}</span>`;
   return html`<ul class="facts">
-    <li><span class="facts__icon">${raw(ICON.moon)}</span><div><b>Oy</b><p>${moonFact}</p></div></li>
-    <li><span class="facts__icon">${raw(ICON.planet)}</span><div><b>Sayyoralar</b><p>${planetsFact}</p></div></li>
-    <li><span class="facts__icon">${raw(ICON.stars)}</span><div><b>Yulduzlar</b><p>Oddiy ko‘z bilan ${num(info.visibleStars)} ta yulduz<br /><span class="muted">shahar chiroqlari bo‘lmasa, albatta</span></p></div></li>
+    <li><span class="facts__icon">${raw(ICON.moon)}</span><div><b>${T.moon}</b><p>${moonFact}</p></div></li>
+    <li><span class="facts__icon">${raw(ICON.planet)}</span><div><b>${T.planets}</b><p>${planetsFact}</p></div></li>
+    <li><span class="facts__icon">${raw(ICON.stars)}</span><div><b>${T.stars}</b><p>${T.starsCount(num(info.visibleStars))}<br /><span class="muted">${T.starsNote}</span></p></div></li>
   </ul>`;
 }
 
@@ -126,8 +130,11 @@ function renderPage(c, d, place, when) {
   const venue = c.venue;
   const gmap = venue.googleMaps || '';
   const ymap = venue.yandexMaps || '';
-  const dateLine = `${d.day}-${MONTHS[d.month - 1]}, ${d.year}`;
-  const weekday = d.weekdayName.charAt(0).toUpperCase() + d.weekdayName.slice(1);
+  const dateLine = T.dateLine(d.day, T.months[d.month - 1], d.year);
+  const wd = T.weekdays[new Date(`${c.event.date}T12:00:00Z`).getUTCDay()];
+  const weekday = wd.charAt(0).toUpperCase() + wd.slice(1);
+  const langs = siteLangs(c);
+  const langBtn = (cls) => (langs.length > 1 ? html`<div class="lang ${cls}" role="group" aria-label="${T.langSwitch}">${langs.map((l) => html`<button type="button" data-lang="${l}" aria-pressed="${String(LANGS[l].html === document.documentElement.lang)}" lang="${LANGS[l].html}">${LANGS[l].label}</button>`)}</div>` : '');
   const words = (s) => raw(esc(s).split(/(\s+)/).map((w) => (/\S/.test(w) ? `<span class="w">${w}</span>` : w)).join(''));
   const sectionHead = (eyebrow, title) => html`<p class="eyebrow">${eyebrow}</p><h2 class="title">${title}</h2>`;
   // Islomiy matnlar (ixtiyoriy): Bismilloh, oyat, duo. Berilmasa sahifa avvalgidek
@@ -153,30 +160,32 @@ function renderPage(c, d, place, when) {
       <div class="gate__inner">
         ${bismillah ? html`<p class="bismillah gate__bismillah" data-type>${bismillah}</p>` : ''}
         <span class="gate__star">${raw(ICON.star)}</span>
-        <p class="eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
-        <p class="gate__lead">Sizni bir kechaga<br />taklif qilamiz</p>
+        <p class="eyebrow">${t.heroCaption || T.heroCaption}</p>
+        <p class="gate__lead">${raw(T.gateLead)}</p>
         <p class="gate__date">${dateLine}</p>
-        <button class="gate__btn" id="gate-open" type="button"><span>Osmonni ochish</span></button>
-        <p class="gate__hint">${raw(ICON.music)} ovoz bilan tomosha qiling</p>
+        <button class="gate__btn" id="gate-open" type="button"><span>${T.gateBtn}</span></button>
+        <p class="gate__hint">${raw(ICON.music)} ${T.gateHint}</p>
       </div>
+      ${langBtn('lang--gate')}
     </div>
 
     ${c.introVideo ? html`<div class="intro" id="intro" hidden>
       <video class="intro__video" src="${mediaUrl(c.introVideo)}" playsinline preload="auto"></video>
       <span class="intro__load" aria-hidden="true"></span>
-      <button class="intro__skip" type="button" hidden><span>O‘tkazib yuborish</span>${raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>')}</button>
+      <button class="intro__skip" type="button" hidden><span>${T.skip}</span>${raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>')}</button>
     </div>` : ''}
 
-    <button class="fab fab--music" id="music-toggle" type="button" aria-label="Musiqani yoqish" aria-pressed="false" hidden>${raw(ICON.music)}<span class="fab__bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
-    <button class="fab fab--explore" id="explore-open" type="button" aria-label="Osmonni tomosha qilish" hidden>${raw(ICON.compass)}</button>
+    <button class="fab fab--music" id="music-toggle" type="button" aria-label="${T.musicOn}" aria-pressed="false" hidden>${raw(ICON.music)}<span class="fab__bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+    <button class="fab fab--explore" id="explore-open" type="button" aria-label="${T.explore}" hidden>${raw(ICON.compass)}</button>
+    ${langs.length > 1 ? html`<button class="fab fab--lang" id="lang-next" type="button" aria-label="${T.langSwitch}" hidden>${LANGS[langs[(langs.findIndex((l) => LANGS[l].html === document.documentElement.lang) + 1) % langs.length]].short}</button>` : ''}
 
     <main class="story" id="story">
-      <section class="scene scene--hero" data-view="hero" aria-label="Taklifnoma">
+      <section class="scene scene--hero" data-view="hero" aria-label="${T.invitationLabel}">
         <h1 class="sr-only">${d.names}</h1>
-        <p class="eyebrow hero__eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
+        <p class="eyebrow hero__eyebrow">${t.heroCaption || T.heroCaption}</p>
         <div class="hero__foot">
-          <p class="hero__date"><span>${weekday}</span><b>${pad(d.day)} · ${pad(d.month)} · ${d.year}</b><span>soat ${c.event.time}</span></p>
-          <p class="hero__scroll" aria-hidden="true"><i></i>Pastga suring</p>
+          <p class="hero__date"><span>${weekday}</span><b>${pad(d.day)} · ${pad(d.month)} · ${d.year}</b><span>${T.at(c.event.time)}</span></p>
+          <p class="hero__scroll" aria-hidden="true"><i></i>${T.scroll}</p>
         </div>
       </section>
 
@@ -192,40 +201,40 @@ function renderPage(c, d, place, when) {
       <section class="scene" data-view="invite">
         <div class="card reveal">
           <span class="card__star">${raw(ICON.star)}</span>
-          <p class="eyebrow">${t.greeting || 'Hurmatli mehmonimiz!'}</p>
+          <p class="eyebrow">${t.greeting || T.greeting}</p>
           ${t.inviteTitle ? html`<h2 class="title">${t.inviteTitle}</h2>` : ''}
-          <p class="invite__text words">${words(t.invitation || `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`)}</p>
+          <p class="invite__text words">${words(t.invitation || T.invitation(d.groom, d.bride))}</p>
           ${t.namesCaption ? html`${ornament}<p class="eyebrow invite__caption">${t.namesCaption}</p>` : ''}
           <div class="invite__names">
             <span>${d.groom}</span><em>&amp;</em><span>${d.bride}</span>
           </div>
           ${t.namesNote ? html`<p class="invite__note" data-type>${t.namesNote}</p>` : ''}
-          <p class="invite__meta">${weekday}, ${dateLine} · soat ${c.event.time}</p>
-          ${c.hosts ? html`<p class="invite__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
+          <p class="invite__meta">${weekday}, ${dateLine} · ${T.at(c.event.time)}</p>
+          ${c.hosts ? html`<p class="invite__hosts"><span>${T.respectfully}</span>${c.hosts}</p>` : ''}
         </div>
       </section>
 
       <section class="scene scene--low" data-view="sky">
         <div class="card reveal">
-          ${sectionHead('Shu kechaning osmoni', when.shifted ? `${dateLine}, soat ${when.time}` : `${dateLine}, soat ${c.event.time}`)}
-          <p class="lead">Bu osmon — bezak emas. Yulduzlar, Oy va sayyoralar to‘y kechasi ${place.city ? `${place.city} osmonida` : `${venue.name} ustida`} qanday joylashsa, aynan shunday chizilgan.</p>
+          ${sectionHead(T.skyEyebrow, `${dateLine}, ${T.at(when.shifted ? when.time : c.event.time)}`)}
+          <p class="lead">${T.skyLead(place.city ? T.skyWhereCity(place.city) : T.skyWhereVenue(venue.name))}</p>
           ${skyVerse ? quote(skyVerse) : ''}
           <div id="sky-facts">${factsHtml(null)}</div>
-          ${when.shifted ? html`<p class="note">To‘y yorug‘ paytda boshlanadi — shuning uchun osmon o‘sha oqshom yulduzlar to‘liq chiqqan paytdagidek (soat ${when.time}) ko‘rsatilgan.</p>` : ''}
-          <button class="btn btn--ghost" type="button" data-explore hidden>${raw(ICON.compass)}<span>Osmonni aylantirib ko‘rish</span></button>
+          ${when.shifted ? html`<p class="note">${T.skyShifted(when.time)}</p>` : ''}
+          <button class="btn btn--ghost" type="button" data-explore hidden>${raw(ICON.compass)}<span>${T.skyExplore}</span></button>
         </div>
       </section>
 
       <section class="scene" data-view="countdown">
         <div class="card card--clear reveal">
-          ${sectionHead('To‘yga qadar', t.countdownTitle || 'Har bir yulduz — kutilgan bir lahza')}
+          ${sectionHead(T.countdownEyebrow, t.countdownTitle || T.countdownTitle)}
           <div class="countdown" id="countdown" role="timer" aria-live="off">
-            ${['kun', 'soat', 'daqiqa', 'soniya'].map((u) => html`<div class="countdown__cell"><b data-unit="${u}">00</b><span>${u}</span></div>`)}
+            ${['kun', 'soat', 'daqiqa', 'soniya'].map((u) => html`<div class="countdown__cell"><b data-unit="${u}">00</b><span>${T.unitNames[u]}</span></div>`)}
           </div>
-          <p class="countdown__done" id="countdown-done" hidden>To‘y kechasi keldi — biz bilan bo‘lganingiz uchun rahmat!</p>
+          <p class="countdown__done" id="countdown-done" hidden>${T.countdownDone}</p>
           <div class="btn-row">
-            <a class="btn btn--ghost" id="gcal" target="_blank" rel="noopener">${raw(ICON.calendar)}<span>Google taqvim</span></a>
-            <button class="btn btn--ghost" id="ics" type="button">${raw(ICON.calendar)}<span>Telefon taqvimi</span></button>
+            <a class="btn btn--ghost" id="gcal" target="_blank" rel="noopener">${raw(ICON.calendar)}<span>${T.gcal}</span></a>
+            <button class="btn btn--ghost" id="ics" type="button">${raw(ICON.calendar)}<span>${T.ics}</span></button>
           </div>
         </div>
       </section>
@@ -233,7 +242,7 @@ function renderPage(c, d, place, when) {
       ${program.length ? html`
       <section class="scene" data-view="program">
         <div class="card reveal">
-          ${sectionHead('Kecha dasturi', 'Yulduzlar yo‘li')}
+          ${sectionHead(T.programEyebrow, T.programTitle)}
           <ol class="timeline">
             ${program.map((p, i) => html`<li style="--i:${i}"><time>${p.time}</time><span class="timeline__dot" aria-hidden="true"></span><p>${p.title}</p></li>`)}
           </ol>
@@ -242,19 +251,19 @@ function renderPage(c, d, place, when) {
 
       <section class="scene" data-view="venue">
         <div class="card reveal">
-          ${t.detailsTitle ? html`${sectionHead('To‘y kechasi', t.detailsTitle)}
+          ${t.detailsTitle ? html`${sectionHead(T.detailsEyebrow, t.detailsTitle)}
           <ul class="details">
-            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Sana</p><b>${dateLine}</b><span>${weekday} kuni</span></li>
-            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Vaqt</p><b>Soat ${c.event.time}</b>${t.timeNote ? html`<span>${t.timeNote}</span>` : ''}</li>
-            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">Manzil</p><b>${venue.name}</b><span>${venue.address}</span></li>
-          </ul>` : html`${sectionHead('Manzil', venue.name)}
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">${T.date}</p><b>${dateLine}</b><span>${T.weekdayOn(weekday)}</span></li>
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">${T.time}</p><b>${T.At(c.event.time)}</b>${t.timeNote ? html`<span>${t.timeNote}</span>` : ''}</li>
+            <li><span class="details__dot" aria-hidden="true"></span><p class="eyebrow">${T.place}</p><b>${venue.name}</b><span>${venue.address}</span></li>
+          </ul>` : html`${sectionHead(T.place, venue.name)}
           <p class="venue__address">${raw(ICON.pin)}<span>${venue.address}</span></p>`}
           ${gmap || ymap ? html`<div class="btn-row">
-            ${gmap ? html`<a class="btn" href="${gmap}" target="_blank" rel="noopener">Google xarita</a>` : ''}
-            ${ymap ? html`<a class="btn" href="${ymap}" target="_blank" rel="noopener">Yandex xarita</a>` : ''}
+            ${gmap ? html`<a class="btn" href="${gmap}" target="_blank" rel="noopener">${T.gmap}</a>` : ''}
+            ${ymap ? html`<a class="btn" href="${ymap}" target="_blank" rel="noopener">${T.ymap}</a>` : ''}
           </div>` : ''}
           ${dress ? html`<div class="dress">
-            <p class="eyebrow">Dress-kod</p>
+            <p class="eyebrow">${T.dress}</p>
             ${dress.text ? html`<p class="dress__text">${dress.text}</p>` : ''}
             ${dress.colors?.length ? html`<div class="dress__colors">${dress.colors.map((col) => html`<span style="--c:${col}" title="${col}"></span>`)}</div>` : ''}
           </div>` : ''}
@@ -264,27 +273,27 @@ function renderPage(c, d, place, when) {
       ${c.rsvp?.enabled ? html`
       <section class="scene scene--low" data-view="wishes" id="wishes">
         <div class="card reveal">
-          ${sectionHead('Tilaklar osmoni', 'Tilagingizni osmonga yo‘llang')}
-          <p class="lead">Javobingizni qoldiring. Yozgan tilagingiz fonar bo‘lib ko‘tariladi va shu osmonda yangi yulduz bo‘lib yonadi.</p>
+          ${sectionHead(T.wishesEyebrow, T.wishesTitle)}
+          <p class="lead">${T.wishesLead}</p>
           <form class="form" id="rsvp-form" novalidate>
-            <label class="field"><span>Ismingiz</span><input name="name" autocomplete="name" maxlength="80" required placeholder="Ism va familiya" /></label>
+            <label class="field"><span>${T.yourName}</span><input name="name" autocomplete="name" maxlength="80" required placeholder="${T.namePh}" /></label>
             <fieldset class="choice">
-              <legend>Kela olasizmi?</legend>
-              <label><input type="radio" name="attending" value="yes" /><span>Albatta boraman</span></label>
-              <label><input type="radio" name="attending" value="no" /><span>Afsuski, bora olmayman</span></label>
+              <legend>${T.canCome}</legend>
+              <label><input type="radio" name="attending" value="yes" /><span>${T.yes}</span></label>
+              <label><input type="radio" name="attending" value="no" /><span>${T.no}</span></label>
             </fieldset>
-            <label class="field" id="guests-field" hidden><span>Necha kishi bo‘lasiz?</span>
-              <select name="guests">${Array.from({ length: d.maxGuests }, (_, i) => html`<option value="${i + 1}">${i + 1} kishi</option>`)}</select>
+            <label class="field" id="guests-field" hidden><span>${T.howMany}</span>
+              <select name="guests">${Array.from({ length: d.maxGuests }, (_, i) => html`<option value="${i + 1}">${T.persons(i + 1)}</option>`)}</select>
             </label>
-            <label class="field"><span>Tilagingiz <em>(ixtiyoriy)</em></span><textarea name="message" rows="3" maxlength="500" placeholder="Yosh oilaga eng ezgu tilaklaringiz…"></textarea></label>
-            <label class="hp" aria-hidden="true">Veb-sayt<input name="website" tabindex="-1" autocomplete="off" /></label>
-            <button class="btn btn--gold" type="submit"><span>Yuborish</span></button>
+            <label class="field"><span>${T.wish} <em>${T.optional}</em></span><textarea name="message" rows="3" maxlength="500" placeholder="${T.wishPh}"></textarea></label>
+            <label class="hp" aria-hidden="true">${T.website}<input name="website" tabindex="-1" autocomplete="off" /></label>
+            <button class="btn btn--gold" type="submit"><span>${T.send}</span></button>
             <p class="form__status" id="rsvp-status" role="status" aria-live="polite"></p>
-            ${d.rsvpClosesAt ? html`<p class="form__deadline">Javob muddati: ${Number(c.rsvp.deadline.slice(8))}-${MONTHS[Number(c.rsvp.deadline.slice(5, 7)) - 1]}gacha</p>` : ''}
+            ${d.rsvpClosesAt ? html`<p class="form__deadline">${T.deadline(Number(c.rsvp.deadline.slice(8)), T.months[Number(c.rsvp.deadline.slice(5, 7)) - 1])}</p>` : ''}
           </form>
           <div class="done" id="rsvp-done" hidden></div>
           <div class="wishes" id="wish-list" hidden>
-            <p class="eyebrow"><span id="wish-count">0</span> ta tilak — osmonda yulduz bo‘lib yonmoqda</p>
+            <p class="eyebrow" id="wish-count"></p>
             <ul></ul>
           </div>
         </div>
@@ -303,21 +312,21 @@ function renderPage(c, d, place, when) {
       </section>` : ''}
 
       <section class="scene scene--final" data-view="final">
-        <p class="final__lead">${t.closing || 'Tashrifingiz biz uchun katta sharaf!'}</p>
+        <p class="final__lead">${t.closing || T.closing}</p>
         <div class="final__foot">
-          ${c.hosts ? html`<p class="final__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
+          ${c.hosts ? html`<p class="final__hosts"><span>${T.respectfully}</span>${c.hosts}</p>` : ''}
           ${contacts.length ? html`<div class="contacts">${contacts.map((ct) => html`<a href="tel:${ct.phone.replace(/[^\d+]/g, '')}">${raw(ICON.phone)}<span><b>${ct.name}</b>${ct.phone}</span></a>`)}</div>` : ''}
           ${brandLink()}
-          <p class="credit">Osmon to‘y kechasi uchun astronomik hisoblangan · Yulduzlar katalogi: Yale BSC</p>
+          <p class="credit">${T.credit}</p>
         </div>
       </section>
     </main>
 
     <div class="explore" id="explore" hidden>
-      <p class="explore__hint">Barmoq bilan suring — osmon aylanadi. Ikki barmoq — yaqinlashtirish.</p>
+      <p class="explore__hint">${T.exploreHint}</p>
       <div class="explore__bar">
-        <button class="chip" id="toggle-lines" type="button" aria-pressed="false">${raw(ICON.stars)}<span>Yulduz turkumlari</span></button>
-        <button class="chip chip--close" id="explore-close" type="button">${raw(ICON.close)}<span>Yopish</span></button>
+        <button class="chip" id="toggle-lines" type="button" aria-pressed="false">${raw(ICON.stars)}<span>${T.constellations}</span></button>
+        <button class="chip chip--close" id="explore-close" type="button">${raw(ICON.close)}<span>${T.close}</span></button>
       </div>
     </div>
     <div class="tip" id="tip" role="dialog" aria-live="polite" hidden></div>
@@ -353,7 +362,7 @@ function initCountdown(d) {
 
 const utcStamp = (date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 function initCalendar(c, d) {
-  const title = `${d.names} — to‘y`;
+  const title = T.calTitle(d.names);
   const where = `${c.venue.name}, ${c.venue.address}`;
   const details = `${c.texts?.invitation || ''}\n\n${location.href}`;
   const gcal = $('#gcal');
@@ -385,15 +394,16 @@ function initMusic(src) {
     btn.remove();
     return { play() {} };
   }
-  audio.src = src;
+  if (audio.getAttribute('src') !== src) audio.src = src;
   audio.volume = 0.55;
   const sync = () => {
     const on = !audio.paused;
     btn.classList.toggle('is-playing', on);
     btn.setAttribute('aria-pressed', String(on));
-    btn.setAttribute('aria-label', on ? 'Musiqani o‘chirish' : 'Musiqani yoqish');
+    btn.setAttribute('aria-label', on ? T.musicOff : T.musicOn);
   };
   const play = () => audio.play().catch(() => {}).finally(sync);
+  sync();
   audio.addEventListener('play', sync);
   audio.addEventListener('pause', sync);
   btn.addEventListener('click', () => (audio.paused ? play() : audio.pause()));
@@ -560,19 +570,37 @@ function initTyping() {
 // Oldingi chizishdagi osmon: sana, joy va ismlar o'zgarmasa qayta hisoblanmaydi (panel ko'rinishi)
 let kept = null;
 
-const SAMPLE_WISHES = [
-  { name: 'Mehmon', message: 'Baxtingiz shu osmondagi yulduzlardek abadiy bo‘lsin!' },
-  { name: 'Do‘stingiz', message: 'Oilangiz mustahkam, xonadoningiz nurga to‘la bo‘lsin.' },
-  { name: 'Qarindoshingiz', message: 'Qo‘sha qaringlar!' },
-];
+const LANG_KEY = 'osmon:lang';
+const skyLabels = () => ({ moon: T.moon, ...T.planetNames });
+/** Til: ?lang= → mehmonning oldingi tanlovi → config.languages dagi birinchi til. */
+function pickLang(langs) {
+  const q = new URLSearchParams(location.search).get('lang');
+  if (langs.includes(q)) return q;
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    if (langs.includes(saved)) return saved;
+  } catch {
+    /* localStorage yo'q */
+  }
+  return langs[0];
+}
 
 /**
  * Sahifani chizish. preview — boshqaruv paneli ko'rinishi: kirish pardasisiz, musiqasiz,
  * ismlar darhol chiziladi, javob formasi yuborilmaydi.
+ * lang — shu tilda chizish; resume — til almashtirilganda: taklifnoma allaqachon ochilgan.
  */
-export async function mountOsmon(c, { preview = false } = {}) {
+export async function mountOsmon(c0, { preview = false, lang = null, resume = false } = {}) {
   const sc = newScope();
+  const langs = siteLangs(c0);
+  const L = langs.includes(lang) ? lang : pickLang(langs);
+  T = STR[L];
+  document.documentElement.lang = LANGS[L].html;
+  const c = localize(c0, L);
   const d = deriveConfig(c);
+  // Mehmon javobi tildan qat'i nazar bitta kalitda (asl ismlar bilan)
+  const baseNames = `${c0.couple.groom} & ${c0.couple.bride}`;
+  if (langs.length > 1 && !preview) document.title = `${d.names} · ${c.texts?.heroCaption || T.heroCaption}`;
   const place = skyPlace(c);
   const tz = c.event.timezone || '+05:00';
   const moment = nightMoment(d.start, place.lat, place.lng);
@@ -588,12 +616,27 @@ export async function mountOsmon(c, { preview = false } = {}) {
     kept = null;
   }
   reuse?.root.remove();
-  if (!preview) document.documentElement.classList.add('is-locked');
+  const shown = preview || resume;
+  if (!shown) document.documentElement.classList.add('is-locked');
+  // Til almashtirilganda musiqa uzilmasin — eski audio element saqlanadi
+  const oldAudio = resume ? $('#music') : null;
   app.innerHTML = renderPage(c, d, place, { shifted: moment.shifted, time: fmtTime(moment.date, tz) });
   if (reuse) $('#sky').replaceWith(reuse.root);
+  if (oldAudio) $('#music').replaceWith(oldAudio);
 
   let sky = null;
-  let opened = preview;
+  let opened = shown;
+  const switchLang = (l) => {
+    if (l === L) return;
+    try {
+      localStorage.setItem(LANG_KEY, l);
+    } catch {
+      /* localStorage yo'q */
+    }
+    mountOsmon(c0, { preview, lang: l, resume: opened });
+  };
+  $$('[data-lang]').forEach((b) => b.addEventListener('click', () => switchLang(b.dataset.lang)));
+  $('#lang-next')?.addEventListener('click', () => switchLang(langs[(langs.indexOf(L) + 1) % langs.length]));
   initCountdown(d);
   initCalendar(c, d);
   initReveal();
@@ -601,13 +644,14 @@ export async function mountOsmon(c, { preview = false } = {}) {
   if (!preview) initTyping();
   const music = preview ? { play() {} } : initMusic(musicUrlOf(c));
   const scroller = initScroll(() => sky);
-  const wishes = c.rsvp?.enabled ? initWishes(c, d, () => sky, preview) : null;
+  const wishes = c.rsvp?.enabled ? initWishes(c, d, () => sky, preview, baseNames) : null;
 
   const gate = $('#gate');
-  if (preview) {
+  if (shown) {
     gate.remove();
     $('#intro')?.remove();
-    $('#music-toggle')?.remove();
+    if (preview) $('#music-toggle')?.remove();
+    document.documentElement.classList.remove('is-locked');
     document.body.classList.add('is-open');
     $$('.fab').forEach((b) => (b.hidden = false));
     window.scrollTo(0, y);
@@ -640,13 +684,14 @@ export async function mountOsmon(c, { preview = false } = {}) {
   }
 
   try {
-    const s = reuse?.sky || (await createSky({ root: $('#sky'), date: moment.date, lat: place.lat, lng: place.lng, groom: d.groom, bride: d.bride, reduced, instant: preview }));
+    const s = reuse?.sky || (await createSky({ labels: skyLabels(), root: $('#sky'), date: moment.date, lat: place.lat, lng: place.lng, groom: d.groom, bride: d.bride, reduced, instant: preview }));
     if (sc !== scope) {
       // Osmon hisoblanayotganda sahifa qayta chizildi — bu natija endi kerak emas
       if (!reuse) s.destroy();
       return;
     }
     sky = s;
+    s.setLabels?.(skyLabels());
     kept = { key, sky: s, root: $('#sky') };
     if (new URLSearchParams(location.search).has('debug')) window.__sky = s;
     $('#sky-facts').innerHTML = factsHtml({ ...s.stats }).value;
@@ -827,13 +872,13 @@ function initExplore(sky, scroller) {
 }
 
 /* ------------------------------ Javob va tilaklar ------------------------------ */
-function initWishes(c, d, getSky, preview = false) {
+function initWishes(c, d, getSky, preview = false, baseNames = d.names) {
   const form = $('#rsvp-form');
   const status = $('#rsvp-status');
   const doneBox = $('#rsvp-done');
   const guestsField = $('#guests-field');
   const listBox = $('#wish-list');
-  const storageKey = `rsvp:${d.names}:${c.event.originalDate || c.event.date}`;
+  const storageKey = `rsvp:${baseNames}:${c.event.originalDate || c.event.date}`;
   const store = {
     get() {
       try {
@@ -855,14 +900,11 @@ function initWishes(c, d, getSky, preview = false) {
   const known = new Map();
   let mine = null;
 
-  const thanks = (a, name) =>
-    a === 'yes'
-      ? `Rahmat, ${name}! Sizni to‘y kechasida intizorlik bilan kutamiz.`
-      : `Rahmat, ${name}! Xabar berganingiz uchun minnatdormiz — duolaringiz biz bilan.`;
+  const thanks = (a, name) => (a === 'yes' ? T.thanksYes(name) : T.thanksNo(name));
   const showDone = (text, withChange = true) => {
     form.hidden = true;
     doneBox.hidden = false;
-    doneBox.innerHTML = html`<span class="done__star">${raw(ICON.star)}</span><p>${text}</p>${withChange ? html`<button class="link" type="button" id="rsvp-change">Javobni o‘zgartirish</button>` : ''}`.value;
+    doneBox.innerHTML = html`<span class="done__star">${raw(ICON.star)}</span><p>${text}</p>${withChange ? html`<button class="link" type="button" id="rsvp-change">${T.change}</button>` : ''}`.value;
     $('#rsvp-change')?.addEventListener('click', () => {
       doneBox.hidden = true;
       form.hidden = false;
@@ -879,13 +921,13 @@ function initWishes(c, d, getSky, preview = false) {
 
   const now = Date.now();
   const closed = (d.rsvpClosesAt && now > d.rsvpClosesAt.getTime()) || now >= d.start.getTime();
-  if (closed) showDone('Javoblar qabul qilish muddati tugagan. Tilaklaringiz uchun rahmat!', false);
+  if (closed) showDone(T.closed, false);
   else if (saved?.name && saved?.attending) showDone(thanks(saved.attending, saved.name));
 
   const submitLabel = $('button[type="submit"] span', form);
   function syncForm() {
     guestsField.hidden = form.elements.namedItem('attending').value !== 'yes';
-    submitLabel.textContent = form.elements.namedItem('message').value.trim() ? 'Fonarni osmonga uchirish' : 'Javobni yuborish';
+    submitLabel.textContent = form.elements.namedItem('message').value.trim() ? T.sendLantern : T.sendAnswer;
   }
   form.addEventListener('change', syncForm);
   form.addEventListener('input', syncForm);
@@ -899,24 +941,24 @@ function initWishes(c, d, getSky, preview = false) {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (preview) return setStatus('Ko‘rinish rejimi — javob yuborilmaydi.');
+    if (preview) return setStatus(T.previewNoSend);
     const data = Object.fromEntries(new FormData(form));
     data.name = (data.name || '').trim();
     data.message = (data.message || '').trim();
-    if (data.name.length < 2) return setStatus('Iltimos, ismingizni kiriting.', true, form.elements.namedItem('name'));
-    if (!data.attending) return setStatus('Iltimos, kela olishingizni belgilang.', true);
+    if (data.name.length < 2) return setStatus(T.errName, true, form.elements.namedItem('name'));
+    if (!data.attending) return setStatus(T.errAttending, true);
     const btn = $('button[type="submit"]', form);
     btn.disabled = true;
-    setStatus('Yuborilmoqda…');
+    setStatus(T.sending);
     try {
       const res = await fetch('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, id: guestId, couple: d.names }),
+        body: JSON.stringify({ ...data, id: guestId, couple: baseNames }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) {
-        setStatus(json.error === 'not_configured' ? 'Hozircha javobni qabul qilib bo‘lmadi. Birozdan so‘ng qayta urinib ko‘ring.' : 'Xatolik yuz berdi. Iltimos, qayta urinib ko‘ring.', true);
+        setStatus(json.error === 'not_configured' ? T.errConfig : T.errGeneric, true);
         return;
       }
       const { website, ...answer } = data;
@@ -929,7 +971,7 @@ function initWishes(c, d, getSky, preview = false) {
       showDone(thanks(data.attending, data.name));
       refresh();
     } catch {
-      setStatus('Internet aloqasini tekshirib, qayta urinib ko‘ring.', true);
+      setStatus(T.errNetwork, true);
     } finally {
       btn.disabled = false;
     }
@@ -984,7 +1026,7 @@ function initWishes(c, d, getSky, preview = false) {
   function renderList() {
     const all = [...known.values()];
     listBox.hidden = !all.length;
-    $('#wish-count').textContent = String(all.length + (mine && ![...known.values()].some((w) => w.message === mine.message && w.name === mine.name) ? 1 : 0));
+    $('#wish-count').textContent = T.wishCount(all.length + (mine && ![...known.values()].some((w) => w.message === mine.message && w.name === mine.name) ? 1 : 0));
     $('ul', listBox).innerHTML = all
       .slice(0, 40)
       .map((w) => html`<li><p>“${w.message}”</p><b>${w.name}</b></li>`.value)
@@ -993,7 +1035,7 @@ function initWishes(c, d, getSky, preview = false) {
 
   async function refresh() {
     try {
-      const json = preview ? { ok: true, wishes: SAMPLE_WISHES } : await (await fetch('/api/wishes', { cache: 'no-store' })).json();
+      const json = preview ? { ok: true, wishes: T.sampleWishes } : await (await fetch('/api/wishes', { cache: 'no-store' })).json();
       if (!json?.ok || !Array.isArray(json.wishes)) return;
       const fresh = [];
       for (const w of json.wishes) {

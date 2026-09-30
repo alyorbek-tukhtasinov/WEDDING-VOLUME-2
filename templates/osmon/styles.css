@@ -9,7 +9,7 @@
   --line: rgba(230, 204, 147, 0.22);
   --glass: rgba(5, 9, 22, 0.64);
   --serif: 'Cormorant Garamond', 'Times New Roman', serif;
-  --caps: 'Cinzel', 'Times New Roman', serif;
+  --caps: 'Cinzel', 'Cormorant Garamond', 'Times New Roman', serif;
   --script: 'Great Vibes', cursive;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
@@ -263,6 +263,52 @@ svg {
 .fab--explore {
   top: calc(14px + var(--safe-t));
   left: 14px;
+}
+.fab--lang {
+  top: calc(68px + var(--safe-t));
+  right: 14px;
+  font-family: 'Cormorant Garamond', var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+/* Til tanlash (kirish pardasida) */
+.lang {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(6, 9, 22, 0.5);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.lang--gate {
+  position: absolute;
+  top: calc(18px + var(--safe-t));
+  left: 50%;
+  translate: -50% 0;
+  opacity: 0;
+  transition: opacity 1s ease 0.4s;
+}
+.gate.is-ready .lang--gate {
+  opacity: 1;
+}
+.lang button {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--soft);
+  font-family: 'Cormorant Garamond', var(--serif);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+}
+.lang button[aria-pressed='true'] {
+  background: rgba(230, 204, 147, 0.16);
+  color: var(--gold);
 }
 .fab__bars {
   position: absolute;

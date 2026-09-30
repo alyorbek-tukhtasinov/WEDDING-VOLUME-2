@@ -206,6 +206,8 @@ export async function createSky(o) {
   let night = 0; // 0 — shafaq, 1 — to'liq tun
   let nightTarget = 0;
   let labels = 0;
+  // Oy va sayyoralar yozuvlari (saytning tilida)
+  let labelNames = o.labels || {};
   let labelsTarget = 0;
   let conAlpha = 0;
   let conTarget = 0;
@@ -293,7 +295,8 @@ export async function createSky(o) {
 
   async function prepareNames(groom, bride) {
     try {
-      await Promise.race([document.fonts.load('120px "Great Vibes"'), new Promise((r) => setTimeout(r, 2500))]);
+      // Matn bilan — kirill harflari uchun alohida shrift fayli ham yuklansin
+      await Promise.race([document.fonts.load('120px "Great Vibes"', `${groom}${bride}`), new Promise((r) => setTimeout(r, 2500))]);
     } catch {
       /* shrift yuklanmasa ham davom etamiz */
     }
@@ -434,7 +437,7 @@ export async function createSky(o) {
     fx.restore();
 
     if (labels > 0.01) {
-      label(p[0], p[1], R + 8, 'Oy', `${Math.round(k * 100)}%`);
+      label(p[0], p[1], R + 8, labelNames.moon || 'Oy', `${Math.round(k * 100)}%`);
     }
   }
 
@@ -448,7 +451,7 @@ export async function createSky(o) {
     fx.lineTo(x + off * 0.7 + 14, y - off * 0.7 - 14);
     fx.lineTo(x + off * 0.7 + 30, y - off * 0.7 - 14);
     fx.stroke();
-    fx.font = '600 10px Cinzel, serif';
+    fx.font = '600 10px Cinzel, "Cormorant Garamond", serif';
     fx.fillStyle = 'rgba(240, 226, 190, 0.95)';
     fx.textBaseline = 'middle';
     const tx = x + off * 0.7 + 34;
@@ -480,7 +483,7 @@ export async function createSky(o) {
       fx.arc(p[0], p[1], 1.6, 0, Math.PI * 2);
       fx.fill();
       fx.restore();
-      if (labels > 0.01) label(p[0], p[1], 6, pl.name, '');
+      if (labels > 0.01) label(p[0], p[1], 6, labelNames[pl.id] || pl.name, '');
     }
   }
 
@@ -954,6 +957,9 @@ export async function createSky(o) {
       planets: planets.filter((p) => p.alt > 3).sort((a, b) => a.mag - b.mag).map((p) => ({ id: p.id, name: p.name, alt: p.alt, az: p.az })),
     },
     views,
+    setLabels(l) {
+      labelNames = l || {};
+    },
     setView(v, immediate = false) {
       if (explore) return;
       target.alt = v.alt;
