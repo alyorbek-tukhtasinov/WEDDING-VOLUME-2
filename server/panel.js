@@ -200,6 +200,35 @@ function sniff(buf) {
   if (buf.subarray(4, 8).toString() === 'ftyp') return 'm4a';
   return null;
 }
+// MPEG audio (MP3) kadr sarlavhasi: 11 bit sinxron, Layer III, ruxsat etilgan bitreyt va chastota.
+// MPEG 1, 2 va 2.5 (ffe2/ffe3 — kam uchraydi, eski tekshiruv tanimasdi).
+function mp3Header(buf, i) {
+  if (buf[i] !== 0xff || (buf[i + 1] & 0xe0) !== 0xe0) return false;
+  const version = (buf[i + 1] >> 3) & 3;
+  const layer = (buf[i + 1] >> 1) & 3;
+  const bitrate = buf[i + 2] >> 4;
+  const rate = (buf[i + 2] >> 2) & 3;
+  return version !== 1 && layer === 1 && bitrate !== 0 && bitrate !== 15 && rate !== 3;
+}
+
+/** Musiqa fayli turi: 'mp3' | 'm4a', aks holda { unknown: tushunarli nom } — xato xabari uchun. */
+function sniffAudio(buf) {
+  const k = sniff(buf);
+  if (k === 'mp3' || k === 'm4a') return k;
+  // Boshida bo'sh (0x00) baytlar bo'lgan MP3: birinchi haqiqiy kadr sarlavhasigacha o'tkazib yuboriladi
+  let i = 0;
+  while (i < Math.min(buf.length, 65536) && buf[i] === 0) i++;
+  if (i < buf.length - 4 && mp3Header(buf, i)) return 'mp3';
+  const head = buf.subarray(0, 12);
+  const hex = head.toString('hex');
+  if (head.subarray(0, 4).toString() === 'OggS') return { unknown: 'OGG/Opus' };
+  if (hex.startsWith('1a45dfa3')) return { unknown: 'WebM (odatda YouTube/Instagram yuklagichlaridan)' };
+  if (head.subarray(0, 4).toString() === 'RIFF' && head.subarray(8, 12).toString() === 'WAVE') return { unknown: 'WAV' };
+  if (head.subarray(0, 4).toString() === 'fLaC') return { unknown: 'FLAC' };
+  if (hex.startsWith('3026b275')) return { unknown: 'WMA' };
+  return { unknown: null };
+}
+
 // mp4 (kirish videosi) ham m4a kabi "ftyp" konteyneri
 const EXT_KIND = { jpg: 'jpg', jpeg: 'jpg', png: 'png', webp: 'webp', mp3: 'mp3', m4a: 'm4a', mp4: 'm4a' };
 
@@ -294,8 +323,15 @@ async function addMusic(body) {
   if (!buf.length) throw new UserError('bad_media', 'Fayl tanlanmagan');
   if (buf.length > MAX_MUSIC) throw new UserError('bad_media', 'Fayl 15 MB dan katta — qisqaroq yoki siqilgan versiyasini yuklang');
   // Kengaytma nomdan emas, fayl mazmunidan aniqlanadi (".mp3" nomli M4A fayllar ham to'g'ri saqlanadi)
-  const ext = sniff(buf);
-  if (ext !== 'mp3' && ext !== 'm4a') throw new UserError('bad_media', 'Faqat MP3 yoki M4A audio fayl yuklash mumkin');
+  const ext = sniffAudio(buf);
+  if (typeof ext !== 'string') {
+    throw new UserError(
+      'bad_media',
+      ext.unknown
+        ? `Fayl nomi .mp3 bo‘lsa ham, ichida ${ext.unknown} audio bor. Uni MP3 ga o‘girib (masalan, onlayn “convert to mp3” xizmati bilan) qayta yuklang.`
+        : 'Faqat MP3 yoki M4A audio fayl yuklash mumkin — bu fayl turi tanilmadi. MP3 ga o‘girib qayta yuklang.',
+    );
+  }
 
   return serial(async () => {
     await syncWork(true);
