@@ -2,7 +2,7 @@ import './styles.css';
 import config from '@wedding-config';
 import brand from '@brand-config';
 import { deriveConfig, applyOverrides } from './lib/config.js';
-import { LANGS, siteLangs, pickLang, rememberLang, localize } from './lib/i18n.js';
+import { LANGS, siteLangs, pickLang, rememberLang, localize, fixScriptGlyphs } from './lib/i18n.js';
 import { T, setLang } from './strings.js';
 import { renderPage } from './render.js';
 import {
@@ -55,6 +55,7 @@ function mount(lang, resume = false) {
   const shown = resume ? { ...c, effects: { ...(c.effects || {}), envelope: false } } : c;
   app.innerHTML = renderPage(shown, derived, brand);
   if (oldAudio) document.getElementById('music')?.replaceWith(oldAudio);
+  fixScriptGlyphs(app);
   // Til tugmalari (konvertda va sahifada)
   document.querySelectorAll('[data-lang]').forEach((b) =>
     b.addEventListener('click', (e) => {

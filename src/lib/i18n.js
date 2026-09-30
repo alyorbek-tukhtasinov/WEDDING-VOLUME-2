@@ -150,3 +150,23 @@ export function localize(c, lang, ruDefaults = {}) {
   const { program, ...rest } = r;
   return merge(base, rest);
 }
+
+/* ------------------------- Qo'lyozma shrift (Great Vibes) ------------------------- */
+// Great Vibes'da o'zbek kirillining қ, ҳ, ғ harflari yo'q — boshqa shriftda chiqib, uslubni buzadi.
+// Faqat shu shriftdagi yozuvlarda ular к, х, г bilan almashtiriladi (oddiy matnda imlo o'zgarmaydi).
+const SCRIPT_MAP = { Қ: 'К', қ: 'к', Ҳ: 'Х', ҳ: 'х', Ғ: 'Г', ғ: 'г' };
+const SCRIPT_RE = /[ҚқҲҳҒғ]/g;
+export const scriptSafe = (s) => String(s ?? '').replace(SCRIPT_RE, (ch) => SCRIPT_MAP[ch]);
+
+export function fixScriptGlyphs(root, family = 'Great Vibes') {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const seen = new Map();
+  while (walker.nextNode()) {
+    const n = walker.currentNode;
+    if (!/[ҚқҲҳҒғ]/.test(n.data)) continue;
+    const el = n.parentElement;
+    if (!seen.has(el)) seen.set(el, getComputedStyle(el).fontFamily.includes(family));
+    if (seen.get(el)) n.data = scriptSafe(n.data);
+  }
+}

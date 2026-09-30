@@ -10,6 +10,7 @@ import brand from '@brand-config';
 import { nightMoment } from './sky/astro.js';
 import { STR, LANGS, siteLangs, localize, phaseName, dirName, brandText } from './i18n.js';
 import { introHtml, initIntro } from '../../src/lib/intro.js';
+import { fixScriptGlyphs, scriptSafe } from '../../src/lib/i18n.js';
 import { createSky } from './sky/scene.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -577,6 +578,7 @@ export async function mountOsmon(c0, { preview = false, lang = null, resume = fa
   app.innerHTML = renderPage(c, d, place, { shifted: moment.shifted, time: fmtTime(moment.date, tz) });
   if (reuse) $('#sky').replaceWith(reuse.root);
   if (oldAudio) $('#music').replaceWith(oldAudio);
+  fixScriptGlyphs(app);
 
   let sky = null;
   let opened = shown;
@@ -638,7 +640,7 @@ export async function mountOsmon(c0, { preview = false, lang = null, resume = fa
   }
 
   try {
-    const s = reuse?.sky || (await createSky({ labels: skyLabels(), root: $('#sky'), date: moment.date, lat: place.lat, lng: place.lng, groom: d.groom, bride: d.bride, reduced, instant: preview }));
+    const s = reuse?.sky || (await createSky({ labels: skyLabels(), root: $('#sky'), date: moment.date, lat: place.lat, lng: place.lng, groom: scriptSafe(d.groom), bride: scriptSafe(d.bride), reduced, instant: preview }));
     if (sc !== scope) {
       // Osmon hisoblanayotganda sahifa qayta chizildi — bu natija endi kerak emas
       if (!reuse) s.destroy();

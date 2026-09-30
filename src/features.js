@@ -29,20 +29,36 @@ export function initEnvelope({ onOpen, onGesture }) {
     setTimeout(done, prefersReducedMotion() ? 300 : 1500);
   };
 
-  // Kirish videosi bo'lsa: muhr bosilganda avval video, tugagach konvert ochiladi
-  const intro = initIntro(open);
-  const start = () => {
-    if (opened || introOn) return;
-    if (!intro || intro.broken) return open();
-    introOn = true;
-    onGesture?.();
-    intro.play();
-  };
-  let introOn = false;
-  btn.addEventListener('click', start);
+  btn.addEventListener('click', open);
   // Konvertning istalgan joyini bosish ham ochadi
   el.addEventListener('click', (e) => {
-    if (e.target === el || e.target.closest('.envelope__half')) start();
+    if (e.target === el || e.target.closest('.envelope__half')) open();
+  });
+
+  // Kirish videosi: avval kirish ekrani → video → tugagach konvert paydo bo'ladi (muhr bosilib ochiladi)
+  const prelude = $('#prelude');
+  if (!prelude) return;
+  const reveal = () => {
+    prelude.remove();
+    el.classList.add('is-arriving');
+    btn.focus({ preventScroll: true });
+  };
+  const intro = initIntro(reveal);
+  const play = $('#prelude-play', prelude);
+  play.focus({ preventScroll: true });
+  let started = false;
+  play.addEventListener('click', () => {
+    if (started) return;
+    started = true;
+    // Video yuklanmagan bo'lsa — to'g'ridan-to'g'ri konvertga
+    if (!intro || intro.broken) {
+      prelude.classList.add('is-leaving');
+      setTimeout(reveal, prefersReducedMotion() ? 0 : 700);
+      return;
+    }
+    onGesture?.();
+    prelude.classList.add('is-going');
+    intro.play();
   });
 }
 

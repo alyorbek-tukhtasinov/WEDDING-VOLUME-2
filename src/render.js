@@ -423,10 +423,31 @@ function langButton(c) {
   return html`<button class="lang-fab" id="lang-next" type="button" data-lang="${next}" lang="${LANGS[next].html}" aria-label="${T.langSwitch}">${LANGS[next].short}</button>`;
 }
 
-export function renderPage(c, d, brand) {
+// Kirish videosi bo'lsa — konvertdan oldin minimalistik ekran: o'z-o'zidan chiziladigan tilla halqa
+// ichida monogramma. Bosilganda halqa butun ekranga kengayadi, qorong'ilikdan video boshlanadi;
+// video tugagach konvert paydo bo'ladi.
+function prelude(c, d) {
   return html`
+    <div class="prelude" id="prelude">
+      ${langPicker(c)}
+      <button class="prelude__ring" id="prelude-play" type="button" aria-label="${T.preludeBtn}">
+        <svg class="prelude__circle" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="96" pathLength="1" /></svg>
+        <span class="prelude__mono">${d.initials}</span>
+        <span class="prelude__play">${T.preludeBtn}</span>
+      </button>
+      <p class="prelude__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
+      <p class="prelude__date">${pad(d.day)} · ${pad(d.month)} · ${d.year}</p>
+      <p class="prelude__hint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></svg>${T.preludeHint}</p>
+    </div>
+  `;
+}
+
+export function renderPage(c, d, brand) {
+  const intro = c.introVideo && c.effects?.envelope !== false;
+  return html`
+    ${intro ? prelude(c, d) : ''}
     ${envelope(c, d)}
-    ${c.introVideo && c.effects?.envelope !== false ? raw(introHtml(mediaUrl(c.introVideo), T.skip)) : ''}
+    ${intro ? raw(introHtml(mediaUrl(c.introVideo), T.skip)) : ''}
     <div class="petals" id="petals" aria-hidden="true"></div>
     ${c.backgroundImage
       ? html`<div class="page-bg" aria-hidden="true" style="background-image:url('${mediaUrl(c.backgroundImage)}');--bg-veil:${bgVeil(c)}"></div>`
