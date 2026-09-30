@@ -259,6 +259,17 @@ Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumla
 `scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,
 `templates/osmon/fonts` da saytning o‘zida.
 
+### "Bulutlar ustida" shabloni (bulut)
+
+Yorug', kunduzgi osmon (`templates/bulut/`). Kirishda samolyot chiptasi (boarding pass):
+"Parvozni boshlash" bosilganda musiqa yoqiladi, bulutlar orasidan uchib chiqiladi va samolyotlar
+safi osmonga tutun bilan kelin-kuyov ismlarini yozadi (`skywrite.js`). Bulutlar — 3D, sahifa
+surilganda kamera oldinga uchadi (`sky.js`). Sanoq — aeroport tablosi (split-flap), dastur —
+havo sharlarida, manzil — parashyutda, dress-kod ranglari — bosilsa uchib ketadigan sharlar,
+tilaklar — qog'oz samolyotcha bo'lib keladigan pochta kartochkalari.
+Havolaga `?mehmon=Ism` qo'shilsa, chiptada va javob formasida o'sha mehmonning ismi chiqadi.
+Namuna: `clients/demo-bulut`.
+
 ### "3D sehrli kitob" shabloni (kitob)
 
 Taklifnoma — charm muqovali kitob (`templates/kitob/`). Muqova bosilganda musiqa yoqiladi va

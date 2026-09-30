@@ -33,6 +33,12 @@ export const TEMPLATES = [
     description: 'Charm muqovali kitob: varaqlar 3D aylanadi, har sahifada pop-up manzara, emoji-stikerlar, mehmonlar tilaklari devori',
     features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
   },
+  {
+    id: 'bulut',
+    title: 'Bulutlar ustida',
+    description: 'Yorug‘ kunduzgi osmon: samolyot chiptasi, bulutlar orasidan parvoz, samolyotlar ismlarni osmonga tutun bilan yozadi, havo sharlari va qog‘oz samolyotcha-tilaklar',
+    features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';
