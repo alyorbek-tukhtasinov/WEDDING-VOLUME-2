@@ -2,6 +2,8 @@ import './styles.css';
 import config from '@wedding-config';
 import brand from '@brand-config';
 import { deriveConfig, applyOverrides } from './lib/config.js';
+import { LANGS, siteLangs, pickLang, rememberLang, localize } from './lib/i18n.js';
+import { T, setLang } from './strings.js';
 import { renderPage } from './render.js';
 import {
   initEnvelope,
@@ -31,23 +33,59 @@ async function loadOverrides() {
   }
 }
 
-async function start() {
-  const c = applyOverrides(config, await loadOverrides());
-  const derived = deriveConfig(c);
-  const app = document.getElementById('app');
-  app.innerHTML = renderPage(c, derived, brand);
-  const typing = c.effects?.typing !== false;
-  prepareTyping(typing);
+let base = null; // admin o'zgarishlari qo'shilgan asl (lotin) config
 
+/**
+ * Sahifani shu tilda chizish. resume — til almashtirilganda: konvert allaqachon ochilgan,
+ * musiqa uzilmaydi, sahifa joyida qoladi.
+ */
+function mount(lang, resume = false) {
+  const langs = siteLangs(base);
+  const L = langs.includes(lang) ? lang : pickLang(langs);
+  setLang(L);
+  document.documentElement.lang = LANGS[L].html;
+  const c = localize(base, L, T);
+  const derived = deriveConfig(c);
+  if (langs.length > 1) document.title = `${derived.names} · ${c.texts?.heroCaption || T.heroCaption}`;
+  const baseNames = `${base.couple.groom.trim()} & ${base.couple.bride.trim()}`;
+
+  const app = document.getElementById('app');
+  const y = window.scrollY;
+  const oldAudio = resume ? document.getElementById('music') : null;
+  const shown = resume ? { ...c, effects: { ...(c.effects || {}), envelope: false } } : c;
+  app.innerHTML = renderPage(shown, derived, brand);
+  if (oldAudio) document.getElementById('music')?.replaceWith(oldAudio);
+  // Til tugmalari (konvertda va sahifada)
+  document.querySelectorAll('[data-lang]').forEach((b) =>
+    b.addEventListener('click', (e) => {
+      e.stopPropagation(); // konvertni ochib yubormasin
+      const l = b.dataset.lang;
+      if (l === L) return;
+      rememberLang(l);
+      mount(l, !document.getElementById('envelope'));
+    }),
+  );
+
+  const typing = !resume && c.effects?.typing !== false;
+  prepareTyping(typing);
   initCountdown(derived);
   initCalendar(c, derived);
-  initReveal();
   initGallery();
-  initRsvp(c, derived, { onSaved: loadWishes });
+  initRsvp(c, derived, { onSaved: loadWishes, baseNames });
   loadWishes();
-
   const music = initMusic();
+
+  if (resume) {
+    document.querySelectorAll('[data-reveal]').forEach((el) => el.classList.add('is-visible'));
+    document.querySelector('.hero')?.classList.add('is-in');
+    document.documentElement.classList.remove('is-locked');
+    initPetals(c.effects?.petals !== false);
+    window.scrollTo(0, y);
+    return;
+  }
+  initReveal();
   initEnvelope({
+    onGesture: () => music.prime(),
     onOpen({ gesture }) {
       initPetals(c.effects?.petals !== false);
       // Konvert ochilish animatsiyasi tugagach yozish boshlanadi
@@ -57,7 +95,7 @@ async function start() {
       } else {
         // Konvert o'chirilgan bo'lsa, musiqa birinchi bosishda boshlanadi (brauzer talabi)
         const startMusic = (e) => {
-          if (e.target.closest?.('#music-toggle')) return;
+          if (e.target.closest?.('#music-toggle, [data-lang]')) return;
           music.play();
         };
         document.addEventListener('pointerdown', startMusic, { once: true });
@@ -65,6 +103,11 @@ async function start() {
       if (!document.getElementById('envelope')) document.querySelector('.hero')?.classList.add('is-in');
     },
   });
+}
+
+async function start() {
+  base = applyOverrides(config, await loadOverrides());
+  mount(null);
 }
 
 start();

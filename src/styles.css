@@ -16,7 +16,8 @@
 
   --f-script: 'Great Vibes', 'Brush Script MT', cursive;
   --f-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --f-caps: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  /* Cinzel'da kirill yo'q — kirill harflari Cormorant bilan chiqadi */
+  --f-caps: 'Cinzel', 'Cormorant Garamond', 'Trajan Pro', Georgia, serif;
 
   --page-w: 520px;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -1617,6 +1618,140 @@ a {
   display: block;
   font-weight: 600;
   color: var(--gold);
+}
+
+/* --------------------------- Til tanlash ---------------------------- */
+/* Konvertda: tugmalar; sahifada: musiqa tugmasi ustida keyingi til */
+.lang {
+  position: absolute;
+  z-index: 3;
+  top: calc(18px + env(safe-area-inset-top));
+  left: 50%;
+  translate: -50% 0;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cream) 88%, transparent);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.15);
+}
+.lang button {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--navy);
+  font-family: var(--f-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lang button[aria-pressed='true'] {
+  background: var(--navy);
+  color: var(--gold);
+}
+.lang-fab {
+  position: fixed;
+  z-index: 50;
+  right: max(16px, calc(50vw - var(--page-w) / 2 + 16px));
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--gold);
+  font-family: var(--f-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.3);
+}
+/* Konvert ochiq turganda sahifadagi til tugmasi ko'rinmaydi (konvertning o'zida bor) */
+.envelope ~ .lang-fab {
+  display: none;
+}
+
+/* ---------------------------- Kirish videosi ---------------------------- */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+.intro.is-in {
+  opacity: 1;
+}
+.intro.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 1.2s;
+}
+.intro__video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.intro__load {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--gold) 25%, transparent);
+  border-top-color: var(--gold);
+  opacity: 0;
+  transition: opacity 0.4s;
+  animation: intro-spin 0.9s linear infinite;
+  pointer-events: none;
+}
+.intro.is-loading .intro__load {
+  opacity: 1;
+}
+@keyframes intro-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.intro__skip {
+  position: absolute;
+  right: 16px;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px 10px 18px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: rgb(11 37 69 / 0.6);
+  color: var(--gold);
+  font-family: var(--f-caps);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: intro-skip 0.6s ease both;
+}
+.intro__skip svg {
+  width: 16px;
+  height: 16px;
+}
+@keyframes intro-skip {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 /* ------------------------------ Musiqa ------------------------------- */

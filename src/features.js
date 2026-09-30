@@ -1,7 +1,9 @@
 import { $, $$, prefersReducedMotion } from './lib/dom.js';
+import { initIntro } from './lib/intro.js';
+import { T } from './strings.js';
 
 /* ------------------------------ Konvert ------------------------------ */
-export function initEnvelope({ onOpen }) {
+export function initEnvelope({ onOpen, onGesture }) {
   const el = $('#envelope');
   if (!el) {
     onOpen?.({ gesture: false });
@@ -27,15 +29,27 @@ export function initEnvelope({ onOpen }) {
     setTimeout(done, prefersReducedMotion() ? 300 : 1500);
   };
 
-  btn.addEventListener('click', open);
+  // Kirish videosi bo'lsa: muhr bosilganda avval video, tugagach konvert ochiladi
+  const intro = initIntro(open);
+  const start = () => {
+    if (opened || introOn) return;
+    if (!intro || intro.broken) return open();
+    introOn = true;
+    onGesture?.();
+    intro.play();
+  };
+  let introOn = false;
+  btn.addEventListener('click', start);
   // Konvertning istalgan joyini bosish ham ochadi
   el.addEventListener('click', (e) => {
-    if (e.target === el || e.target.closest('.envelope__half')) open();
+    if (e.target === el || e.target.closest('.envelope__half')) start();
   });
 }
 
 /* ---------------------------- Hisoblagich ---------------------------- */
+let countdownTimer = 0;
 export function initCountdown(d) {
+  clearInterval(countdownTimer); // til almashtirilib sahifa qayta chizilganda
   const grid = $('#countdown');
   if (!grid) return;
   const cells = Object.fromEntries($$('[data-unit]', grid).map((n) => [n.dataset.unit, n]));
@@ -54,10 +68,10 @@ export function initCountdown(d) {
     const now = Date.now();
     if (now >= d.end.getTime()) {
       clearInterval(timer);
-      return finish('To‘y bo‘lib o‘tdi. Barchangizga tashrifingiz uchun rahmat!');
+      return finish(T.countdownEnded);
     }
     if (now >= d.start.getTime()) {
-      return finish('To‘y boshlandi! Sizni kutib qolamiz 🤍');
+      return finish(T.countdownStarted);
     }
     let s = Math.floor((d.start.getTime() - now) / 1000);
     const values = {
@@ -72,7 +86,7 @@ export function initCountdown(d) {
     }
   };
   tick();
-  timer = setInterval(tick, 1000);
+  timer = countdownTimer = setInterval(tick, 1000);
 }
 
 /* ------------------------------ Taqvim ------------------------------ */
@@ -81,7 +95,7 @@ const utcStamp = (date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d
 export function initCalendar(c, d) {
   const details = `${c.texts?.invitation || ''}\n\n${location.href}`;
   const where = `${c.venue.name}, ${c.venue.address}`;
-  const title = `${d.names} — to‘y`;
+  const title = T.calTitle(d.names);
 
   const gcal = $('#gcal');
   if (gcal) {
@@ -138,14 +152,27 @@ export function initMusic() {
     const on = !audio.paused;
     btn.classList.toggle('is-playing', on);
     btn.setAttribute('aria-pressed', String(on));
-    btn.setAttribute('aria-label', on ? 'Musiqani o‘chirish' : 'Musiqani yoqish');
+    btn.setAttribute('aria-label', on ? T.musicOff : T.musicOn);
   };
   const play = () => audio.play().catch(() => {}).finally(sync);
+  // iOS: ovozni faqat bosish paytida yoqish mumkin. Kirish videosidan keyin musiqa chalinishi uchun
+  // audio bosish paytida jimgina "ochib" qo'yiladi
+  const prime = () => {
+    audio.muted = true;
+    audio.play().then(() => audio.pause()).catch(() => {}).finally(() => {
+      audio.currentTime = 0;
+      audio.muted = false;
+    });
+  };
 
   audio.volume = 0.6;
   audio.addEventListener('play', sync);
   audio.addEventListener('pause', sync);
   btn.addEventListener('click', () => (audio.paused ? play() : audio.pause()));
+  sync();
+  // Til almashtirilganda audio element saqlanadi — kuzatuvchi bir marta qo'shiladi
+  if (audio.dataset.bound) return { play, prime };
+  audio.dataset.bound = '1';
   // Boshqa ilovaga o'tilganda musiqa to'xtaydi
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && !audio.paused) {
@@ -153,10 +180,10 @@ export function initMusic() {
       audio.dataset.resume = '1';
     } else if (!document.hidden && audio.dataset.resume) {
       delete audio.dataset.resume;
-      play();
+      audio.play().catch(() => {});
     }
   });
-  return { play };
+  return { play, prime };
 }
 
 /* --------------------------- Paydo bo'lish --------------------------- */
@@ -309,13 +336,14 @@ export function initGallery() {
 }
 
 /* ------------------------------- RSVP -------------------------------- */
-export function initRsvp(c, d, { onSaved } = {}) {
+export function initRsvp(c, d, { onSaved, baseNames = d.names } = {}) {
   const form = $('#rsvp-form');
   if (!form) return;
   const status = $('#rsvp-status');
   const doneBox = $('#rsvp-done');
   const guestsField = $('#guests-field');
-  const storageKey = `rsvp:${d.names}:${c.event.originalDate || c.event.date}`;
+  // Tildan qat'i nazar bitta kalit (asl ismlar bilan)
+  const storageKey = `rsvp:${baseNames}:${c.event.originalDate || c.event.date}`;
 
   const store = {
     get() {
@@ -349,9 +377,7 @@ export function initRsvp(c, d, { onSaved } = {}) {
   if ((d.rsvpClosesAt && now > d.rsvpClosesAt.getTime()) || now >= d.start.getTime()) {
     $('.rsvp__deadline')?.remove();
     return showDone(
-      c.contacts?.length
-        ? 'Javoblar qabul qilish muddati tugagan. Savollar bo‘lsa, quyidagi raqamlarga qo‘ng‘iroq qiling.'
-        : 'Javoblar qabul qilish muddati tugagan.',
+      c.contacts?.length ? T.closedCall : T.closed,
     );
   }
 
@@ -367,20 +393,20 @@ export function initRsvp(c, d, { onSaved } = {}) {
     const data = Object.fromEntries(new FormData(form));
     data.name = (data.name || '').trim();
 
-    if (data.name.length < 2) return setStatus('Iltimos, ismingizni kiriting.', true, form.elements.namedItem('name'));
-    if (!data.attending) return setStatus('Iltimos, kela olishingizni belgilang.', true);
+    if (data.name.length < 2) return setStatus(T.errName, true, form.elements.namedItem('name'));
+    if (!data.attending) return setStatus(T.errAttending, true);
     if (data.phone && !/^\+?[\d\s()-]{7,}$/.test(data.phone.trim())) {
-      return setStatus('Telefon raqami noto‘g‘ri kiritilgan.', true, form.elements.namedItem('phone'));
+      return setStatus(T.errPhone, true, form.elements.namedItem('phone'));
     }
 
     const submit = $('button[type="submit"]', form);
     submit.disabled = true;
-    setStatus('Yuborilmoqda…');
+    setStatus(T.sending);
     try {
       const res = await fetch('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, id: guestId, couple: d.names }),
+        body: JSON.stringify({ ...data, id: guestId, couple: baseNames }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.ok) {
@@ -396,13 +422,13 @@ export function initRsvp(c, d, { onSaved } = {}) {
       setStatus(
         json.error === 'not_configured'
           ? c.contacts?.length
-            ? 'Hozircha javobni qabul qilib bo‘lmadi. Iltimos, birozdan so‘ng urinib ko‘ring yoki telefon orqali bog‘laning.'
-            : 'Hozircha javobni qabul qilib bo‘lmadi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.'
-          : 'Xatolik yuz berdi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.',
+            ? T.errConfigCall
+            : T.errConfig
+          : T.errGeneric,
         true,
       );
     } catch {
-      setStatus('Internet aloqasini tekshirib, qayta urinib ko‘ring.', true);
+      setStatus(T.errNetwork, true);
     } finally {
       submit.disabled = false;
     }
@@ -436,7 +462,7 @@ export function initRsvp(c, d, { onSaved } = {}) {
     const btn = Object.assign(document.createElement('button'), {
       type: 'button',
       className: 'link',
-      textContent: 'Javobni o‘zgartirish',
+      textContent: T.change,
     });
     btn.addEventListener('click', () => {
       fillForm(saved);
@@ -484,7 +510,5 @@ export async function loadWishes() {
 }
 
 function thanks(attending, name) {
-  return attending === 'yes'
-    ? `Rahmat, ${name}! Sizni to‘yimizda intizorlik bilan kutamiz.`
-    : `Rahmat, ${name}! Javobingiz uchun minnatdormiz.`;
+  return attending === 'yes' ? T.thanksYes(name) : T.thanksNo(name);
 }

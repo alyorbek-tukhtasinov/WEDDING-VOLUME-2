@@ -249,6 +249,11 @@ ruscha matnlar `i18n.ru` da (`couple`, `texts`, `venue`, `hosts`, `sky.city`, `d
 `program` — bandlar tartibida). Interfeys matnlari: `templates/osmon/i18n.js`. Panelda: "Tillar" bo‘limi.
 Namuna: `clients/muhammaddiyor-robiyaxon`.
 
+**Volume 2 shablonida ham** tillar (`languages`, `i18n`) va kirish videosi (`introVideo`) xuddi shunday
+ishlaydi: til tanlash konvertda va sahifada (musiqa tugmasi ustida), video — muhr bosilganda
+(konvert o‘chirilgan bo‘lsa video qo‘yilmaydi). Umumiy kod: `src/lib/i18n.js`, `src/lib/intro.js`;
+Volume 2 interfeys matnlari — `src/strings.js`. Namuna: `clients/muhammaddiyor-robiyaxon-v2`.
+
 Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumlari chiziqlari —
 [d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3, © Olaf Frohn); qayta yaratish:
 `scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,

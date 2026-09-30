@@ -859,7 +859,7 @@ function secBackground() {
   );
 }
 
-/* --- Tillar (osmon) --- */
+/* --- Tillar (osmon, volume2) --- */
 // config.languages: saytdagi tillar, birinchisi — asosiy. Kirill matnlari lotinchadan o'zi o'giriladi
 // (i18n.uzc — faqat to'g'rilash uchun), ruscha matnlar — i18n.ru.
 function secOsmonLangs() {
@@ -902,7 +902,7 @@ function secOsmonLangs() {
         ${field('Mezbonlar', 'i18n.ru.hosts', { placeholder: ph(c.hosts) })}
         ${field('To‘yxona nomi', 'i18n.ru.venue.name', { placeholder: ph(c.venue?.name) })}
         ${field('Manzil', 'i18n.ru.venue.address', { placeholder: ph(c.venue?.address) })}
-        ${field('Shahar (osmon bo‘limi: “над городом …”)', 'i18n.ru.sky.city', { placeholder: ph(c.sky?.city) })}
+        ${c.template === 'osmon' ? field('Shahar (osmon bo‘limi: “над городом …”)', 'i18n.ru.sky.city', { placeholder: ph(c.sky?.city) }) : ''}
         ${c.dressCode?.text ? area('Dress-kod', 'i18n.ru.dressCode.text', { rows: 2, placeholder: 'Вечерний праздничный наряд.' }) : ''}
         ${(c.program || []).length ? html`<p class="hint">To‘y dasturi (ruscha)</p>
           ${(c.program || []).map((p, i) => field(`${p.time} — ${p.title}`, `i18n.ru.program.${i}`, { placeholder: ph(p.title) }))}` : ''}` : ''}
@@ -929,7 +929,7 @@ function updateLangs() {
   markDirty();
 }
 
-/* --- Kirish videosi (osmon) --- */
+/* --- Kirish videosi (osmon, volume2) --- */
 const MAX_VIDEO = 12 * 1024 * 1024; // server chegarasi bilan bir xil
 
 function secIntroVideo() {
@@ -940,7 +940,7 @@ function secIntroVideo() {
     'intro',
     'Kirish videosi (ixtiyoriy)',
     html`
-      <small class="hint">“Osmonni ochish” bosilganda video ovozi bilan to‘liq ekranda qo‘yiladi, tugagach (yoki “O‘tkazib yuborish”) taklifnoma ochiladi. Faqat MP4, 12 MB gacha — 720p, 1–2 daqiqa tavsiya etiladi. Jonli ko‘rinishda video ko‘rsatilmaydi.</small>
+      <small class="hint">Kirish tugmasi (“Osmonni ochish” yoki konvert muhri) bosilganda video ovozi bilan to‘liq ekranda qo‘yiladi, tugagach (yoki “O‘tkazib yuborish”) taklifnoma ochiladi.${c.template === 'osmon' ? '' : ' Konvert o‘chirilgan bo‘lsa, video qo‘yilmaydi.'} Faqat MP4, 12 MB gacha — 720p, 1–2 daqiqa tavsiya etiladi. Jonli ko‘rinishda video ko‘rsatilmaydi.</small>
       ${v ? html`<p class="hint hint--ok">✓ ${v}${up ? ` — ${(up.size / 1048576).toFixed(1)} MB, saqlanganda yuklanadi` : ''}${!up && !state.ed.isNew ? html` · <a href="${mediaSrc(v)}" target="_blank" rel="noopener">ko‘rish</a>` : ''}</p>` : ''}
       <div class="actions-row">
         <button class="btn btn--small" type="button" data-action="intro-set">${v ? 'Videoni almashtirish' : '+ Video tanlash'}</button>
@@ -1494,7 +1494,7 @@ function showEditor() {
       ? [secMain(), secOsmonLangs(), secTexts(), secIslamic(), secIntroVideo(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
       : suzani || kitob
         ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secEffects(), secSeo()]
-        : [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
+        : [secMain(), secOsmonLangs(), secTexts(), secIntroVideo(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
 
   root.innerHTML = html`
     ${topbar(html`<span class="badge ${yz ? 'badge--yz' : osmon ? 'badge--osmon' : suzani ? 'badge--suzani' : kitob ? 'badge--kitob' : ''}">${tpl?.title}</span>`)}

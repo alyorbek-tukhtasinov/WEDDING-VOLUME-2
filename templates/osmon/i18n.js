@@ -3,30 +3,15 @@
 // Berilmasa — faqat o'zbek lotin (avvalgidek). Kirillcha matnlar lotinchadan avtomatik o'giriladi,
 // config.i18n.uzc da qo'lda to'g'rilash mumkin. Ruscha matnlar — config.i18n.ru dan
 // (yo'q bo'lsa: tayyor ruscha matn yoki kirillcha o'girma).
-import { latinToCyrillic } from '../../src/lib/translit.js';
+import { MONTHS, WEEKDAYS } from '../../src/lib/config.js';
+import { LANGS, siteLangs, ruPlural, cyr, localize as localizeContent, brandText as brandTextOf } from '../../src/lib/i18n.js';
 
-export const LANGS = {
-  uz: { label: 'O‘zbekcha', short: 'UZ', html: 'uz' },
-  uzc: { label: 'Ўзбекча', short: 'ЎЗ', html: 'uz-Cyrl' },
-  ru: { label: 'Русский', short: 'РУ', html: 'ru' },
-};
-
-export function siteLangs(c) {
-  const list = (Array.isArray(c.languages) ? c.languages : []).filter((l) => LANGS[l]);
-  return list.length ? [...new Set(list)] : ['uz'];
-}
+export { LANGS, siteLangs };
 
 /* ------------------------------- Interfeys matnlari ------------------------------- */
-const ruPlural = (n, one, few, many) => {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return one;
-  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-  return many;
-};
 const UZ = {
-  months: ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'],
-  weekdays: ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'],
+  months: MONTHS, // saytlardagi avvalgi yozilish bilan bir xil
+  weekdays: WEEKDAYS,
   dateLine: (d, m, y) => `${d}-${m}, ${y}`,
   weekdayOn: (w) => `${w} kuni`,
   at: (t) => `soat ${t}`,
@@ -126,13 +111,6 @@ const UZ = {
 };
 
 // Kirill: lotinchadan o'giriladi, faqat avtomatik o'girib bo'lmaydigan joylar qo'lda
-const cyr = (v) => {
-  if (typeof v === 'string') return latinToCyrillic(v).replace(/<бр \/>/g, '<br />');
-  if (typeof v === 'function') return (...a) => cyr(v(...a));
-  if (Array.isArray(v)) return v.map(cyr);
-  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, cyr(x)]));
-  return v;
-};
 const UZC = {
   ...cyr(UZ),
   months: ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'],
@@ -250,7 +228,7 @@ UZ.unitNames = UZ.units;
 export const STR = { uz: UZ, uzc: UZC, ru: RU };
 
 /** Sayt pastidagi buyurtma havolasi matni (brand.config.js — lotinda). */
-export const brandText = (t, text) => (t === RU ? 'Онлайн-приглашения на заказ' : t === UZC ? latinToCyrillic(text) : text);
+export const brandText = (t, text) => brandTextOf(t === RU ? 'ru' : t === UZC ? 'uzc' : 'uz', text);
 
 /** Oy fazasi nomi (astro.js dagi moonPhaseName bilan bir xil chegaralar). */
 export function phaseName(t, illumination, waxing) {
@@ -263,88 +241,5 @@ export function phaseName(t, illumination, waxing) {
 }
 export const dirName = (t, az) => t.dirs[Math.round((((az % 360) + 360) % 360) / 45) % 8];
 
-/* ------------------------------ Mijoz ma'lumotlari ------------------------------ */
-// Faqat odam o'qiydigan matnlar o'giriladi (havolalar, fayl nomlari, sanalar — yo'q)
-function cyrContent(c) {
-  const t = latinToCyrillic;
-  const out = structuredClone(c);
-  if (out.couple) {
-    out.couple.groom = t(out.couple.groom);
-    out.couple.bride = t(out.couple.bride);
-  }
-  if (out.hosts) out.hosts = t(out.hosts);
-  if (out.texts) out.texts = cyr(out.texts);
-  if (out.venue) {
-    out.venue.name = t(out.venue.name);
-    out.venue.address = t(out.venue.address);
-  }
-  if (out.sky?.city) out.sky.city = t(out.sky.city);
-  if (Array.isArray(out.program)) out.program = out.program.map((p) => ({ ...p, title: t(p.title) }));
-  if (out.dressCode?.text) out.dressCode.text = t(out.dressCode.text);
-  if (Array.isArray(out.contacts)) out.contacts = out.contacts.map((x) => ({ ...x, name: t(x.name) }));
-  if (out.islamic) out.islamic = cyr(out.islamic);
-  return out;
-}
-
-// Ruscha tarjima berilmagan to'y dasturi bandlari uchun (paneldagi tayyor shablonlar)
-const RU_PROGRAM = {
-  'Mehmonlarni kutib olish': 'Встреча гостей',
-  'Kelin-kuyovning kirib kelishi': 'Выход жениха и невесты',
-  'Tantanali ziyofat': 'Праздничный банкет',
-  'Kechki ziyofat': 'Вечерний банкет',
-  'To‘y tortini kesish': 'Свадебный торт',
-  'Dasturxon atrofida ziyofat': 'Праздничное застолье',
-  'Kelin salom marosimi': 'Обряд «Келин салом»',
-  'Qur’on tilovati va duo': 'Чтение Корана и дуа',
-  'Fotiha marosimi': 'Обряд фатиха',
-};
-
-const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
-function merge(base, over) {
-  if (!isObj(over)) return base;
-  const out = { ...base };
-  for (const [k, v] of Object.entries(over)) {
-    if (v == null || v === '') continue;
-    out[k] = isObj(v) && isObj(base?.[k]) ? merge(base[k], v) : v;
-  }
-  return out;
-}
-
-/** Config'ning shu tildagi nusxasi. */
-export function localize(c, lang) {
-  if (lang === 'uzc') {
-    const auto = cyrContent(c);
-    const out = merge(auto, c.i18n?.uzc);
-    // Ism qo'lda to'g'rilangan bo'lsa (masalan Муҳаммад → Мухаммад) — matnlar ichida ham
-    const fix = ['groom', 'bride']
-      .map((k) => [auto.couple?.[k], out.couple?.[k]])
-      .filter(([a, b]) => a && b && a !== b);
-    if (!fix.length) return out;
-    const swap = (v) => {
-      if (typeof v === 'string') return fix.reduce((x, [a, b]) => x.split(a).join(b), v);
-      if (Array.isArray(v)) return v.map(swap);
-      if (isObj(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, swap(x)]));
-      return v;
-    };
-    for (const k of ['texts', 'hosts', 'islamic']) if (out[k]) out[k] = swap(out[k]);
-    return out;
-  }
-  if (lang !== 'ru') return c;
-  const r = c.i18n?.ru || {};
-  const base = cyrContent(c);
-  // Ruscha matn berilmagan bo'lsa — tayyor ruscha matn (o'zbekcha kirill emas)
-  base.texts = {
-    heroCaption: RU.heroCaption,
-    greeting: RU.greeting,
-    invitation: RU.invitation(base.couple.groom, base.couple.bride),
-    closing: RU.closing,
-  };
-  base.program = (c.program || []).map((p, i) => ({
-    ...p,
-    title: r.program?.[i] || RU_PROGRAM[p.title?.replace(/'/g, '‘')] || latinToCyrillic(p.title),
-  }));
-  if (c.dressCode?.text) base.dressCode = { ...base.dressCode, text: 'Вечерний праздничный наряд.' };
-  delete base.islamic;
-  const { program, ...rest } = r;
-  return merge(base, rest);
-}
+/** Config'ning shu tildagi nusxasi (ruscha matn berilmagan joyda — shu shablonning ruscha matni). */
+export const localize = (c, lang) => localizeContent(c, lang, RU);

@@ -1,5 +1,8 @@
 import { html, raw } from './lib/dom.js';
-import { MONTHS, WEEKDAYS_SHORT, mediaUrl, musicUrlOf } from './lib/config.js';
+import { mediaUrl, musicUrlOf } from './lib/config.js';
+import { LANGS, siteLangs, brandText } from './lib/i18n.js';
+import { introHtml } from './lib/intro.js';
+import { T, LANG } from './strings.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 const img = (name) => `/images/${name}`;
@@ -7,17 +10,18 @@ const img = (name) => `/images/${name}`;
 function envelope(c, d) {
   if (c.effects?.envelope === false) return '';
   return html`
-    <div class="envelope" id="envelope" role="dialog" aria-modal="true" aria-label="Taklifnomani ochish">
+    <div class="envelope" id="envelope" role="dialog" aria-modal="true" aria-label="${T.envelopeOpen}">
       <div class="envelope__half envelope__half--left" aria-hidden="true"></div>
       <div class="envelope__half envelope__half--right" aria-hidden="true"></div>
       <div class="envelope__top">
-        <p class="envelope__to">Taklifnoma</p>
+        <p class="envelope__to">${T.envelopeTo}</p>
         <p class="envelope__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
       </div>
-      <button class="envelope__seal" type="button" id="envelope-open" aria-label="Taklifnomani ochish">
+      <button class="envelope__seal" type="button" id="envelope-open" aria-label="${T.envelopeOpen}">
         <span class="envelope__initials">${d.initials}</span>
       </button>
-      <p class="envelope__hint">Ochish uchun muhrni bosing</p>
+      <p class="envelope__hint">${T.envelopeHint}</p>
+      ${langPicker(c)}
     </div>
   `;
 }
@@ -27,7 +31,7 @@ function hero(c, d) {
     <header class="hero" id="top">
       <img class="hero__bg" src="${img('hero-arch.webp')}" alt="" fetchpriority="high" />
       <div class="hero__content">
-        <p class="hero__caption" data-type>${c.texts?.heroCaption || 'To‘yga taklifnoma'}</p>
+        <p class="hero__caption" data-type>${c.texts?.heroCaption || T.heroCaption}</p>
         <h1 class="hero__names">
           <span>${d.groom}</span>
           <span class="hero__amp">&amp;</span>
@@ -35,7 +39,7 @@ function hero(c, d) {
         </h1>
         <p class="hero__date">${pad(d.day)} <i>·</i> ${pad(d.month)} <i>·</i> ${d.year}</p>
       </div>
-      <a class="hero__scroll" href="#invite" aria-label="Pastga">
+      <a class="hero__scroll" href="#invite" aria-label="${T.down}">
         <span></span>
       </a>
     </header>
@@ -47,9 +51,9 @@ function invite(c, d) {
     <section class="invite" id="invite">
       <div class="paper paper--a" data-reveal>
         <img class="frame frame--top" src="${img('frame-top.webp')}" alt="" loading="lazy" />
-        <p class="invite__greeting" data-type>${c.texts?.greeting}</p>
-        <p class="invite__text" data-type>${c.texts?.invitation}</p>
-        ${c.hosts ? html`<p class="invite__hosts" data-type><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
+        <p class="invite__greeting" data-type>${c.texts?.greeting || T.greeting}</p>
+        <p class="invite__text" data-type>${c.texts?.invitation || T.invitation(d.groom, d.bride)}</p>
+        ${c.hosts ? html`<p class="invite__hosts" data-type><span>${T.respectfully}</span>${c.hosts}</p>` : ''}
         <img class="frame frame--bottom" src="${img('frame-bottom.webp')}" alt="" loading="lazy" />
       </div>
     </section>
@@ -71,8 +75,8 @@ function calendarGrid(d) {
   }
   return html`
     <div class="cal" data-reveal>
-      <p class="cal__title">${d.monthName} ${d.year}</p>
-      <div class="cal__grid cal__grid--head">${WEEKDAYS_SHORT.map((w) => html`<span>${w}</span>`)}</div>
+      <p class="cal__title">${T.monthsNom[d.month - 1]} ${d.year}</p>
+      <div class="cal__grid cal__grid--head">${T.weekdaysShort.map((w) => html`<span>${w}</span>`)}</div>
       <div class="cal__grid">${cells}</div>
     </div>
   `;
@@ -81,18 +85,18 @@ function calendarGrid(d) {
 function dateSection(c, d) {
   return html`
     <section class="section date" id="date">
-      <h2 class="title" data-reveal>Qachon?</h2>
+      <h2 class="title" data-reveal>${T.when}</h2>
       <div class="badge" data-reveal>
-        <span class="badge__weekday">${d.weekdayName}</span>
+        <span class="badge__weekday">${T.weekdays[d.weekday]}</span>
         <span class="badge__day">${d.day}</span>
-        <span class="badge__month">${d.monthName}</span>
+        <span class="badge__month">${T.months[d.month - 1]}</span>
         <span class="badge__year">${d.year}</span>
-        <span class="badge__time">soat ${c.event.time}</span>
+        <span class="badge__time">${T.at(c.event.time)}</span>
       </div>
       ${calendarGrid(d)}
       <div class="actions" data-reveal>
-        <a class="btn btn--ghost" id="gcal" target="_blank" rel="noopener">Google Taqvimga qo‘shish</a>
-        <button class="btn btn--ghost" id="ics" type="button">Taqvimga saqlash (.ics)</button>
+        <a class="btn btn--ghost" id="gcal" target="_blank" rel="noopener">${T.gcal}</a>
+        <button class="btn btn--ghost" id="ics" type="button">${T.ics}</button>
       </div>
     </section>
   `;
@@ -101,14 +105,9 @@ function dateSection(c, d) {
 function countdown() {
   return html`
     <section class="countdown" aria-live="off">
-      <h2 class="countdown__title" data-reveal>To‘yimizgacha qoldi</h2>
+      <h2 class="countdown__title" data-reveal>${T.countdownTitle}</h2>
       <div class="countdown__grid" id="countdown" data-reveal>
-        ${[
-          ['days', 'kun'],
-          ['hours', 'soat'],
-          ['minutes', 'daqiqa'],
-          ['seconds', 'soniya'],
-        ].map(
+        ${Object.entries(T.units).map(
           ([k, label]) => html`
             <div class="countdown__cell">
               <span class="countdown__num" data-unit="${k}">00</span>
@@ -141,15 +140,15 @@ function venue(c) {
   const image = v.image ? mediaUrl(v.image) : img('building.webp');
   return html`
     <section class="section venue" id="venue">
-      <h2 class="title" data-reveal>Qayerda?</h2>
+      <h2 class="title" data-reveal>${T.where}</h2>
       ${c.giftNote?.title
         ? giftNote(c.giftNote)
         : html`<img class="venue__img ${v.image ? 'venue__img--photo' : ''}" src="${image}" alt="${v.name}" loading="lazy" data-reveal />`}
       <p class="venue__name" data-reveal>${v.name}</p>
       <p class="venue__address" data-reveal>${v.address}</p>
       <div class="actions" data-reveal>
-        ${v.googleMaps ? html`<a class="btn" href="${v.googleMaps}" target="_blank" rel="noopener">Google Maps</a>` : ''}
-        ${v.yandexMaps ? html`<a class="btn" href="${v.yandexMaps}" target="_blank" rel="noopener">Yandex Xarita</a>` : ''}
+        ${v.googleMaps ? html`<a class="btn" href="${v.googleMaps}" target="_blank" rel="noopener">${T.gmap}</a>` : ''}
+        ${v.yandexMaps ? html`<a class="btn" href="${v.yandexMaps}" target="_blank" rel="noopener">${T.ymap}</a>` : ''}
       </div>
     </section>
   `;
@@ -161,7 +160,7 @@ function specialGuest(c) {
   if (!g?.name) return '';
   return html`
     <section class="section guest">
-      <p class="guest__eyebrow" data-reveal>${g.eyebrow || 'To‘y kechasi mehmoni'}</p>
+      <p class="guest__eyebrow" data-reveal>${g.eyebrow || T.guestEyebrow}</p>
       <p class="guest__name" data-reveal>${g.name}</p>
       ${g.text ? html`<p class="guest__text" data-reveal data-type>${g.text}</p>` : ''}
       <img class="guest__heart" src="${img('heart.webp')}" alt="" loading="lazy" data-reveal />
@@ -184,7 +183,7 @@ function notices(c) {
   if (!n?.items?.length) return '';
   return html`
     <section class="section notices torn" id="notices">
-      <h2 class="title" data-reveal>${n.title || 'Muhim iltimoslar'}</h2>
+      <h2 class="title" data-reveal>${n.title || T.noticesTitle}</h2>
       ${n.intro ? html`<p class="notices__intro" data-reveal>${n.intro}</p>` : ''}
       <div class="notices__list">
         ${n.items.map(
@@ -206,7 +205,7 @@ function program(c) {
   return html`
     <section class="section program torn" id="program">
       <img class="program__rings" src="${img('rings.webp')}" alt="" loading="lazy" data-reveal />
-      <h2 class="title" data-reveal>To‘y dasturi</h2>
+      <h2 class="title" data-reveal>${T.program}</h2>
       <ol class="timeline">
         ${c.program.map(
           (p) => html`
@@ -229,7 +228,7 @@ function dressCode(c) {
   if (!c.dressCode?.text) return '';
   return html`
     <section class="section dress">
-      <h2 class="title" data-reveal>Dress-kod</h2>
+      <h2 class="title" data-reveal>${T.dress}</h2>
       <p class="dress__text" data-reveal data-type>${c.dressCode.text}</p>
       ${c.dressCode.colors?.length
         ? html`<div class="dress__colors" data-reveal>
@@ -251,7 +250,7 @@ function garland(c) {
           (g, i) => html`
             <div class="garland__item" style="--i:${i};--r:${tilts[i % tilts.length]}deg">
               <span class="garland__pin" aria-hidden="true"></span>
-              <button class="garland__photo" type="button" aria-label="Rasmni kattalashtirish">
+              <button class="garland__photo" type="button" aria-label="${T.zoom}">
                 <img src="${mediaUrl(g)}" alt="" loading="lazy" />
               </button>
             </div>
@@ -259,7 +258,7 @@ function garland(c) {
         )}
       </div>
     </div>
-    <p class="garland__hint" data-reveal>Suring →</p>
+    <p class="garland__hint" data-reveal>${T.swipe}</p>
   `;
 }
 
@@ -272,7 +271,7 @@ function gallery(c) {
         ${garland(c)}
         <dialog class="lightbox" id="lightbox">
           <img alt="" />
-          <button class="lightbox__close" type="button" aria-label="Yopish">×</button>
+          <button class="lightbox__close" type="button" aria-label="${T.close}">×</button>
         </dialog>
       </section>
     `;
@@ -283,7 +282,7 @@ function gallery(c) {
       <div class="gallery__grid">
         ${c.gallery.map(
           (g, i) => html`
-            <button class="gallery__item" type="button" data-index="${i}" data-reveal aria-label="Rasmni kattalashtirish">
+            <button class="gallery__item" type="button" data-index="${i}" data-reveal aria-label="${T.zoom}">
               <img src="${mediaUrl(g)}" alt="" loading="lazy" />
             </button>
           `,
@@ -291,7 +290,7 @@ function gallery(c) {
       </div>
       <dialog class="lightbox" id="lightbox">
         <img alt="" />
-        <button class="lightbox__close" type="button" aria-label="Yopish">×</button>
+        <button class="lightbox__close" type="button" aria-label="${T.close}">×</button>
       </dialog>
     </section>
   `;
@@ -302,7 +301,7 @@ function rsvp(c, d) {
   const deadline = c.rsvp.deadline
     ? (() => {
         const [, m, day] = c.rsvp.deadline.split('-').map(Number);
-        return html`<p class="rsvp__deadline">Iltimos, ${day}-${MONTHS[m - 1]}gacha javob bering</p>`;
+        return html`<p class="rsvp__deadline">${T.deadline(day, T.months[m - 1])}</p>`;
       })()
     : '';
   const options = Array.from({ length: d.maxGuests }, (_, i) => html`<option value="${i + 1}">${i + 1}</option>`);
@@ -310,33 +309,33 @@ function rsvp(c, d) {
   return html`
     <section class="section rsvp" id="rsvp">
       <div class="paper paper--b" data-reveal>
-        <h2 class="title">Tashrifingizni tasdiqlang</h2>
+        <h2 class="title">${T.rsvpTitle}</h2>
         ${deadline}
         <form class="form" id="rsvp-form" novalidate>
           <label class="field">
-            <span>Ismingiz *</span>
+            <span>${T.name}</span>
             <input name="name" type="text" autocomplete="name" required minlength="2" maxlength="80" />
           </label>
           <label class="field">
-            <span>Telefon raqamingiz</span>
+            <span>${T.phone}</span>
             <input name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="30" placeholder="+998" />
           </label>
           <fieldset class="choice">
-            <legend>Kela olasizmi? *</legend>
-            <label><input type="radio" name="attending" value="yes" required /> <span>Albatta kelaman</span></label>
-            <label><input type="radio" name="attending" value="no" /> <span>Afsuski, kela olmayman</span></label>
+            <legend>${T.canCome}</legend>
+            <label><input type="radio" name="attending" value="yes" required /> <span>${T.yes}</span></label>
+            <label><input type="radio" name="attending" value="no" /> <span>${T.no}</span></label>
           </fieldset>
           <label class="field" id="guests-field" hidden>
-            <span>Necha kishi bo‘lasiz?</span>
+            <span>${T.howMany}</span>
             <select name="guests">${options}</select>
           </label>
           <label class="field">
-            <span>Tilaklaringiz</span>
+            <span>${T.wishes}</span>
             <textarea name="message" rows="3" maxlength="500"></textarea>
           </label>
           <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
           <p class="form__status" id="rsvp-status" role="status"></p>
-          <button class="btn btn--solid" type="submit">Javobni yuborish</button>
+          <button class="btn btn--solid" type="submit">${T.send}</button>
         </form>
         <div class="rsvp__done" id="rsvp-done" hidden></div>
       </div>
@@ -349,7 +348,7 @@ function wishes(c) {
   // Tilaklar serverdan yuklanadi; bo'lmasa bo'lim yashirin qoladi
   return html`
     <section class="section wishes" id="wishes" hidden>
-      <h2 class="title">Tilaklar</h2>
+      <h2 class="title">${T.wishesTitle}</h2>
       <ul class="wishes__list" id="wishes-list"></ul>
     </section>
   `;
@@ -359,7 +358,7 @@ function contacts(c) {
   if (!c.contacts?.length) return '';
   return html`
     <section class="section contacts">
-      <h2 class="title" data-reveal>Savollar bo‘lsa</h2>
+      <h2 class="title" data-reveal>${T.contacts}</h2>
       <ul class="contacts__list">
         ${c.contacts.map(
           (ct) => html`
@@ -378,14 +377,14 @@ function footer(c, d, brand) {
   return html`
     <footer class="footer">
       <img class="footer__flower" src="${img('peony.webp')}" alt="" loading="lazy" />
-      <p class="footer__closing" data-reveal>${c.texts?.closing}</p>
+      <p class="footer__closing" data-reveal>${c.texts?.closing || T.closing}</p>
       <p class="footer__names" data-reveal>${d.groom} <span>&amp;</span> ${d.bride}</p>
       ${brand?.enabled
         ? html`<a class="brand" href="${brand.url}" target="_blank" rel="noopener">
             ${brand.logo
               ? html`<img src="${brand.logo}" alt="" width="28" height="28" loading="lazy" />`
               : html`<svg class="brand__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" /></svg>`}
-            <span>${brand.text}<b>${brand.name}</b></span>
+            <span>${brandText(LANG, brand.text)}<b>${brand.name}</b></span>
           </a>`
         : ''}
     </footer>
@@ -397,7 +396,7 @@ function musicButton(c) {
   if (!src) return '';
   return html`
     <audio id="music" src="${src}" loop preload="none"></audio>
-    <button class="music" id="music-toggle" type="button" aria-label="Musiqani yoqish" aria-pressed="false">
+    <button class="music" id="music-toggle" type="button" aria-label="${T.musicOn}" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
     </button>
   `;
@@ -409,9 +408,25 @@ function bgVeil(c) {
   return Number.isFinite(v) && v >= 0 && v <= 1 ? v : 0.84;
 }
 
+// Til tanlash: konvertda (ochishdan oldin) — tugmalar; sahifada — keyingi tilga o'tish tugmasi
+function langPicker(c) {
+  const langs = siteLangs(c);
+  if (langs.length < 2) return '';
+  return html`<div class="lang" role="group" aria-label="${T.langSwitch}">
+    ${langs.map((l) => html`<button type="button" data-lang="${l}" lang="${LANGS[l].html}" aria-pressed="${String(l === LANG)}">${LANGS[l].label}</button>`)}
+  </div>`;
+}
+function langButton(c) {
+  const langs = siteLangs(c);
+  if (langs.length < 2) return '';
+  const next = langs[(langs.indexOf(LANG) + 1) % langs.length];
+  return html`<button class="lang-fab" id="lang-next" type="button" data-lang="${next}" lang="${LANGS[next].html}" aria-label="${T.langSwitch}">${LANGS[next].short}</button>`;
+}
+
 export function renderPage(c, d, brand) {
   return html`
     ${envelope(c, d)}
+    ${c.introVideo && c.effects?.envelope !== false ? raw(introHtml(mediaUrl(c.introVideo), T.skip)) : ''}
     <div class="petals" id="petals" aria-hidden="true"></div>
     ${c.backgroundImage
       ? html`<div class="page-bg" aria-hidden="true" style="background-image:url('${mediaUrl(c.backgroundImage)}');--bg-veil:${bgVeil(c)}"></div>`
@@ -436,5 +451,6 @@ export function renderPage(c, d, brand) {
       ${footer(c, d, brand)}
     </div>
     ${musicButton(c)}
+    ${langButton(c)}
   `.value;
 }
