@@ -200,7 +200,8 @@ function sniff(buf) {
   if (buf.subarray(4, 8).toString() === 'ftyp') return 'm4a';
   return null;
 }
-const EXT_KIND = { jpg: 'jpg', jpeg: 'jpg', png: 'png', webp: 'webp', mp3: 'mp3', m4a: 'm4a' };
+// mp4 (kirish videosi) ham m4a kabi "ftyp" konteyneri
+const EXT_KIND = { jpg: 'jpg', jpeg: 'jpg', png: 'png', webp: 'webp', mp3: 'mp3', m4a: 'm4a', mp4: 'm4a' };
 
 function checkSlug(slug) {
   if (typeof slug !== 'string' || !SLUG_RE.test(slug) || slug.length > 60) {

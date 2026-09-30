@@ -236,6 +236,11 @@ saytning o‘zida. Qo‘shimcha sarlavhalar: `texts.inviteTitle`, `namesCaption`
 `countdownTitle`, `detailsTitle` (manzil bo‘limi Sana · Vaqt · Manzil ko‘rinishida), `timeNote`.
 Panelda: "Islomiy matnlar (oyat va duo)" → yoqilsa tayyor matnlar qo‘yiladi. Namuna: `clients/baxtiyor-shaxrizoda`.
 
+**Kirish videosi (ixtiyoriy).** `"introVideo": "intro-xxx.mp4"` (media/ dagi fayl). “Osmonni ochish”
+bosilganda video ovozi bilan to‘liq ekranda qo‘yiladi, 1.5 s dan keyin “O‘tkazib yuborish” chiqadi;
+video tugagach taklifnoma ochiladi, fon musiqasi shundan keyin boshlanadi. Panelda: "Kirish videosi"
+bo‘limi — faqat MP4, 12 MB gacha (720p, H.264 tavsiya etiladi).
+
 Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumlari chiziqlari —
 [d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3, © Olaf Frohn); qayta yaratish:
 `scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,

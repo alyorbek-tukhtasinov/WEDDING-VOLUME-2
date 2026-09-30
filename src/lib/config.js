@@ -64,6 +64,8 @@ export function validateConfig(c, mediaFiles = null) {
   }
   checkMedia(c.venue?.image, 'venue.image');
   checkMedia(c.music, 'music');
+  checkMedia(c.introVideo, 'introVideo');
+  need(!c.introVideo || /\.mp4$/i.test(c.introVideo), 'introVideo: faqat .mp4 fayl bo\'lishi mumkin');
   need(!c.musicTrack || c.musicTrack === 'none' || findTrack(c.musicTrack), `musicTrack: to'plamda "${c.musicTrack}" qo'shig'i yo'q`);
   checkMedia(c.backgroundImage, 'backgroundImage');
   if (c.backgroundOverlay != null) {

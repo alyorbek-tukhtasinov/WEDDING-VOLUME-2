@@ -858,6 +858,50 @@ function secBackground() {
   );
 }
 
+/* --- Kirish videosi (osmon) --- */
+const MAX_VIDEO = 12 * 1024 * 1024; // server chegarasi bilan bir xil
+
+function secIntroVideo() {
+  const c = state.ed.config;
+  const v = c.introVideo;
+  const up = v && state.ed.uploads[v];
+  return section(
+    'intro',
+    'Kirish videosi (ixtiyoriy)',
+    html`
+      <small class="hint">“Osmonni ochish” bosilganda video ovozi bilan to‘liq ekranda qo‘yiladi, tugagach (yoki “O‘tkazib yuborish”) taklifnoma ochiladi. Faqat MP4, 12 MB gacha — 720p, 1–2 daqiqa tavsiya etiladi. Jonli ko‘rinishda video ko‘rsatilmaydi.</small>
+      ${v ? html`<p class="hint hint--ok">✓ ${v}${up ? ` — ${(up.size / 1048576).toFixed(1)} MB, saqlanganda yuklanadi` : ''}${!up && !state.ed.isNew ? html` · <a href="${mediaSrc(v)}" target="_blank" rel="noopener">ko‘rish</a>` : ''}</p>` : ''}
+      <div class="actions-row">
+        <button class="btn btn--small" type="button" data-action="intro-set">${v ? 'Videoni almashtirish' : '+ Video tanlash'}</button>
+        ${v ? html`<button class="btn btn--small btn--ghost" type="button" data-action="intro-del">O‘chirish</button>` : ''}
+      </div>
+    `,
+    { open: !!v },
+  );
+}
+
+async function pickIntroVideo() {
+  const file = await new Promise((resolve) => {
+    const input = Object.assign(document.createElement('input'), { type: 'file', accept: 'video/mp4' });
+    input.onchange = () => resolve(input.files?.[0]);
+    input.click();
+  });
+  if (!file) return;
+  if (!/\.mp4$/i.test(file.name) && file.type !== 'video/mp4') return toast('Faqat MP4 video tanlang');
+  if (file.size > MAX_VIDEO) return toast(`Video ${(file.size / 1048576).toFixed(1)} MB — 12 MB dan oshmasin. Avval siqib oling.`);
+  const b64 = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+  const name = `intro-${Date.now().toString(36)}.mp4`;
+  state.ed.uploads[name] = { b64, url: URL.createObjectURL(file), size: file.size };
+  state.ed.config.introVideo = name;
+  $('#sec-intro').outerHTML = secIntroVideo();
+  markDirty();
+}
+
 function secGiftNote() {
   const on = !!state.ed.config.giftNote?.title;
   return section(
@@ -1376,7 +1420,7 @@ function showEditor() {
   const sections = yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secYzRu(), secYzTexts(), secSeo()]
     : osmon
-      ? [secMain(), secTexts(), secIslamic(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
+      ? [secMain(), secTexts(), secIslamic(), secIntroVideo(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
       : suzani || kitob
         ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secEffects(), secSeo()]
         : [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
@@ -1755,6 +1799,12 @@ function bindEditor() {
       markDirty();
     }
     if (a === 'bg-set') pickBackground();
+    if (a === 'intro-set') pickIntroVideo();
+    if (a === 'intro-del') {
+      delete state.ed.config.introVideo;
+      $('#sec-intro').outerHTML = secIntroVideo();
+      markDirty();
+    }
     if (b.dataset.photoSet) {
       e.preventDefault();
       const [file] = await pickFiles();

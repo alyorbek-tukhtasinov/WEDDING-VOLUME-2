@@ -3,7 +3,7 @@
 // mountOsmon() ham saytda (main.js), ham boshqaruv panelining jonli ko'rinishida ishlatiladi.
 import './fonts/fonts.css';
 import './styles.css';
-import { deriveConfig, musicUrlOf, MONTHS } from '../../src/lib/config.js';
+import { deriveConfig, musicUrlOf, mediaUrl, MONTHS } from '../../src/lib/config.js';
 import { parseMapInput } from '../../src/lib/maps.js';
 import { html, raw, esc } from '../../src/lib/dom.js';
 import brand from '@brand-config';
@@ -160,6 +160,12 @@ function renderPage(c, d, place, when) {
         <p class="gate__hint">${raw(ICON.music)} ovoz bilan tomosha qiling</p>
       </div>
     </div>
+
+    ${c.introVideo ? html`<div class="intro" id="intro" hidden>
+      <video class="intro__video" src="${mediaUrl(c.introVideo)}" playsinline preload="auto"></video>
+      <span class="intro__load" aria-hidden="true"></span>
+      <button class="intro__skip" type="button" hidden><span>O‘tkazib yuborish</span>${raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>')}</button>
+    </div>` : ''}
 
     <button class="fab fab--music" id="music-toggle" type="button" aria-label="Musiqani yoqish" aria-pressed="false" hidden>${raw(ICON.music)}<span class="fab__bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
     <button class="fab fab--explore" id="explore-open" type="button" aria-label="Osmonni tomosha qilish" hidden>${raw(ICON.compass)}</button>
@@ -391,6 +397,15 @@ function initMusic(src) {
   audio.addEventListener('play', sync);
   audio.addEventListener('pause', sync);
   btn.addEventListener('click', () => (audio.paused ? play() : audio.pause()));
+  // iOS: ovozni faqat bosish paytida yoqish mumkin. Video tugagach musiqa chalinishi uchun
+  // audio bosish paytida jimgina "ochib" qo'yiladi
+  const prime = () => {
+    audio.muted = true;
+    audio.play().then(() => audio.pause()).catch(() => {}).finally(() => {
+      audio.currentTime = 0;
+      audio.muted = false;
+    });
+  };
   scope.on(document, 'visibilitychange', () => {
     if (document.hidden && !audio.paused) {
       audio.pause();
@@ -400,7 +415,50 @@ function initMusic(src) {
       play();
     }
   });
-  return { play };
+  return { play, prime };
+}
+
+/* ------------------------------ Kirish videosi ------------------------------ */
+// "Osmonni ochish" bosilganda video ovozi bilan to'liq ekranda qo'yiladi; tugagach
+// (yoki "O'tkazib yuborish") video so'nib, taklifnoma ochiladi
+function initIntro(openSite) {
+  const box = $('#intro');
+  if (!box) return null;
+  const v = $('video', box);
+  const skip = $('.intro__skip', box);
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    box.classList.add('is-leaving');
+    v.pause();
+    openSite();
+    setTimeout(() => {
+      v.removeAttribute('src');
+      v.load();
+      box.remove();
+    }, 1300);
+  };
+  v.addEventListener('ended', finish);
+  v.addEventListener('error', finish);
+  v.addEventListener('waiting', () => box.classList.add('is-loading'));
+  v.addEventListener('playing', () => box.classList.remove('is-loading'));
+  skip.addEventListener('click', finish);
+  return {
+    play() {
+      box.hidden = false;
+      box.classList.add('is-loading');
+      requestAnimationFrame(() => box.classList.add('is-in'));
+      // Ovoz bilan qo'yib bo'lmasa — ovozsiz, u ham bo'lmasa — to'g'ridan-to'g'ri saytga
+      v.play()
+        .catch(() => {
+          v.muted = true;
+          return v.play();
+        })
+        .catch(finish);
+      setTimeout(() => (skip.hidden = false), 1500);
+    },
+  };
 }
 
 /* ------------------------------ Paydo bo'lish ------------------------------ */
@@ -548,6 +606,7 @@ export async function mountOsmon(c, { preview = false } = {}) {
   const gate = $('#gate');
   if (preview) {
     gate.remove();
+    $('#intro')?.remove();
     $('#music-toggle')?.remove();
     document.body.classList.add('is-open');
     $$('.fab').forEach((b) => (b.hidden = false));
@@ -572,7 +631,12 @@ export async function mountOsmon(c, { preview = false } = {}) {
         scroller.refresh();
       }, reduced ? 200 : 1400);
     };
-    openBtn.addEventListener('click', open);
+    const intro = initIntro(open);
+    openBtn.addEventListener('click', () => {
+      if (!intro || opened) return open();
+      music.prime?.();
+      intro.play();
+    });
   }
 
   try {
