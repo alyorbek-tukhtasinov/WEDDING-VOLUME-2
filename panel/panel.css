@@ -307,6 +307,11 @@ a {
   color: #f4d98e;
 }
 
+.badge--bulut {
+  background: #2f6fb4;
+  color: #fff;
+}
+
 .badge--soon {
   background: #fff4dc;
   color: #7a5200;

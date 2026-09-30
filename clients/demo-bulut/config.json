@@ -1,0 +1,64 @@
+{
+  "template": "bulut",
+  "couple": {
+    "groom": "Sardor",
+    "bride": "Malika"
+  },
+  "event": {
+    "date": "2026-11-07",
+    "time": "17:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Rahimovlar va Yusupovlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Hayotimizdagi eng baxtli parvozni siz bilan birga boshlamoqchimiz. Sizni farzandlarimiz Sardor va Malikaning nikoh to‘yi marosimiga taklif etamiz.",
+    "closing": "Baxtimizga sherik bo‘lganingiz uchun rahmat!"
+  },
+  "venue": {
+    "name": "“Osmon” to‘yxonasi",
+    "address": "Toshkent shahri, Mirzo Ulug‘bek tumani",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.338000%2C69.334500",
+    "yandexMaps": "https://yandex.uz/maps/?pt=69.334500,41.338000&z=16&l=map"
+  },
+  "program": [
+    {
+      "time": "17:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "17:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "18:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "20:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Yorug‘ va bayramona libos. Osmon ranglari — havorang, oq, shaftoli va tilla ayniqsa mos tushadi.",
+    "colors": [
+      "#8cc8f5",
+      "#ffffff",
+      "#ffb38a",
+      "#f2b441"
+    ]
+  },
+  "musicTrack": "musiqa-5",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-11-05",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "effects": {
+    "countdown": true
+  }
+}

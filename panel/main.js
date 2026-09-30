@@ -213,7 +213,7 @@ function defaultConfig(template) {
     };
   }
   const kechki = DRESS_PRESETS.find((p) => p.id === 'kechki');
-  if (template === 'suzani' || template === 'kitob') {
+  if (template === 'suzani' || template === 'kitob' || template === 'bulut') {
     return {
       template,
       couple: { groom: '', bride: '', initials: '' },
@@ -396,7 +396,7 @@ function clientCard(c, today) {
   return html`
     <article class="card ${past && !c.demo ? 'card--past' : ''} ${c.demo ? 'card--demo' : ''}">
       <div class="actions-row">
-        <span class="badge ${c.template === 'yz' ? 'badge--yz' : c.template === 'osmon' ? 'badge--osmon' : c.template === 'suzani' ? 'badge--suzani' : c.template === 'kitob' ? 'badge--kitob' : ''}">${tpl?.title || c.template}</span>
+        <span class="badge ${c.template === 'yz' ? 'badge--yz' : c.template === 'osmon' ? 'badge--osmon' : c.template === 'suzani' ? 'badge--suzani' : c.template === 'kitob' ? 'badge--kitob' : c.template === 'bulut' ? 'badge--bulut' : ''}">${tpl?.title || c.template}</span>
         ${c.demo ? html`<span class="badge badge--demo">Demo</span>` : ''}
         ${soon && !c.demo ? html`<span class="badge badge--soon">Yaqinda</span>` : ''}
         ${past && !c.demo ? html`<span class="badge">O‘tgan</span>` : ''}
@@ -465,7 +465,7 @@ function renderList(filter) {
 /* ------------------------------------------------------------------ */
 /*  Shablon tanlash                                                     */
 /* ------------------------------------------------------------------ */
-const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg' };
+const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg' };
 
 function showTemplatePicker() {
   root.innerHTML = html`
@@ -939,7 +939,7 @@ function secMusicRsvp() {
         </label>
         <button class="btn btn--small" type="button" data-action="music-play" style="align-self:end">▶ Tinglash</button>
       </div>
-      <div class="toggle-row">${check('Mehmonlar javob yubora olsin', 'rsvp.enabled', true)} ${c.template === 'volume2' || !c.template || c.template === 'kitob' ? check('Tilaklarni saytda ko‘rsatish', 'rsvp.showWishes', true) : ''}</div>
+      <div class="toggle-row">${check('Mehmonlar javob yubora olsin', 'rsvp.enabled', true)} ${c.template === 'volume2' || !c.template || c.template === 'kitob' || c.template === 'bulut' ? check('Tilaklarni saytda ko‘rsatish', 'rsvp.showWishes', true) : ''}</div>
       <div class="grid2">
         ${field('Javob qabul qilish muddati', 'rsvp.deadline', { type: 'date', hint: 'Odatda to‘ydan 1 kun oldin' })}
         ${field('Bir javobda ko‘pi bilan necha kishi', 'rsvp.maxGuests', { type: 'number', attrs: 'min="1" max="20"' })}
@@ -952,6 +952,9 @@ function secEffects() {
   // "Tirik suzani"da faqat sanoqni o'chirish mumkin (qolgan effektlar shablonning o'zida)
   if (state.ed.config.template === 'suzani') {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq (kashta gardishlari)', 'effects.countdown', true)}</div>`);
+  }
+  if (state.ed.config.template === 'bulut') {
+    return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq (aeroport tablosi)', 'effects.countdown', true)}</div>`);
   }
   if (state.ed.config.template === 'kitob') {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq (taqvim varaqlari)', 'effects.countdown', true)}</div>`);
@@ -1275,7 +1278,7 @@ async function openExisting(slug, { copy = false } = {}) {
     if (c.seo) c.seo.ogImage = '';
     if (c.music) {
       c.music = '';
-      c.musicTrack ||= c.template === 'yz' ? 'musiqa-4' : c.template === 'osmon' ? 'musiqa-3' : c.template === 'suzani' || c.template === 'kitob' ? 'musiqa-5' : 'musiqa-1';
+      c.musicTrack ||= c.template === 'yz' ? 'musiqa-4' : c.template === 'osmon' ? 'musiqa-3' : c.template === 'suzani' || c.template === 'kitob' || c.template === 'bulut' ? 'musiqa-5' : 'musiqa-1';
     }
     delete c.giftCard;
     state.ed = newEditor({ isNew: true, config: c });
@@ -1296,16 +1299,17 @@ function showEditor() {
   const osmon = c.template === 'osmon';
   const suzani = c.template === 'suzani';
   const kitob = c.template === 'kitob';
+  const bulut = c.template === 'bulut';
   const sections = yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secYzRu(), secYzTexts(), secSeo()]
     : osmon
       ? [secMain(), secTexts(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
-      : suzani || kitob
+      : suzani || kitob || bulut
         ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secEffects(), secSeo()]
         : [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
 
   root.innerHTML = html`
-    ${topbar(html`<span class="badge ${yz ? 'badge--yz' : osmon ? 'badge--osmon' : suzani ? 'badge--suzani' : kitob ? 'badge--kitob' : ''}">${tpl?.title}</span>`)}
+    ${topbar(html`<span class="badge ${yz ? 'badge--yz' : osmon ? 'badge--osmon' : suzani ? 'badge--suzani' : kitob ? 'badge--kitob' : bulut ? 'badge--bulut' : ''}">${tpl?.title}</span>`)}
     <div class="wrap">
       <div class="list-head">
         <a class="btn btn--small btn--ghost" href="#/">← Ro‘yxat</a>
@@ -1327,7 +1331,7 @@ function showEditor() {
           </div>
         </form>
         <aside class="preview" id="preview">
-          <div class="phone"><iframe id="preview-frame" title="Jonli ko‘rinish" src="${yz ? '/preview-yz.html' : osmon ? '/preview-osmon.html' : suzani ? '/preview-suzani.html' : kitob ? '/preview-kitob.html' : '/preview-v2.html'}"></iframe></div>
+          <div class="phone"><iframe id="preview-frame" title="Jonli ko‘rinish" src="${yz ? '/preview-yz.html' : osmon ? '/preview-osmon.html' : suzani ? '/preview-suzani.html' : kitob ? '/preview-kitob.html' : bulut ? '/preview-bulut.html' : '/preview-v2.html'}"></iframe></div>
           <p class="preview__note">Jonli ko‘rinish — saqlanmagan o‘zgarishlar ham ko‘rinadi</p>
           <button class="btn btn--small preview-toggle" type="button" data-action="preview-close">Yopish</button>
         </aside>
