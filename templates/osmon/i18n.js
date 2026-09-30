@@ -312,7 +312,23 @@ function merge(base, over) {
 
 /** Config'ning shu tildagi nusxasi. */
 export function localize(c, lang) {
-  if (lang === 'uzc') return merge(cyrContent(c), c.i18n?.uzc);
+  if (lang === 'uzc') {
+    const auto = cyrContent(c);
+    const out = merge(auto, c.i18n?.uzc);
+    // Ism qo'lda to'g'rilangan bo'lsa (masalan Муҳаммад → Мухаммад) — matnlar ichida ham
+    const fix = ['groom', 'bride']
+      .map((k) => [auto.couple?.[k], out.couple?.[k]])
+      .filter(([a, b]) => a && b && a !== b);
+    if (!fix.length) return out;
+    const swap = (v) => {
+      if (typeof v === 'string') return fix.reduce((x, [a, b]) => x.split(a).join(b), v);
+      if (Array.isArray(v)) return v.map(swap);
+      if (isObj(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, swap(x)]));
+      return v;
+    };
+    for (const k of ['texts', 'hosts', 'islamic']) if (out[k]) out[k] = swap(out[k]);
+    return out;
+  }
   if (lang !== 'ru') return c;
   const r = c.i18n?.ru || {};
   const base = cyrContent(c);

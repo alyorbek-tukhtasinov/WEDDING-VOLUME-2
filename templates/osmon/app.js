@@ -437,8 +437,10 @@ function initIntro(openSite) {
   const v = $('video', box);
   const skip = $('.intro__skip', box);
   let done = false;
+  let started = false;
+  let broken = false;
   const finish = () => {
-    if (done) return;
+    if (done || !started) return;
     done = true;
     box.classList.add('is-leaving');
     v.pause();
@@ -450,12 +452,17 @@ function initIntro(openSite) {
     }, 1300);
   };
   v.addEventListener('ended', finish);
-  v.addEventListener('error', finish);
+  // Video bosishdan oldin yuklanmasa — parda o'zi ochilib ketmasin: tugma saytni to'g'ridan-to'g'ri ochadi
+  v.addEventListener('error', () => (started ? finish() : (broken = true)));
   v.addEventListener('waiting', () => box.classList.add('is-loading'));
   v.addEventListener('playing', () => box.classList.remove('is-loading'));
   skip.addEventListener('click', finish);
   return {
+    get broken() {
+      return broken;
+    },
     play() {
+      started = true;
       box.hidden = false;
       box.classList.add('is-loading');
       requestAnimationFrame(() => box.classList.add('is-in'));
@@ -677,7 +684,7 @@ export async function mountOsmon(c0, { preview = false, lang = null, resume = fa
     };
     const intro = initIntro(open);
     openBtn.addEventListener('click', () => {
-      if (!intro || opened) return open();
+      if (!intro || intro.broken || opened) return open();
       music.prime?.();
       intro.play();
     });

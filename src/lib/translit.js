@@ -35,6 +35,11 @@ export function latinToCyrillic(input) {
     }
     // Ikki harfli tovushlar (sh, ch, yo, yu, ya, ye)
     const pair = next != null ? lo + next.toLowerCase() : '';
+    // yo‘ → йў (yo‘l, yo‘q): "o‘" alohida harf, "ё" emas
+    if (pair === 'yo' && isApos(s[i + 2])) {
+      out += isUpper(ch) ? 'Й' : 'й';
+      continue;
+    }
     if (DIGRAPH[pair]) {
       const c = DIGRAPH[pair];
       out += isUpper(ch) ? upper(c) : c;

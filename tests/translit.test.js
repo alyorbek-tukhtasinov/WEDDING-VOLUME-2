@@ -26,5 +26,8 @@ test('Maxsus holatlar: o‘/g‘, e, tutuq belgisi, ch', () => {
   assert.equal(t("Mas'uda"), 'Масъуда');
   assert.equal(t('Chilonzor'), 'Чилонзор');
   assert.equal(t('“Navro‘z” to‘yxonasi'), '“Наврўз” тўйхонаси');
+  assert.equal(t('Yulduzlar yo‘li'), 'Юлдузлар йўли');
+  assert.equal(t("Yo'lchi, yo‘q"), 'Йўлчи, йўқ');
+  assert.equal(t('Kuyov'), 'Куёв');
   assert.equal(t(''), '');
 });
