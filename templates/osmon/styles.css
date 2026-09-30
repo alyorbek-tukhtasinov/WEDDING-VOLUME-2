@@ -9,7 +9,7 @@
   --line: rgba(230, 204, 147, 0.22);
   --glass: rgba(5, 9, 22, 0.64);
   --serif: 'Cormorant Garamond', 'Times New Roman', serif;
-  --caps: 'Cinzel', 'Times New Roman', serif;
+  --caps: 'Cinzel', 'Cormorant Garamond', 'Times New Roman', serif;
   --script: 'Great Vibes', cursive;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
@@ -263,6 +263,52 @@ svg {
 .fab--explore {
   top: calc(14px + var(--safe-t));
   left: 14px;
+}
+.fab--lang {
+  top: calc(68px + var(--safe-t));
+  right: 14px;
+  font-family: 'Cormorant Garamond', var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+/* Til tanlash (kirish pardasida) */
+.lang {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(6, 9, 22, 0.5);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.lang--gate {
+  position: absolute;
+  top: calc(18px + var(--safe-t));
+  left: 50%;
+  translate: -50% 0;
+  opacity: 0;
+  transition: opacity 1s ease 0.4s;
+}
+.gate.is-ready .lang--gate {
+  opacity: 1;
+}
+.lang button {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--soft);
+  font-family: 'Cormorant Garamond', var(--serif);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+}
+.lang button[aria-pressed='true'] {
+  background: rgba(230, 204, 147, 0.16);
+  color: var(--gold);
 }
 .fab__bars {
   position: absolute;
@@ -603,6 +649,86 @@ svg {
   font-style: italic;
   font-weight: 400;
   color: var(--muted);
+}
+
+/* ------------------------------ Kirish videosi ------------------------------ */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+.intro.is-in {
+  opacity: 1;
+}
+.intro.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 1.2s;
+}
+.intro__video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.intro__load {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(230, 204, 147, 0.2);
+  border-top-color: var(--gold);
+  opacity: 0;
+  transition: opacity 0.4s;
+  animation: intro-spin 0.9s linear infinite;
+  pointer-events: none;
+}
+.intro.is-loading .intro__load {
+  opacity: 1;
+}
+@keyframes intro-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.intro__skip {
+  position: absolute;
+  right: 16px;
+  bottom: calc(22px + var(--safe-b));
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px 10px 18px;
+  border: 1px solid rgba(230, 204, 147, 0.4);
+  border-radius: 999px;
+  background: rgba(4, 6, 16, 0.55);
+  color: var(--gold);
+  font-family: var(--caps);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: intro-skip 0.6s ease both;
+}
+.intro__skip svg {
+  width: 16px;
+  height: 16px;
+}
+@keyframes intro-skip {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 /* ------------------------ Islomiy matnlar (ixtiyoriy) ------------------------ */

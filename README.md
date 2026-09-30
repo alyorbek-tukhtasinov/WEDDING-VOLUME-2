@@ -236,6 +236,19 @@ saytning o‘zida. Qo‘shimcha sarlavhalar: `texts.inviteTitle`, `namesCaption`
 `countdownTitle`, `detailsTitle` (manzil bo‘limi Sana · Vaqt · Manzil ko‘rinishida), `timeNote`.
 Panelda: "Islomiy matnlar (oyat va duo)" → yoqilsa tayyor matnlar qo‘yiladi. Namuna: `clients/baxtiyor-shaxrizoda`.
 
+**Kirish videosi (ixtiyoriy).** `"introVideo": "intro-xxx.mp4"` (media/ dagi fayl). “Osmonni ochish”
+bosilganda video ovozi bilan to‘liq ekranda qo‘yiladi, 1.5 s dan keyin “O‘tkazib yuborish” chiqadi;
+video tugagach taklifnoma ochiladi, fon musiqasi shundan keyin boshlanadi. Panelda: "Kirish videosi"
+bo‘limi — faqat MP4, 12 MB gacha (720p, H.264 tavsiya etiladi).
+
+**Tillar (ixtiyoriy).** `"languages": ["uzc", "ru"]` — saytdagi tillar, birinchisi asosiy (`uz` — lotin,
+`uzc` — o‘zbek kirill, `ru` — rus). Bir nechta til bo‘lsa, kirish pardasida va sahifada til almashtirish
+tugmasi chiqadi, tanlov mehmon brauzerida eslab qolinadi (`?lang=ru` havolasi ham ishlaydi).
+Kirillcha matnlar config'dagi lotinchadan avtomatik o‘giriladi (`i18n.uzc` — to‘g‘rilash uchun),
+ruscha matnlar `i18n.ru` da (`couple`, `texts`, `venue`, `hosts`, `sky.city`, `dressCode.text`,
+`program` — bandlar tartibida). Interfeys matnlari: `templates/osmon/i18n.js`. Panelda: "Tillar" bo‘limi.
+Namuna: `clients/muhammaddiyor-robiyaxon`.
+
 Ma’lumotlar manbasi: yulduzlar — Yale Bright Star Catalogue, yulduz turkumlari chiziqlari —
 [d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3, © Olaf Frohn); qayta yaratish:
 `scripts/build-sky-data.js`. Shriftlar (Cinzel, Cormorant Garamond, Great Vibes) — SIL OFL,

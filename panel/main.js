@@ -7,6 +7,7 @@ import { parseMapInput } from '../src/lib/maps.js';
 import { MUSIC_LIBRARY, findTrack } from '../src/lib/music.js';
 import { validateConfig, isValidDate, TIME_RE, MONTHS } from '../src/lib/config.js';
 import { latinToCyrillic } from '../src/lib/translit.js';
+import { LANGS, STR as OSMON_STR } from '../templates/osmon/i18n.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -858,6 +859,120 @@ function secBackground() {
   );
 }
 
+/* --- Tillar (osmon) --- */
+// config.languages: saytdagi tillar, birinchisi — asosiy. Kirill matnlari lotinchadan o'zi o'giriladi
+// (i18n.uzc — faqat to'g'rilash uchun), ruscha matnlar — i18n.ru.
+function secOsmonLangs() {
+  const c = state.ed.config;
+  const langs = Array.isArray(c.languages) && c.languages.length ? c.languages : ['uz'];
+  const ph = (v) => (v ? latinToCyrillic(v) : '');
+  const RU = OSMON_STR.ru;
+  const has = (l) => langs.includes(l);
+  return section(
+    'langs',
+    'Tillar',
+    html`
+      <div class="toggle-row">
+        ${Object.entries(LANGS).map(([id, l]) => html`<label class="check"><input type="checkbox" data-lang-opt="${id}" ${has(id) ? 'checked' : ''} /> ${l.label}</label>`)}
+      </div>
+      <label class="f"><span>Asosiy til (sayt shu tilda ochiladi)</span>
+        <select id="lang-default">${langs.map((l) => html`<option value="${l}">${LANGS[l].label}</option>`)}</select>
+      </label>
+      <small class="hint">Bir nechta til tanlansa, saytda til almashtirish tugmasi chiqadi. Matnlarni lotinda yozavering — kirillchasi o‘zi tuziladi.</small>
+      ${has('uzc') ? html`
+        <p class="hint"><b>Ўзбекча (kirill)</b> — bo‘sh maydonlar avtomatik o‘giriladi (ko‘rsatilgan). Xato bo‘lsa, to‘g‘risini yozing.</p>
+        <div class="grid2">
+          ${field('Kuyov', 'i18n.uzc.couple.groom', { placeholder: ph(c.couple?.groom) })}
+          ${field('Kelin', 'i18n.uzc.couple.bride', { placeholder: ph(c.couple?.bride) })}
+        </div>
+        ${field('To‘yxona nomi', 'i18n.uzc.venue.name', { placeholder: ph(c.venue?.name) })}
+        ${field('Manzil', 'i18n.uzc.venue.address', { placeholder: ph(c.venue?.address) })}` : ''}
+      ${has('ru') ? html`
+        <p class="hint"><b>Русский</b> — bo‘sh maydonda ko‘rsatilgan matn turadi.</p>
+        <div class="grid2">
+          ${field('Kuyov', 'i18n.ru.couple.groom', { placeholder: ph(c.couple?.groom) })}
+          ${field('Kelin', 'i18n.ru.couple.bride', { placeholder: ph(c.couple?.bride) })}
+        </div>
+        <div class="grid2">
+          ${field('Bosh sahifadagi yozuv', 'i18n.ru.texts.heroCaption', { placeholder: RU.heroCaption })}
+          ${field('Murojaat', 'i18n.ru.texts.greeting', { placeholder: RU.greeting })}
+        </div>
+        ${area('Taklif matni', 'i18n.ru.texts.invitation', { rows: 4, placeholder: RU.invitation(ph(c.couple?.groom), ph(c.couple?.bride)) })}
+        ${field('Yakuniy so‘z', 'i18n.ru.texts.closing', { placeholder: RU.closing })}
+        ${field('Mezbonlar', 'i18n.ru.hosts', { placeholder: ph(c.hosts) })}
+        ${field('To‘yxona nomi', 'i18n.ru.venue.name', { placeholder: ph(c.venue?.name) })}
+        ${field('Manzil', 'i18n.ru.venue.address', { placeholder: ph(c.venue?.address) })}
+        ${field('Shahar (osmon bo‘limi: “над городом …”)', 'i18n.ru.sky.city', { placeholder: ph(c.sky?.city) })}
+        ${c.dressCode?.text ? area('Dress-kod', 'i18n.ru.dressCode.text', { rows: 2, placeholder: 'Вечерний праздничный наряд.' }) : ''}
+        ${(c.program || []).length ? html`<p class="hint">To‘y dasturi (ruscha)</p>
+          ${(c.program || []).map((p, i) => field(`${p.time} — ${p.title}`, `i18n.ru.program.${i}`, { placeholder: ph(p.title) }))}` : ''}` : ''}
+    `,
+    { open: langs.length > 1 },
+  );
+}
+
+function updateLangs() {
+  const c = state.ed.config;
+  const picked = $$('[data-lang-opt]').filter((x) => x.checked).map((x) => x.dataset.langOpt);
+  if (!picked.length) {
+    toast('Kamida bitta til tanlang');
+    $('[data-lang-opt="uz"]').checked = true;
+    picked.push('uz');
+  }
+  const def = $('#lang-default')?.value;
+  const order = picked.includes(def) ? [def, ...picked.filter((l) => l !== def)] : picked;
+  if (order.length === 1 && order[0] === 'uz') delete c.languages;
+  else c.languages = order;
+  const wasOpen = $('#sec-langs')?.open;
+  $('#sec-langs').outerHTML = secOsmonLangs();
+  $('#sec-langs').open = !!wasOpen;
+  markDirty();
+}
+
+/* --- Kirish videosi (osmon) --- */
+const MAX_VIDEO = 12 * 1024 * 1024; // server chegarasi bilan bir xil
+
+function secIntroVideo() {
+  const c = state.ed.config;
+  const v = c.introVideo;
+  const up = v && state.ed.uploads[v];
+  return section(
+    'intro',
+    'Kirish videosi (ixtiyoriy)',
+    html`
+      <small class="hint">“Osmonni ochish” bosilganda video ovozi bilan to‘liq ekranda qo‘yiladi, tugagach (yoki “O‘tkazib yuborish”) taklifnoma ochiladi. Faqat MP4, 12 MB gacha — 720p, 1–2 daqiqa tavsiya etiladi. Jonli ko‘rinishda video ko‘rsatilmaydi.</small>
+      ${v ? html`<p class="hint hint--ok">✓ ${v}${up ? ` — ${(up.size / 1048576).toFixed(1)} MB, saqlanganda yuklanadi` : ''}${!up && !state.ed.isNew ? html` · <a href="${mediaSrc(v)}" target="_blank" rel="noopener">ko‘rish</a>` : ''}</p>` : ''}
+      <div class="actions-row">
+        <button class="btn btn--small" type="button" data-action="intro-set">${v ? 'Videoni almashtirish' : '+ Video tanlash'}</button>
+        ${v ? html`<button class="btn btn--small btn--ghost" type="button" data-action="intro-del">O‘chirish</button>` : ''}
+      </div>
+    `,
+    { open: !!v },
+  );
+}
+
+async function pickIntroVideo() {
+  const file = await new Promise((resolve) => {
+    const input = Object.assign(document.createElement('input'), { type: 'file', accept: 'video/mp4' });
+    input.onchange = () => resolve(input.files?.[0]);
+    input.click();
+  });
+  if (!file) return;
+  if (!/\.mp4$/i.test(file.name) && file.type !== 'video/mp4') return toast('Faqat MP4 video tanlang');
+  if (file.size > MAX_VIDEO) return toast(`Video ${(file.size / 1048576).toFixed(1)} MB — 12 MB dan oshmasin. Avval siqib oling.`);
+  const b64 = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+  const name = `intro-${Date.now().toString(36)}.mp4`;
+  state.ed.uploads[name] = { b64, url: URL.createObjectURL(file), size: file.size };
+  state.ed.config.introVideo = name;
+  $('#sec-intro').outerHTML = secIntroVideo();
+  markDirty();
+}
+
 function secGiftNote() {
   const on = !!state.ed.config.giftNote?.title;
   return section(
@@ -1376,7 +1491,7 @@ function showEditor() {
   const sections = yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secYzRu(), secYzTexts(), secSeo()]
     : osmon
-      ? [secMain(), secTexts(), secIslamic(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
+      ? [secMain(), secOsmonLangs(), secTexts(), secIslamic(), secIntroVideo(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
       : suzani || kitob
         ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secEffects(), secSeo()]
         : [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
@@ -1665,6 +1780,7 @@ function bindEditor() {
     const t = e.target;
     if (t.id === 'map-input') applyMapInput(t.value);
     if (t.dataset.toggle) setToggle(t.dataset.toggle, t.checked);
+    if (t.dataset.langOpt || t.id === 'lang-default') updateLangs();
     if (t.id === 'music-select') {
       const c = ed.config;
       const v = t.value;
@@ -1755,6 +1871,12 @@ function bindEditor() {
       markDirty();
     }
     if (a === 'bg-set') pickBackground();
+    if (a === 'intro-set') pickIntroVideo();
+    if (a === 'intro-del') {
+      delete state.ed.config.introVideo;
+      $('#sec-intro').outerHTML = secIntroVideo();
+      markDirty();
+    }
     if (b.dataset.photoSet) {
       e.preventDefault();
       const [file] = await pickFiles();

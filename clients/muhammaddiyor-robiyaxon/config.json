@@ -1,0 +1,106 @@
+{
+  "template": "osmon",
+  "languages": [
+    "uzc",
+    "ru"
+  ],
+  "couple": {
+    "groom": "Muhammaddiyor",
+    "bride": "Robiyaxon",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-11-22",
+    "time": "19:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Muhammaddiyor va Robiyaxonning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Shu kecha osmonidagi har bir yulduz guvoh bo‘ladigan baxtli lahzalarni siz bilan birga nishonlashni istaymiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "“Zamin” to‘yxonasi",
+    "address": "Toshkent shahri",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.294333%2C69.236268",
+    "yandexMaps": "https://yandex.uz/maps/?pt=69.236268,41.294333&z=17&l=map"
+  },
+  "sky": {
+    "city": "Toshkent",
+    "lat": 41.294333,
+    "lng": 69.236268
+  },
+  "program": [
+    {
+      "time": "19:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "19:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "20:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "22:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki bayramona libos. Tungi osmon ranglari — to‘q ko‘k, kumush va tilla — ayniqsa mos tushadi.",
+    "colors": [
+      "#0b1633",
+      "#1f2d5c",
+      "#c9ced9",
+      "#d8b976"
+    ]
+  },
+  "musicTrack": "musiqa-3",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-11-20",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "Муҳаммаддиёр ва Робияхон — никоҳ тўйига таклифнома",
+    "description": "Муҳаммаддиёр ва Робияхоннинг тўй таклифномаси. 2026 йил 22 ноябрь, соат 19:00 да «Замин» тўйхонасида сизни кутамиз. Приглашение на свадьбу: 22 ноября 2026, 19:00, тойхона «Замин».",
+    "ogImage": ""
+  },
+  "i18n": {
+    "ru": {
+      "couple": {
+        "groom": "Мухаммаддиёр",
+        "bride": "Робияхон"
+      },
+      "texts": {
+        "heroCaption": "Приглашение на свадьбу",
+        "greeting": "Дорогие гости!",
+        "invitation": "С радостью приглашаем вас на никах-той наших детей — Мухаммаддиёра и Робияхон. Мы будем счастливы разделить с вами светлые мгновения этой ночи, свидетелями которых станет каждая звезда на небе.",
+        "closing": "Ваше присутствие — большая честь для нас!"
+      },
+      "venue": {
+        "name": "Тойхона «Замин»",
+        "address": "г. Ташкент"
+      },
+      "sky": {
+        "city": "Ташкент"
+      },
+      "program": [
+        "Встреча гостей",
+        "Выход жениха и невесты",
+        "Праздничный банкет",
+        "Свадебный торт"
+      ],
+      "dressCode": {
+        "text": "Вечерний праздничный наряд. Особенно уместны цвета ночного неба — тёмно-синий, серебро и золото."
+      }
+    }
+  }
+}
