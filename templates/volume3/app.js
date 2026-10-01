@@ -1,54 +1,48 @@
-// "Volume 3" shabloni: to'q ko'k konvert va tilla muhr, ko'k kartush ichida ismlar, haftalik taqvim,
-// sana va vaqt, saroy surati bilan manzil, sanoq va uzuklar, ishtirokni tasdiqlash, mehmonlar kitobi.
+// "Volume 3" shabloni — gulli bog' (akvarel gullar foni, xira oynali kartochkalar, yashil ranglar).
+// Kirish: yurak belgisi, ismlar, sana va "Ochish" tugmasi gul guldastalari orasida; keyin marosim haqida,
+// aziz mehmonlar, sanoq va oy taqvimi, manzil va xarita, ishtirokni tasdiqlash, mehmonlar kitobi, yakun.
 // Ma'lumotlar — config.json (panel), javob va tilaklar — /api/rsvp, /api/wishes, brend — brand.config.js.
 // mountVolume3() ham saytda (main.js), ham boshqaruv panelining jonli ko'rinishida ishlatiladi.
 import '../osmon/fonts/fonts.css';
 import './fonts/fonts.css';
 import './styles.css';
-import './extra.css';
 import { deriveConfig, musicUrlOf, MONTHS } from '../../src/lib/config.js';
 import { html, raw } from '../../src/lib/dom.js';
-import { LANGS, siteLangs, pickLang, rememberLang, localize, scriptSafe, cyr } from '../../src/lib/i18n.js';
+import { LANGS, siteLangs, pickLang, rememberLang, localize, cyr } from '../../src/lib/i18n.js';
 import brand from '@brand-config';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const pad = (n) => String(n).padStart(2, '0');
-const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
 /* ------------------------------------ Matnlar ------------------------------------ */
 const RU_MONTHS = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
 const RU_MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-const UZ_WEEKDAYS = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
-const RU_WEEKDAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+const UZ_WEEKDAYS = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'];
+const RU_WEEKDAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
 
 const T = {
   uz: {
-    top: 'SIZ',
-    middle: 'TO‘YIMIZGA',
-    script: 'taklif etilgansiz',
-    withLove: 'muhabbat ila,',
-    open: 'ochish',
-    amp: 'va',
-    blessing: 'Alloh ularni qalbini sevgi ila birlashtirdi<br/>(Anfol surasi, 63-oyat)',
-    welcome: 'Aziz&nbsp;va&nbsp;qadrdon<br/><span class="no-break">insonimiz!</span>',
-    lead: 'Sizni nikoh to‘yimiz munosabati bilan bo‘lib o‘tadigan "Visol oqshomi"ga taklif etamiz.',
-    scroll: 'Pastga suring',
-    weekdays: ['DU', 'SE', 'CHOR', 'PAY', 'JU', 'SHA', 'YA'],
-    dateTime: 'Sana va vaqt',
-    dateLabel: 'Sana',
-    timeLabel: 'Vaqt',
-    starts: 'Marosim boshlanishi',
-    location: 'To‘y manzili',
-    yandex: 'Yandex xaritasi',
-    google: 'Google Maps',
-    countdown: 'Har lahzani sanayapmiz',
-    units: ['Kun', 'Soat', 'Daqiqa', 'Soniya'],
-    waiting: 'Sizni intiqlik bilan kutamiz.',
-    today: 'Bugun aynan o‘sha kun. Sizni kutamiz.',
+    gateInvite: 'BIZNING BAXTLI KUNIMIZNI SIZ BILAN BIRGA NISHONLASH VA QUVONCHIMIZGA SHERIK BO‘LISHINGIZ UCHUN SIZNI NIKOH TO‘YIMIZGA SAMIMIY TAKLIF ETAMIZ',
+    open: 'Ochish',
+    ceremonyLabel: 'Marosim haqida',
+    ceremonyInvite: 'SIZNI FARZANDLARIMIZ NIKOH TO‘YI MUNOSABATI BILAN O‘TKAZILADIGAN TANTANAGA CHIN QALBDAN TAKLIF ETAMIZ',
+    willHold: 'NIKOH MAROSIMI BO‘LIB O‘TADI',
+    at: 'Soat',
+    dearGuests: 'Aziz Mehmonimiz',
+    dearText: ['Sizni nikoh to‘yimiz munosabati bilan', 'bo‘lib o‘tadigan “Visol oqshomi”ga', 'taklif etamiz'],
+    withRespect: 'Hurmat bilan,',
+    timeRemaining: 'To‘ygacha qolgan vaqt',
+    units: ['KUN', 'SOAT', 'DAQIQA', 'SONIYA'],
+    today: 'Bugun aynan o‘sha kun!',
+    weekdays: ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'],
     program: 'To‘y dasturi',
     dress: 'Kiyim uslubi',
-    rsvp: 'Iltimos, ishtirokingizni tasdiqlang',
+    locationLabel: 'Manzil',
+    yandex: 'Yandex xarita',
+    google: 'Google Maps',
+    rsvpLabel: 'R.S.V.P.',
+    rsvpTitle: 'Iltimos, ishtirokingizni tasdiqlang',
     yourName: 'Ismingiz',
     namePh: 'Ism va familiya',
     yes: 'Albatta boraman',
@@ -57,10 +51,14 @@ const T = {
     person: 'kishi',
     confirm: 'Tasdiqlash',
     deadline: (d, m) => `Javob muddati: ${d}-${MONTHS[m - 1]}gacha`,
-    guestbook: 'Mehmonlar Kitobi',
+    gbLabel: 'Mehmonlar Kitobi',
+    gbTitle: 'Mehmonlar Kitobi',
     gbName: 'Ismingizni kiriting',
     gbMsg: 'Xabaringizni yozing',
     gbSend: 'Xabar yuborish',
+    closingLabel: 'Sizni kutamiz',
+    seeYou: 'Ko‘rishguncha',
+    withLove: 'Sevgi bilan',
     sending: 'Yuborilmoqda…',
     needName: 'Iltimos, ismingizni kiriting.',
     needAnswer: 'Iltimos, kela olishingizni belgilang.',
@@ -80,31 +78,26 @@ const T = {
     musicOff: 'Musiqani o‘chirish',
   },
   ru: {
-    top: 'ВЫ',
-    middle: 'ПРИГЛАШЕНЫ',
-    script: 'на свадьбу',
-    withLove: 'с любовью,',
-    open: 'нажмите',
-    amp: 'и',
-    blessing: 'Аллах объединил их сердца любовью<br/>(сура «Аль-Анфаль», аят 63)',
-    welcome: 'Дорогие&nbsp;наши<br/>родные&nbsp;и&nbsp;<span class="no-break">близкие!</span>',
-    lead: 'По случаю нашего бракосочетания приглашаем Вас на торжественный свадебный вечер.',
-    scroll: 'Листайте вниз',
-    weekdays: ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'],
-    dateTime: 'Дата и время',
-    dateLabel: 'Дата',
-    timeLabel: 'Время',
-    starts: 'Начало торжества',
-    location: 'Место проведения',
-    yandex: 'Яндекс Карты',
-    google: 'Google Maps',
-    countdown: 'Считаем каждое мгновение',
-    units: ['Дней', 'Часов', 'Минут', 'Секунд'],
-    waiting: 'Мы ждём вас.',
-    today: 'Этот день настал. Мы ждём вас.',
+    gateInvite: 'ОТ ВСЕЙ ДУШИ ПРИГЛАШАЕМ ВАС РАЗДЕЛИТЬ С НАМИ РАДОСТЬ НАШЕГО СЧАСТЛИВОГО ДНЯ И ПОЧТИТЬ СВОИМ ПРИСУТСТВИЕМ НАШЕ БРАКОСОЧЕТАНИЕ',
+    open: 'Открыть',
+    ceremonyLabel: 'О церемонии',
+    ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА СВАДЕБНОЕ ТОРЖЕСТВО ПО СЛУЧАЮ БРАКОСОЧЕТАНИЯ НАШИХ ДЕТЕЙ',
+    willHold: 'ЦЕРЕМОНИЯ БРАКОСОЧЕТАНИЯ СОСТОИТСЯ',
+    at: 'в',
+    dearGuests: 'Дорогие гости',
+    dearText: ['По случаю нашего бракосочетания', 'приглашаем Вас на торжественный', 'свадебный вечер'],
+    withRespect: 'С уважением,',
+    timeRemaining: 'Время до свадьбы',
+    units: ['ДНИ', 'ЧАСЫ', 'МИНУТЫ', 'СЕКУНДЫ'],
+    today: 'Этот день настал!',
+    weekdays: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
     program: 'Программа вечера',
     dress: 'Дресс-код',
-    rsvp: 'Пожалуйста, подтвердите присутствие',
+    locationLabel: 'Место проведения',
+    yandex: 'Яндекс Карты',
+    google: 'Google Maps',
+    rsvpLabel: 'R.S.V.P.',
+    rsvpTitle: 'Пожалуйста, подтвердите своё присутствие',
     yourName: 'Ваше имя',
     namePh: 'Имя и фамилия',
     yes: 'Обязательно приду',
@@ -113,10 +106,14 @@ const T = {
     person: 'чел.',
     confirm: 'Подтвердить',
     deadline: (d, m) => `Ответ до ${d} ${RU_MONTHS_GEN[m - 1]}`,
-    guestbook: 'Книга гостей',
+    gbLabel: 'Гостевая книга',
+    gbTitle: 'Гостевая книга',
     gbName: 'Введите ваше имя',
     gbMsg: 'Напишите пожелание',
     gbSend: 'Отправить',
+    closingLabel: 'Мы ждём вас',
+    seeYou: 'До встречи',
+    withLove: 'С любовью',
     sending: 'Отправка…',
     needName: 'Пожалуйста, введите имя.',
     needAnswer: 'Пожалуйста, отметьте, сможете ли прийти.',
@@ -136,19 +133,8 @@ const T = {
     musicOff: 'Выключить музыку',
   },
 };
-// O'zbek kirill: interfeys matnlari lotinchadan o'giriladi
-const texts = (lang) => {
-  if (lang === 'ru') return T.ru;
-  if (lang !== 'uzc') return T.uz;
-  return { ...cyr(T.uz), weekdays: ['ДУ', 'СЕ', 'ЧОР', 'ПАЙ', 'ЖУ', 'ШАН', 'ЯК'], google: 'Google Maps' };
-};
-
-const RU_DEFAULTS = {
-  heroCaption: '',
-  greeting: '',
-  invitation: () => T.ru.lead,
-  closing: '',
-};
+const texts = (lang) => (lang === 'ru' ? T.ru : lang === 'uzc' ? { ...cyr(T.uz), google: 'Google Maps', rsvpLabel: 'R.S.V.P.' } : T.uz);
+const RU_DEFAULTS = { heroCaption: '', greeting: '', invitation: () => '', closing: '' };
 
 /* ---------------------------- Qayta chizish uchun tozalash ---------------------------- */
 let scope = null;
@@ -187,30 +173,6 @@ function newScope() {
   return scope;
 }
 
-const ICON = {
-  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',
-  pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>',
-  send: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>',
-  user: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-  msg: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
-  insta: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>',
-};
-
-/* ------------------------------------ Sana ------------------------------------ */
-function dates(d, lang) {
-  const ru = lang === 'ru';
-  const month = ru ? RU_MONTHS[d.month - 1] : d.monthName;
-  // Taqvim: to'y kuni joylashgan hafta (dushanbadan)
-  const base = Date.UTC(d.year, d.month - 1, d.day);
-  const shift = (d.weekday + 6) % 7;
-  return {
-    head: `${cap(month)}, ${d.year}`,
-    full: ru ? `${d.day} ${RU_MONTHS_GEN[d.month - 1]} ${d.year}` : `${d.day}-${month}, ${d.year}-yil`,
-    weekday: (ru ? RU_WEEKDAYS : UZ_WEEKDAYS)[d.weekday],
-    week: Array.from({ length: 7 }, (_, i) => new Date(base + (i - shift) * 86400000).getUTCDate()),
-  };
-}
-
 const session = {
   get(k) {
     try {
@@ -228,165 +190,234 @@ const session = {
   },
 };
 
+const ICON = {
+  heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.2 5.3 3.2 1.7-2 3.2-3.2 5.3-3.2 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z" fill="currentColor"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>',
+  send: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  user: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  msg: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  insta: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>',
+};
+
+/* ------------------------------------ Sana ------------------------------------ */
+function dates(d, lang) {
+  const ru = lang === 'ru';
+  // Oy taqvimi (dushanbadan): bo'sh kataklar null
+  const first = (new Date(Date.UTC(d.year, d.month - 1, 1)).getUTCDay() + 6) % 7;
+  const days = new Date(Date.UTC(d.year, d.month, 0)).getUTCDate();
+  const cells = Array(first).fill(null);
+  for (let n = 1; n <= days; n++) cells.push(n);
+  while (cells.length % 7) cells.push(null);
+  return {
+    full: ru ? `${d.day} ${RU_MONTHS_GEN[d.month - 1]} ${d.year}` : `${d.day} ${d.monthName} ${d.year}`,
+    weekday: (ru ? RU_WEEKDAYS : UZ_WEEKDAYS)[d.weekday],
+    month: ru ? RU_MONTHS_GEN[d.month - 1] : d.monthName,
+    monthYear: ru ? `${RU_MONTHS[d.month - 1]} ${d.year}` : `${d.monthName} ${d.year}`,
+    cells,
+  };
+}
+
+/* ------------------------------------ Bo'laklar ------------------------------------ */
+const divider = (cls = '') => html`<div class="gdn-divider ${cls}" aria-hidden="true"><span></span><b>❦</b><span></span></div>`;
+const names = (d, size) => html`
+  <div class="gdn-names gdn-names--${size}">
+    <span>${d.groom}</span><i>&amp;</i><span>${d.bride}</span>
+  </div>`;
+const card = (inner, cls = '') => html`<div class="gdn-card reveal ${cls}">${inner}</div>`;
+
 /* ------------------------------------ Sahifa ------------------------------------ */
 function renderPage(c, d, L, lang, langs) {
-  const t = c.texts || {};
-  // Qo'lyozma shriftda қ/ҳ/ғ yo'q — kirill ismlarda к/х/г bilan chiqadi
-  const first = scriptSafe(d.groom);
-  const second = scriptSafe(d.bride);
   const dt = dates(d, lang);
+  const t = c.texts || {};
   const program = (c.program || []).filter((p) => p?.time && p?.title);
   const dress = c.dressCode?.text?.trim() ? c.dressCode : null;
   const v = c.venue;
-  const amp = L.amp;
-  const sec = c.sections || {};
-  const on = (k) => sec[k] !== false;
-  const blessing = c.texts?.blessing != null ? html`${c.texts.blessing}` : raw(L.blessing);
+  const on = (k) => (c.sections || {})[k] !== false;
 
   return html`
-    <div class="rylx" id="rylx">
-      <button class="v3-music" id="music-toggle" type="button" aria-label="${L.musicOn}" aria-pressed="false" hidden>${raw(ICON.play)}</button>
+    <div class="gdn-root" id="gdn">
+      <div class="gdn-canvas" aria-hidden="true"></div>
+      <button class="gdn-music" id="music-toggle" type="button" aria-label="${L.musicOn}" aria-pressed="false" hidden>${raw(ICON.play)}</button>
       ${langs.length > 1 ? html`
-      <nav class="language-switcher" aria-label="Language">
-        ${langs.map((l) => html`<button type="button" class="language-option ${l === lang ? 'is-active' : ''}" data-lang="${l}" aria-pressed="${l === lang}">${{ uz: 'UZ', uzc: 'ЎЗ', ru: 'RU' }[l]}</button>`)}
-      </nav>` : ''}
+      <div class="gdn-langs">
+        ${langs.map((l) => html`<button type="button" class="${l === lang ? 'is-active' : ''}" data-lang="${l}" aria-pressed="${l === lang}">${{ uz: 'UZ', uzc: 'ЎЗ', ru: 'RU' }[l]}</button>`)}
+      </div>` : ''}
 
-      <section class="intro" id="intro">
-        <div class="envelope-stage">
-          <div class="flap flap-top">
-            <p class="flap-note">
-              <span class="flap-note-top">${L.top}</span>
-              <span class="flap-note-middle">${L.middle}</span>
-              <span class="flap-note-script">${L.script}</span>
-            </p>
+      <div class="gdn-gate" id="gate">
+        <div class="gdn-canvas" aria-hidden="true"></div>
+        <div class="gdn-gate__box">
+          <img class="gdn-deco-top" src="/images/garden/flower2-decoration.webp" alt="" aria-hidden="true" draggable="false" />
+          <div class="gdn-card gdn-gate__card">
+            <div class="gdn-heart">${raw(ICON.heart)}</div>
+            ${names(d, 'gate')}
+            ${divider('gdn-my6')}
+            <p class="gdn-date">${dt.full}</p>
+            <p class="gdn-label gdn-gate__invite">${L.gateInvite}</p>
+            <button class="gdn-btn gdn-label" id="gate-open" type="button">${L.open} ${raw(ICON.arrow)}</button>
           </div>
-          <div class="flap flap-left"></div>
-          <div class="flap flap-right"></div>
-          <div class="flap flap-bottom">
-            <p class="flap-signature"><span>${L.withLove}</span><br /><strong>${first} ${amp} ${second}</strong></p>
-          </div>
-          <button class="seal-button" id="seal" type="button" aria-label="${L.open}"><span>${L.open}</span></button>
+          <img class="gdn-deco-bottom" src="/images/garden/flower5-bottom.webp" alt="" aria-hidden="true" draggable="false" />
         </div>
-      </section>
+      </div>
 
-      <main class="invitation">
-        <section class="letter-hero reveal" id="letterHero">
-          <article class="ornament-hero" role="img" aria-label="${first} ${amp} ${second}">
-            <div class="ornament-content">
-              <p class="ornament-names">
-                <span class="ornament-name-line">${first}</span>
-                <span class="ornament-name-amp">${amp}</span>
-                <span class="ornament-name-line">${second}</span>
-              </p>
-              <p class="ornament-message">${blessing}</p>
-              <div class="ornament-date" aria-hidden="true"><span>${pad(d.day)}</span><i></i><span>${pad(d.month)}</span><i></i><span>${String(d.year).slice(2)}</span></div>
+      <main class="gdn-main">
+        <section class="gdn-hero">
+          <div class="gdn-card reveal gdn-hero__card">
+            <p class="gdn-label gdn-accent gdn-mb6">${L.ceremonyLabel}</p>
+            <p class="gdn-label gdn-mb9">${L.ceremonyInvite}</p>
+            ${names(d, 'hero')}
+            ${divider('gdn-my9')}
+            <p class="gdn-label">${L.willHold}</p>
+            <p class="gdn-venue">${v.name}</p>
+            ${v.address ? html`<p class="gdn-small">${v.address}</p>` : ''}
+            <div class="gdn-dayrow">
+              <span class="gdn-label gdn-dayrow__side gdn-right">${dt.weekday}</span>
+              <span class="gdn-vline"></span>
+              <span class="gdn-dayrow__num">${pad(d.day)}</span>
+              <span class="gdn-vline"></span>
+              <span class="gdn-label gdn-dayrow__side gdn-left">${dt.month}</span>
             </div>
-          </article>
-          <div class="scroll-indicator" aria-hidden="true"><span class="scroll-indicator__text">${L.scroll}</span><span class="scroll-indicator__arrow">↓</span></div>
-        </section>
-
-        <section class="letter-card reveal" id="letterCard">
-          <h1 class="hero-title">${t.greeting ? t.greeting : raw(L.welcome)}</h1>
-          <p class="lead" style="white-space: pre-wrap">${t.invitation || L.lead}</p>
-        </section>
-
-        <section class="calendar-section reveal" aria-label="${dt.head}">
-          <div class="calendar" role="img" aria-label="${dt.head}">
-            <div class="calendar-head"><span>${dt.head}</span></div>
-            <div class="calendar-grid week-days">${L.weekdays.map((w) => html`<span>${w}</span>`)}</div>
-            <div class="calendar-grid days">
-              ${dt.week.map((n) => (n === d.day ? html`<div class="heart-cell"><span class="heart-day"><span>${n}</span></span></div>` : html`<span>${n}</span>`))}
-            </div>
+            <p class="gdn-year">${d.year}</p>
+            <p class="gdn-label gdn-accent gdn-mt6">${L.at} ${c.event.time}</p>
           </div>
         </section>
 
-        ${on('details') ? html`
-        <section class="datetime-section reveal" aria-label="${L.dateTime}">
-          <h2 class="datetime-title">${L.dateTime}</h2>
-          <div class="datetime-panel">
-            <div class="datetime-item"><span class="datetime-label">${L.dateLabel}</span><span class="datetime-value">${dt.full}</span><span class="datetime-note">${dt.weekday}</span></div>
-            <span class="datetime-rule" aria-hidden="true"></span>
-            <div class="datetime-item"><span class="datetime-label">${L.timeLabel}</span><span class="datetime-value">${c.event.time}</span><span class="datetime-note">${L.starts}</span></div>
-          </div>
-        </section>` : ''}
-
-        ${program.length ? html`
-        <section class="rylx-extra reveal" aria-label="${L.program}">
-          <h2 class="rylx-extra-title">${L.program}</h2>
-          <div class="rylx-card"><ol class="v3-program">${program.map((p) => html`<li><time>${p.time}</time><i aria-hidden="true"></i><span>${p.title}</span></li>`)}</ol></div>
-        </section>` : ''}
-
-        ${on('location') ? html`
-        <section class="location-section reveal" aria-label="${L.location}">
-          <h2 class="location-title">${L.location}</h2>
-          <p class="venue-name">${v.name}</p>
-          ${v.address ? html`<p class="venue-address">${v.address}</p>` : ''}
-          ${v.googleMaps || v.yandexMaps ? html`
-          <div class="map-links">
-            ${v.yandexMaps ? html`<a class="map-link" href="${v.yandexMaps}" target="_blank" rel="noopener noreferrer"><span>${L.yandex}</span></a>` : ''}
-            ${v.googleMaps ? html`<a class="map-link" href="${v.googleMaps}" target="_blank" rel="noopener noreferrer"><span>${L.google}</span></a>` : ''}
-          </div>` : ''}
+        ${on('dearGuests') ? html`
+        <section class="gdn-sec">
+          ${card(html`
+            <p class="gdn-label gdn-accent gdn-mb6">${t.greeting || L.dearGuests}</p>
+            ${t.invitation
+              ? html`<p class="gdn-text gdn-pre">${t.invitation}</p>`
+              : html`<div class="gdn-text">${L.dearText.map((x) => html`<p>${x}</p>`)}</div>`}
+            ${divider('gdn-my8')}
+            <p class="gdn-label gdn-accent gdn-xs gdn-mb3">${L.withRespect}</p>
+            <p class="gdn-couple">${d.groom} <i>&amp;</i> ${d.bride}</p>
+            ${c.hosts ? html`<p class="gdn-small gdn-mt3">${c.hosts}</p>` : ''}
+          `, 'gdn-card--xl')}
         </section>` : ''}
 
         ${c.effects?.countdown === false || !on('countdown') ? '' : html`
-        <section class="countdown-section reveal" aria-label="${L.countdown}">
-          <h2>${L.countdown}</h2>
-          <div class="countdown" role="timer" aria-live="off">
-            ${L.units.map((u, i) => html`<div class="time-unit"><span data-unit="${i}">00</span><small>${u}</small></div>`)}
-          </div>
-          <p class="countdown-message" id="countdown-message">${L.waiting}</p>
+        <section class="gdn-sec" id="details">
+          ${card(html`
+            <p class="gdn-label gdn-accent gdn-mb6">${L.timeRemaining}</p>
+            <div class="gdn-count" role="timer">
+              ${L.units.map((u, i) => html`<div class="gdn-count__cell"><div class="gdn-count__num" data-unit="${i}">00</div><div class="gdn-label gdn-count__unit">${u}</div></div>`)}
+            </div>
+            <p class="gdn-text gdn-mt6" id="countdown-done" hidden>${L.today}</p>
+            <div class="gdn-mt12">
+              <p class="gdn-label gdn-mb5 gdn-xs">${dt.monthYear}</p>
+              <table class="gdn-cal">
+                <thead><tr>${L.weekdays.map((w) => html`<th>${w}</th>`)}</tr></thead>
+                <tbody>
+                  ${Array.from({ length: dt.cells.length / 7 }, (_, r) => html`<tr>${dt.cells.slice(r * 7, r * 7 + 7).map((n) => html`<td>${n ? (n === d.day ? html`<span class="on">${n}</span>` : n) : ''}</td>`)}</tr>`)}
+                </tbody>
+              </table>
+            </div>
+          `, 'gdn-card--xl')}
         </section>`}
 
+        ${program.length ? html`
+        <section class="gdn-sec">
+          ${card(html`
+            <h2 class="gdn-h2">${L.program}</h2>
+            ${divider('gdn-mt5 gdn-mb8')}
+            <ol class="gdn-program">${program.map((p) => html`<li><time>${p.time}</time><i aria-hidden="true"></i><span>${p.title}</span></li>`)}</ol>
+          `, 'gdn-card--xl')}
+        </section>` : ''}
+
+        ${on('location') ? html`
+        <section class="gdn-sec" id="location">
+          ${card(html`
+            <p class="gdn-label gdn-accent gdn-mb3">${L.locationLabel}</p>
+            <h2 class="gdn-h2">${v.name}</h2>
+            ${v.address ? html`<p class="gdn-small gdn-mt4 gdn-pinline">${raw(ICON.pin)} ${v.address}</p>` : ''}
+            ${divider('gdn-mt6 gdn-mb8')}
+            ${v.mapEmbed ? html`<div class="gdn-map"><iframe title="map" src="${v.mapEmbed}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe></div>` : ''}
+            ${v.googleMaps || v.yandexMaps ? html`
+            <div class="gdn-pills">
+              ${v.yandexMaps ? html`<a class="gdn-pill gdn-label" href="${v.yandexMaps}" target="_blank" rel="noopener">${raw(ICON.pin)} ${L.yandex}</a>` : ''}
+              ${v.googleMaps ? html`<a class="gdn-pill gdn-label" href="${v.googleMaps}" target="_blank" rel="noopener">${raw(ICON.pin)} ${L.google} ${raw(ICON.arrow)}</a>` : ''}
+            </div>` : ''}
+          `, 'gdn-card--2xl')}
+        </section>` : ''}
+
         ${dress ? html`
-        <section class="rylx-extra reveal" aria-label="${L.dress}">
-          <h2 class="rylx-extra-title">${L.dress}</h2>
-          <p class="rylx-extra-sub">${dress.text}</p>
-          ${dress.colors?.length ? html`<div class="v3-swatches">${dress.colors.map((col) => html`<span style="--c:${col}"></span>`)}</div>` : ''}
+        <section class="gdn-sec">
+          ${card(html`
+            <h2 class="gdn-h2">${L.dress}</h2>
+            ${divider('gdn-mt5 gdn-mb6')}
+            <p class="gdn-text">${dress.text}</p>
+            ${dress.colors?.length ? html`<div class="gdn-swatches">${dress.colors.map((col) => html`<span style="--c:${col}"></span>`)}</div>` : ''}
+          `, 'gdn-card--xl')}
         </section>` : ''}
 
         ${c.rsvp?.enabled ? html`
-        <section class="rylx-extra reveal" id="rsvp">
-          <h2 class="rylx-extra-title">${L.rsvp}</h2>
-          <div class="rylx-card">
-            <form class="v3-form" id="rsvp-form" novalidate>
-              <div class="v3-choice" role="radiogroup">
+        <section class="gdn-sec" id="rsvp">
+          ${card(html`
+            <div class="gdn-center gdn-mb8">
+              <p class="gdn-label gdn-accent gdn-mb3">${L.rsvpLabel}</p>
+              <h2 class="gdn-h2">${L.rsvpTitle}</h2>
+            </div>
+            <form class="gdn-form" id="rsvp-form" novalidate>
+              <div class="gdn-choice" role="radiogroup">
                 <label><input type="radio" name="attending" value="yes" /><span>${L.yes}</span></label>
                 <label><input type="radio" name="attending" value="no" /><span>${L.no}</span></label>
               </div>
-              <label class="v3-field"><span class="v3-label">${L.yourName}</span><span class="v3-input">${raw(ICON.user)}<input name="name" autocomplete="name" maxlength="80" required placeholder="${L.namePh}" /></span></label>
-              <label class="v3-field" id="guests-field" hidden><span class="v3-label">${L.guests}</span>
-                <span class="v3-input"><select name="guests">${Array.from({ length: d.maxGuests }, (_, i) => html`<option value="${i + 1}">${i + 1} ${L.person}</option>`)}</select></span>
+              <label class="gdn-field"><span class="gdn-flabel">${L.yourName}</span><span class="gdn-input">${raw(ICON.user)}<input name="name" autocomplete="name" maxlength="80" required placeholder="${L.namePh}" /></span></label>
+              <label class="gdn-field" id="guests-field" hidden><span class="gdn-flabel">${L.guests}</span>
+                <span class="gdn-input"><select name="guests">${Array.from({ length: d.maxGuests }, (_, i) => html`<option value="${i + 1}">${i + 1} ${L.person}</option>`)}</select></span>
               </label>
               <label class="hp" aria-hidden="true">Veb-sayt<input name="website" tabindex="-1" autocomplete="off" /></label>
-              <button class="v3-btn" type="submit"><span>${L.confirm}</span></button>
-              <p class="v3-status" id="rsvp-status" role="status" aria-live="polite"></p>
-              ${d.rsvpClosesAt ? html`<p class="v3-hint">${L.deadline(Number(c.rsvp.deadline.slice(8)), Number(c.rsvp.deadline.slice(5, 7)))}</p>` : ''}
+              <button class="gdn-btn gdn-label gdn-btn--wide" type="submit">${L.confirm}</button>
+              <p class="gdn-status" id="rsvp-status" role="status" aria-live="polite"></p>
+              ${d.rsvpClosesAt ? html`<p class="gdn-small gdn-center">${L.deadline(Number(c.rsvp.deadline.slice(8)), Number(c.rsvp.deadline.slice(5, 7)))}</p>` : ''}
             </form>
-            <div class="v3-done" id="rsvp-done" hidden></div>
-          </div>
+            <div class="gdn-done" id="rsvp-done" hidden></div>
+          `, 'gdn-card--xl gdn-left-text')}
         </section>
 
         ${c.rsvp.showWishes === false ? '' : html`
-        <section class="rylx-extra reveal" id="guestbook">
-          <h2 class="rylx-extra-title">${L.guestbook}</h2>
-          <div class="rylx-card">
-            <form class="v3-form" id="gb-form" novalidate>
-              <label class="v3-input">${raw(ICON.user)}<input name="name" maxlength="80" placeholder="${L.gbName}" aria-label="${L.gbName}" /></label>
-              <label class="v3-input v3-input--area">${raw(ICON.msg)}<textarea name="message" rows="5" maxlength="500" placeholder="${L.gbMsg}" aria-label="${L.gbMsg}"></textarea></label>
-              <button class="v3-btn v3-btn--gradient" type="submit"><span>${L.gbSend}</span>${raw(ICON.send)}</button>
-              <p class="v3-status" id="gb-status" role="status" aria-live="polite"></p>
-            </form>
+        <section class="gdn-sec" id="guestbook">
+          <div class="gdn-wrap-2xl">
+            ${card(html`
+              <div class="gdn-center gdn-mb8">
+                <p class="gdn-label gdn-accent gdn-mb3">${L.gbLabel}</p>
+                <h2 class="gdn-h2 gdn-h2--sm">${L.gbTitle}</h2>
+              </div>
+              <form class="gdn-form" id="gb-form" novalidate>
+                <label class="gdn-input">${raw(ICON.user)}<input name="name" maxlength="80" placeholder="${L.gbName}" aria-label="${L.gbName}" /></label>
+                <label class="gdn-input gdn-input--area">${raw(ICON.msg)}<textarea name="message" rows="5" maxlength="500" placeholder="${L.gbMsg}" aria-label="${L.gbMsg}"></textarea></label>
+                <button class="gdn-btn gdn-label gdn-btn--wide" type="submit">${L.gbSend} ${raw(ICON.send)}</button>
+                <p class="gdn-status" id="gb-status" role="status" aria-live="polite"></p>
+              </form>
+            `, 'gdn-card--flat gdn-left-text')}
+            <div class="gdn-wishes" id="wishes" hidden></div>
           </div>
-          <div class="rylx-grid" id="wishes" hidden></div>
         </section>`}` : ''}
 
-        <footer class="invite-credit">
+        <section class="gdn-closing">
+          ${card(html`
+            <p class="gdn-label gdn-accent gdn-mb5">${t.closing ? t.closing : L.closingLabel}</p>
+            <p class="gdn-script">${L.seeYou}</p>
+            <div class="gdn-float">${raw(ICON.heart)}</div>
+          `, 'gdn-closing__card')}
+        </section>
+
+        <footer class="gdn-footer">
           ${brand?.enabled ? html`
-          <div class="v3-cta rylx-cta">
-            <p class="v3-cta__title">${L.ctaTitle}</p>
-            <p class="v3-cta__sub">${L.ctaSub}</p>
-            <a class="v3-cta__btn" href="${brand.url}" target="_blank" rel="noopener">${raw(ICON.insta)}<span>${brand.name}</span></a>
+          <div class="gdn-card reveal gdn-cta">
+            <p class="gdn-cta__title">${L.ctaTitle}</p>
+            <p class="gdn-label gdn-cta__sub">${L.ctaSub}</p>
+            <a class="gdn-cta__btn" href="${brand.url}" target="_blank" rel="noopener">${raw(ICON.insta)}<span>${brand.name}</span></a>
           </div>` : ''}
+          <div class="gdn-card reveal gdn-sign">
+            ${divider('gdn-mb5')}
+            <p class="gdn-couple gdn-couple--sm">${d.groom} <i>&amp;</i> ${d.bride}</p>
+            <p class="gdn-label gdn-accent gdn-xs">${L.withLove}</p>
+            <p class="gdn-floral">— Floral —</p>
+          </div>
         </footer>
       </main>
       <audio id="music" loop preload="none"></audio>
@@ -394,28 +425,18 @@ function renderPage(c, d, L, lang, langs) {
   `.value;
 }
 
-/* ------------------------------------ Ismlarni sig'dirish ------------------------------------ */
-function fitNames() {
-  for (const line of $$('.ornament-name-line')) {
-    line.style.setProperty('--line-fit-scale', '1');
-    const over = line.scrollWidth / Math.max(1, line.clientWidth);
-    if (over > 1) line.style.setProperty('--line-fit-scale', String(Math.max(0.5, 0.98 / over)));
-  }
-}
-
 /* ------------------------------------ Sanoq ------------------------------------ */
-function initCountdown(d, L) {
+function initCountdown(d) {
   const cells = $$('[data-unit]');
   if (!cells.length) return;
   const tick = () => {
     const diff = Math.max(0, d.start.getTime() - Date.now());
     const s = Math.floor(diff / 1000);
-    const vals = [Math.floor(s / 86400), Math.floor((s % 86400) / 3600), Math.floor((s % 3600) / 60), s % 60];
-    vals.forEach((val, i) => {
+    [Math.floor(s / 86400), Math.floor((s % 86400) / 3600), Math.floor((s % 3600) / 60), s % 60].forEach((val, i) => {
       const txt = pad(val);
       if (cells[i].textContent !== txt) cells[i].textContent = txt;
     });
-    if (diff <= 0) $('#countdown-message').textContent = L.today;
+    if (diff <= 0) $('#countdown-done').hidden = false;
     return diff > 0;
   };
   if (tick()) {
@@ -429,21 +450,18 @@ function initCountdown(d, L) {
 function initReveal() {
   const els = $$('.reveal');
   if (!('IntersectionObserver' in window)) {
-    els.forEach((el) => el.classList.add('visible'));
+    els.forEach((el) => el.classList.add('is-in'));
     return;
   }
   const io = scope.observe(new IntersectionObserver(
     (entries, obs) => entries.forEach((e) => {
       if (!e.isIntersecting) return;
-      e.target.classList.add('visible');
+      e.target.classList.add('is-in');
       obs.unobserve(e.target);
     }),
-    { threshold: 0.15, rootMargin: '0px 0px -6% 0px' },
+    { threshold: 0.12 },
   ));
-  els.forEach((el, i) => {
-    el.style.transitionDelay = `${Math.min(i * 90, 360)}ms`;
-    io.observe(el);
-  });
+  els.forEach((el) => io.observe(el));
 }
 
 /* ------------------------------------ Musiqa ------------------------------------ */
@@ -515,7 +533,7 @@ function initRsvp(c, d, L, preview) {
   const showDone = (text, withChange = true) => {
     form.hidden = true;
     doneBox.hidden = false;
-    doneBox.innerHTML = html`<span class="v3-done__heart" aria-hidden="true"></span><p>${text}</p>${withChange ? html`<button class="v3-link" type="button" id="rsvp-change">${L.change}</button>` : ''}`.value;
+    doneBox.innerHTML = html`<span class="gdn-done__heart">${raw(ICON.heart)}</span><p>${text}</p>${withChange ? html`<button class="gdn-link" type="button" id="rsvp-change">${L.change}</button>` : ''}`.value;
     $('#rsvp-change')?.addEventListener('click', () => {
       doneBox.hidden = true;
       form.hidden = false;
@@ -552,10 +570,10 @@ function initRsvp(c, d, L, preview) {
     if (known.has(key)) return;
     known.add(key);
     wishes.hidden = false;
-    const card = document.createElement('div');
-    card.className = 'rylx-card v3-wish';
-    card.innerHTML = html`<p class="v3-wish__msg">“${w.message}”</p><p class="v3-wish__name">— ${w.name}</p>`.value;
-    fresh ? wishes.prepend(card) : wishes.append(card);
+    const el = document.createElement('div');
+    el.className = 'gdn-card gdn-wish';
+    el.innerHTML = html`<p class="gdn-wish__msg">“${w.message}”</p><p class="gdn-label gdn-accent gdn-wish__name">— ${w.name}</p>`.value;
+    fresh ? wishes.prepend(el) : wishes.append(el);
   }
   async function loadWishes() {
     if (!wishes) return;
@@ -594,8 +612,8 @@ function initRsvp(c, d, L, preview) {
       if (pendingWish) {
         addWish({ name: data.name, message: pendingWish }, true);
         pendingWish = '';
-        $('#gb-form').reset();
-        setStatus($('#gb-status'), L.gbThanks);
+        $('#gb-form')?.reset();
+        if ($('#gb-status')) setStatus($('#gb-status'), L.gbThanks);
       }
     } catch {
       setStatus(status, L.offline, true);
@@ -652,19 +670,15 @@ export async function mountVolume3(config, { preview = false } = {}) {
   document.documentElement.lang = LANGS[lang]?.html || 'uz';
   try {
     await Promise.race([
-      Promise.all([document.fonts.load('48px "Corinthia"'), document.fonts.load('20px "Cormorant Garamond"')]),
+      Promise.all([document.fonts.load('48px "Playfair Display"'), document.fonts.load('20px "Cormorant Garamond"')]),
       new Promise((r) => setTimeout(r, 2000)),
     ]);
   } catch {
     /* shriftsiz ham davom etamiz */
   }
   const y = window.scrollY;
-  const app = $('#app');
-  app.innerHTML = renderPage(c, d, L, lang, langs);
-  const root = $('#rylx');
-  fitNames();
-  scope.on(window, 'resize', fitNames);
-  initCountdown(d, L);
+  $('#app').innerHTML = renderPage(c, d, L, lang, langs);
+  initCountdown(d);
   initReveal();
   initRsvp(c, d, L, preview);
 
@@ -675,45 +689,36 @@ export async function mountVolume3(config, { preview = false } = {}) {
       const u = new URL(location.href);
       u.searchParams.set('lang', b.dataset.lang);
       history.replaceState(null, '', u);
-      session.set('v3:opened', '1');
       mountVolume3(config, { preview });
     }),
   );
 
-  const intro = $('#intro');
-  const reveal = () => {
-    intro.remove();
-    root.classList.add('invitation-visible');
+  const gate = $('#gate');
+  const opened = () => {
+    gate.remove();
     document.documentElement.classList.remove('is-locked');
   };
   if (preview) {
-    reveal();
+    opened();
     $('#music-toggle')?.remove();
     window.scrollTo(0, y);
     return;
   }
   const music = initMusic(musicUrlOf(c), L);
-  // Til almashtirilganda konvert qayta ko'rsatilmaydi
+  if ($('#music-toggle')) $('#music-toggle').hidden = false;
+  // Til almashtirilganda kirish oynasi qayta ko'rsatilmaydi
   if (session.get('v3:opened')) {
-    reveal();
-    $('#music-toggle').hidden = false;
+    opened();
     window.scrollTo(0, y);
     return;
   }
   document.documentElement.classList.add('is-locked');
-  const seal = $('#seal');
-  scope.on(seal, 'click', () => {
+  requestAnimationFrame(() => gate.classList.add('is-ready'));
+  scope.on($('#gate-open'), 'click', () => {
     window.scrollTo(0, 0);
     music.play();
-    intro.classList.add('opened');
-    scope.later(() => {
-      intro.classList.add('fade-out');
-      root.classList.add('invitation-visible');
-      $('#music-toggle').hidden = false;
-    }, 1000);
-    scope.later(() => {
-      session.set('v3:opened', '1');
-      reveal();
-    }, 1900);
+    session.set('v3:opened', '1');
+    gate.classList.add('is-leaving');
+    scope.later(opened, 800);
   }, { once: true });
 }

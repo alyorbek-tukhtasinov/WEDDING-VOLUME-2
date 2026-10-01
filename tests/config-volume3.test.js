@@ -12,8 +12,8 @@ test('volume3: shablon ro‘yxatda, demo config to‘g‘ri', () => {
 });
 
 test('volume3: uslublardagi barcha rasmlar mavjud', () => {
-  const css = fs.readFileSync(new URL('../templates/volume3/styles.css', import.meta.url), 'utf8') + fs.readFileSync(new URL('../templates/volume3/extra.css', import.meta.url), 'utf8');
-  const urls = [...css.matchAll(/url\((\/images\/[^)]+)\)/g)].map((m) => m[1]);
-  assert.ok(urls.length >= 5);
+  const src = fs.readFileSync(new URL('../templates/volume3/styles.css', import.meta.url), 'utf8') + fs.readFileSync(new URL('../templates/volume3/app.js', import.meta.url), 'utf8');
+  const urls = [...new Set([...src.matchAll(/(\/images\/[\w./-]+\.(?:webp|png|jpg))/g)].map((m) => m[1]))];
+  assert.ok(urls.length >= 3);
   for (const u of urls) assert.ok(fs.existsSync(new URL(`../public${u}`, import.meta.url)), u);
 });

@@ -272,13 +272,13 @@ Namuna: `clients/demo-bulut`.
 
 ### "Volume 3" shabloni (volume3)
 
-To'q ko'k va tilla (`templates/volume3/`). Kirishda ko'k konvert: tilla muhr bosilganda qopqoqlar ochiladi,
-musiqa yoqiladi. Ko'k kartush ichida ismlar, oyat va sana; "Aziz va qadrdon insonimiz!" taklif matni,
-to'y kuni yurak ichida bo'lgan haftalik taqvim, "Sana va vaqt", saroy surati bilan manzil, sanoq va uzuklar,
-ishtirokni tasdiqlash va "Mehmonlar kitobi" (tilak javob bilan birga saqlanadi). Dastur va dress-kod —
-ixtiyoriy (config'da bo'lsa chiqadi). Tillar: `"languages": ["uz", "ru"]` (yoki `uzc`) — tepada UZ/RU
-tugmalari. Kartushdagi oyat matnini `texts.blessing` bilan almashtirish mumkin.
-Shriftlar: Corinthia, IBM Plex Sans (SIL OFL) — `templates/volume3/fonts`. Namuna: `clients/demo-volume3`.
+Gulli bog' (`templates/volume3/`): akvarel gullar foni, xira oynali kartochkalar, yashil ranglar.
+Kirishda yurak belgisi, ismlar, sana va "Ochish" tugmasi gul guldastalari orasida (musiqa shu tugma bilan
+yoqiladi). So'ng: marosim haqida (to'yxona, hafta kuni · sana · oy), aziz mehmonlar, sanoq va oy taqvimi,
+manzil va xarita tugmalari, R.S.V.P., mehmonlar kitobi (tilak javob bilan birga saqlanadi), yakun.
+Dastur va dress-kod — ixtiyoriy. Tillar: `"languages": ["uz", "ru"]` (yoki `uzc`) — chap yuqorida tugmalar.
+Rasmlar: `public/images/garden/` (floral-background, flower2-decoration, flower5-bottom).
+Shrift: Playfair Display (SIL OFL) — `templates/volume3/fonts`. Namuna: `clients/demo-volume3`.
 
 ### "3D sehrli kitob" shabloni (kitob)
 
