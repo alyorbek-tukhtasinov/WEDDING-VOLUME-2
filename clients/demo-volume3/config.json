@@ -1,0 +1,34 @@
+{
+  "template": "volume3",
+  "languages": ["uz", "ru"],
+  "couple": {
+    "groom": "Javohir",
+    "bride": "Sevara"
+  },
+  "event": {
+    "date": "2027-02-02",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Karimovlar va Rahimovlar oilasi",
+  "texts": {},
+  "venue": {
+    "name": "“Navro‘z” to‘yxonasi",
+    "address": "Toshkent shahri, Yakkasaroy tumani",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.290000%2C69.255000",
+    "yandexMaps": ""
+  },
+  "program": [],
+  "musicTrack": "musiqa-5",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2027-01-30",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "effects": {
+    "countdown": true
+  }
+}

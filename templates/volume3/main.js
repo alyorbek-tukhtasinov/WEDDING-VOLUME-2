@@ -1,7 +1,7 @@
 // Sayt: config (va admin sahifasidagi o'zgarishlar) bilan sahifani chizish
 import config from '@wedding-config';
 import { applyOverrides } from '../../src/lib/config.js';
-import { mountIvory } from './app.js';
+import { mountVolume3 } from './app.js';
 
 async function loadOverrides() {
   try {
@@ -15,4 +15,4 @@ async function loadOverrides() {
   }
 }
 
-loadOverrides().then((s) => mountIvory(applyOverrides(config, s), { theme: 'ivory' }));
+loadOverrides().then((s) => mountVolume3(applyOverrides(config, s)));

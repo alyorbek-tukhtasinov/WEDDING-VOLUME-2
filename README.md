@@ -270,17 +270,15 @@ tilaklar — qog'oz samolyotcha bo'lib keladigan pochta kartochkalari.
 Havolaga `?mehmon=Ism` qo'shilsa, chiptada va javob formasida o'sha mehmonning ismi chiqadi.
 Namuna: `clients/demo-bulut`.
 
-### "Fil suyagi" (ivory) va "Qirollik" (royal) shablonlari
+### "Volume 3" shabloni (volume3)
 
-Ikki shablon bitta kodda (`templates/ivory/app.js`), `templates/royal/` faqat ko'rinishni tanlaydi.
-- **ivory** — fil suyagi rangli konvert: qizil mumli muhr bosilganda konvert yuqoriga ochiladi, musiqa yoqiladi.
-  Oqqushli kemer ichida ismlar, yirtiq qog'ozda taklif matni, sahifa bo'ylab atirgul barglari to'kiladi.
-- **royal** — to'q ko'k va tilla: ko'k kartush ichida ismlar, tilla muhr, uzuklar, manzil bo'limida saroy surati,
-  tilla uchqunlar.
-
-Ikkalasida: taqvim (to'y kuni yurak ichida), sanoq, "Taqvimga qo'shish", to'y dasturi, manzil va xarita tugmalari,
-dress-kod ranglari, RSVP va mehmonlar tilaklari. Config maydonlari `suzani`/`bulut` bilan bir xil
-(`"template": "ivory"` yoki `"royal"`). Namuna: `clients/demo-ivory`, `clients/demo-royal`.
+To'q ko'k va tilla (`templates/volume3/`). Kirishda ko'k konvert: tilla muhr bosilganda qopqoqlar ochiladi,
+musiqa yoqiladi. Ko'k kartush ichida ismlar, oyat va sana; "Aziz va qadrdon insonimiz!" taklif matni,
+to'y kuni yurak ichida bo'lgan haftalik taqvim, "Sana va vaqt", saroy surati bilan manzil, sanoq va uzuklar,
+ishtirokni tasdiqlash va "Mehmonlar kitobi" (tilak javob bilan birga saqlanadi). Dastur va dress-kod —
+ixtiyoriy (config'da bo'lsa chiqadi). Tillar: `"languages": ["uz", "ru"]` (yoki `uzc`) — tepada UZ/RU
+tugmalari. Kartushdagi oyat matnini `texts.blessing` bilan almashtirish mumkin.
+Shriftlar: Corinthia, IBM Plex Sans (SIL OFL) — `templates/volume3/fonts`. Namuna: `clients/demo-volume3`.
 
 ### "3D sehrli kitob" shabloni (kitob)
 

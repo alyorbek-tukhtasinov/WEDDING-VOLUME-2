@@ -40,16 +40,10 @@ export const TEMPLATES = [
     features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
   },
   {
-    id: 'ivory',
-    title: 'Fil suyagi',
-    description: 'Fil suyagi rangli konvert va qizil mumli muhr, oqqushli kemer, pion gullar, to‘kilayotgan atirgul barglari, taqvim va tilaklar',
-    features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
-  },
-  {
-    id: 'royal',
-    title: 'Qirollik',
-    description: 'To‘q ko‘k va tilla: tilla muhr, ko‘k kartush ichida ismlar, uzuklar, saroy surati, taqvim va tilaklar',
-    features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
+    id: 'volume3',
+    title: 'Volume 3',
+    description: 'To‘q ko‘k konvert va tilla muhr, ko‘k kartush ichida ismlar, haftalik taqvim, saroy surati, sanoq, javob va mehmonlar kitobi (o‘zbek/rus)',
+    features: ['program', 'dressCode', 'rsvp', 'wishes'],
   },
 ];
 

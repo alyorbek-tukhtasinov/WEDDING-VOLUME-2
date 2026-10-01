@@ -31,7 +31,7 @@ export default defineConfig({
         'preview-suzani': path.join(root, 'panel', 'preview-suzani.html'),
         'preview-kitob': path.join(root, 'panel', 'preview-kitob.html'),
         'preview-bulut': path.join(root, 'panel', 'preview-bulut.html'),
-        'preview-ivory': path.join(root, 'panel', 'preview-ivory.html'),
+        'preview-volume3': path.join(root, 'panel', 'preview-volume3.html'),
       },
     },
   },
