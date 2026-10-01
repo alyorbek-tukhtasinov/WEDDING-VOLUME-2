@@ -1,0 +1,87 @@
+{
+  "template": "volume2",
+  "couple": {
+    "groom": "Muxammaddiyor",
+    "bride": "Robiyaxon",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-11-22",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Babaxanov Utkir oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Muxammaddiyor va Robiyaxonning hayotlaridagi eng quvonchli kun — to‘y tantanasiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "\"Zamin\" tuyxonasi",
+    "address": "Toshkent shahar",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.294599%2C69.236923",
+    "yandexMaps": "https://yandex.uz/maps/?pt=69.236923,41.294599&z=17&l=map",
+    "image": ""
+  },
+  "program": [
+    {
+      "time": "18:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "18:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "19:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "21:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "gallery": [],
+  "musicTrack": "musiqa-11",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-11-21",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "theme": {},
+  "effects": {
+    "envelope": true,
+    "petals": true,
+    "typing": true
+  },
+  "languages": [
+    "uzc",
+    "ru"
+  ],
+  "i18n": {
+    "uzc": {
+      "venue": {
+        "name": "\"Zamin\" tuyxonasi",
+        "address": "Toshkent shahar"
+      }
+    }
+  }
+}
