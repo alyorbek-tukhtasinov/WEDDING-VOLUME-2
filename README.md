@@ -270,6 +270,18 @@ tilaklar — qog'oz samolyotcha bo'lib keladigan pochta kartochkalari.
 Havolaga `?mehmon=Ism` qo'shilsa, chiptada va javob formasida o'sha mehmonning ismi chiqadi.
 Namuna: `clients/demo-bulut`.
 
+### "Fil suyagi" (ivory) va "Qirollik" (royal) shablonlari
+
+Ikki shablon bitta kodda (`templates/ivory/app.js`), `templates/royal/` faqat ko'rinishni tanlaydi.
+- **ivory** — fil suyagi rangli konvert: qizil mumli muhr bosilganda konvert yuqoriga ochiladi, musiqa yoqiladi.
+  Oqqushli kemer ichida ismlar, yirtiq qog'ozda taklif matni, sahifa bo'ylab atirgul barglari to'kiladi.
+- **royal** — to'q ko'k va tilla: ko'k kartush ichida ismlar, tilla muhr, uzuklar, manzil bo'limida saroy surati,
+  tilla uchqunlar.
+
+Ikkalasida: taqvim (to'y kuni yurak ichida), sanoq, "Taqvimga qo'shish", to'y dasturi, manzil va xarita tugmalari,
+dress-kod ranglari, RSVP va mehmonlar tilaklari. Config maydonlari `suzani`/`bulut` bilan bir xil
+(`"template": "ivory"` yoki `"royal"`). Namuna: `clients/demo-ivory`, `clients/demo-royal`.
+
 ### "3D sehrli kitob" shabloni (kitob)
 
 Taklifnoma — charm muqovali kitob (`templates/kitob/`). Muqova bosilganda musiqa yoqiladi va

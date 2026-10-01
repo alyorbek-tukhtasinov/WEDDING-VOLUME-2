@@ -39,6 +39,18 @@ export const TEMPLATES = [
     description: 'Yorug‘ kunduzgi osmon: samolyot chiptasi, bulutlar orasidan parvoz, samolyotlar ismlarni osmonga tutun bilan yozadi, havo sharlari va qog‘oz samolyotcha-tilaklar',
     features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
   },
+  {
+    id: 'ivory',
+    title: 'Fil suyagi',
+    description: 'Fil suyagi rangli konvert va qizil mumli muhr, oqqushli kemer, pion gullar, to‘kilayotgan atirgul barglari, taqvim va tilaklar',
+    features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
+  },
+  {
+    id: 'royal',
+    title: 'Qirollik',
+    description: 'To‘q ko‘k va tilla: tilla muhr, ko‘k kartush ichida ismlar, uzuklar, saroy surati, taqvim va tilaklar',
+    features: ['program', 'dressCode', 'contacts', 'rsvp', 'wishes'],
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';
