@@ -1,0 +1,61 @@
+{
+  "template": "volume3",
+  "eventType": "kelin-salom",
+  "couple": {
+    "groom": "Faxriddin",
+    "bride": "Feruza",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-04",
+    "time": "16:00",
+    "timezone": "+05:00",
+    "durationHours": 4
+  },
+  "hosts": "Fatoyevlar va Rahimovlar oilasi",
+  "texts": {},
+  "venue": {
+    "name": "Shabi Shabnam restorani",
+    "address": "Buxoro shahri",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=39.768105%2C64.403987",
+    "yandexMaps": "https://yandex.uz/maps/?pt=64.403987,39.768105&z=17&l=map"
+  },
+  "program": [
+    {
+      "time": "16:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "16:30",
+      "title": "Kelin salom marosimi"
+    },
+    {
+      "time": "17:00",
+      "title": "Dasturxon atrofida suhbat"
+    }
+  ],
+  "dressCode": {
+    "text": "Bayramona libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "musicTrack": "musiqa-1",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-03",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "Faxriddin & Feruza — Kelin salom",
+    "description": "Feruzaning “Kelin salom” marosimiga taklifnoma. 2026-yil 4-oktabr, soat 16:00 da Buxoro shahri, Shabi Shabnam restoranida sizni kutamiz."
+  },
+  "effects": {
+    "countdown": true
+  }
+}

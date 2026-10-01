@@ -132,7 +132,38 @@ const T = {
     musicOff: 'Выключить музыку',
   },
 };
-const texts = (lang) => (lang === 'ru' ? T.ru : lang === 'uzc' ? { ...cyr(T.uz), google: 'Google Maps', rsvpLabel: 'R.S.V.P.' } : T.uz);
+// Marosim turi (config.eventType): nikoh to'yi (asosiy) yoki "Kelin salom" — farq qiladigan matnlar
+export const EVENT_TYPES = ['nikoh', 'kelin-salom'];
+const EVENTS = {
+  'kelin-salom': {
+    uz: {
+      gateInvite: 'QUVONCHLI KUNIMIZDA SIZNI DAVRAMIZDA KO‘RISHNI ISTAYMIZ VA KELINIMIZNING “KELIN SALOM” MAROSIMIGA SAMIMIY TAKLIF ETAMIZ',
+      ceremonyInvite: 'SIZNI KELINIMIZNING “KELIN SALOM” MAROSIMIGA CHIN QALBDAN TAKLIF ETAMIZ',
+      willHold: 'KELIN SALOM MAROSIMI BO‘LIB O‘TADI',
+      dearText: ['Sizni kelinimizning', '“Kelin salom” marosimiga', 'taklif etamiz'],
+      timeRemaining: 'Marosimgacha qolgan vaqt',
+      program: 'Marosim dasturi',
+      ctaTitle: 'Taklifnomangizni buyurtma bering',
+      ctaSub: 'O‘zingizning go‘zal taklifnoma saytingizni yarating',
+    },
+    ru: {
+      gateInvite: 'ОТ ВСЕЙ ДУШИ ПРИГЛАШАЕМ ВАС РАЗДЕЛИТЬ С НАМИ РАДОСТЬ И ПОЧТИТЬ СВОИМ ПРИСУТСТВИЕМ ЦЕРЕМОНИЮ «КЕЛИН САЛОМ» НАШЕЙ НЕВЕСТКИ',
+      ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА ЦЕРЕМОНИЮ «КЕЛИН САЛОМ» НАШЕЙ НЕВЕСТКИ',
+      willHold: 'ЦЕРЕМОНИЯ «КЕЛИН САЛОМ» СОСТОИТСЯ',
+      dearText: ['Приглашаем Вас', 'на церемонию «Келин салом»', 'нашей невестки'],
+      timeRemaining: 'Время до церемонии',
+      program: 'Программа',
+      ctaTitle: 'Закажите онлайн-приглашение',
+      ctaSub: 'Создайте свой красивый сайт-приглашение',
+    },
+  },
+};
+const texts = (lang, eventType) => {
+  const ev = EVENTS[eventType] || {};
+  if (lang === 'ru') return { ...T.ru, ...ev.ru };
+  const uz = { ...T.uz, ...ev.uz };
+  return lang === 'uzc' ? { ...cyr(uz), google: 'Google Maps', rsvpLabel: 'R.S.V.P.' } : uz;
+};
 const RU_DEFAULTS = { heroCaption: '', greeting: '', invitation: () => '', closing: '' };
 
 /* ---------------------------- Qayta chizish uchun tozalash ---------------------------- */
@@ -664,7 +695,7 @@ export async function mountVolume3(config, { preview = false } = {}) {
   const langs = siteLangs(config);
   const lang = preview ? langs[0] : pickLang(langs);
   const c = localize(config, lang, RU_DEFAULTS);
-  const L = texts(lang);
+  const L = texts(lang, config.eventType);
   const d = deriveConfig(c);
   document.documentElement.lang = LANGS[lang]?.html || 'uz';
   try {

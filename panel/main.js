@@ -559,6 +559,13 @@ function secMain() {
         ${field('Muhrdagi harflar', 'couple.initials', { placeholder: 'avtomatik', hint: 'Bo‘sh — ismlardan' })}
       </div>
       <div class="toggle-row">${check('Demo (namuna) sayt — ro‘yxatda alohida turadi, daromad hisobiga kirmaydi', 'demo', /^demo(-|$)/.test(ed.slug || ''))}</div>
+      ${c.template === 'volume3'
+        ? html`<label class="f" data-field="eventType"><span>Marosim turi</span>
+            <select data-path="eventType">
+              <option value="nikoh" ${c.eventType !== 'kelin-salom' ? 'selected' : ''}>Nikoh to‘yi</option>
+              <option value="kelin-salom" ${c.eventType === 'kelin-salom' ? 'selected' : ''}>Kelin salom</option>
+            </select></label>`
+        : ''}
       ${c.template !== 'yz' ? field('Taklif qiluvchilar (oila nomi)', 'hosts', { placeholder: 'To‘rayevlar va Qurbonovlar oilasi', hint: 'Bo‘sh qoldirilsa ko‘rsatilmaydi' }) : ''}
       ${ed.isNew
         ? html`
