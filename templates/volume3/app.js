@@ -3,7 +3,6 @@
 // aziz mehmonlar, sanoq va oy taqvimi, manzil va xarita, ishtirokni tasdiqlash, mehmonlar kitobi, yakun.
 // Ma'lumotlar — config.json (panel), javob va tilaklar — /api/rsvp, /api/wishes, brend — brand.config.js.
 // mountVolume3() ham saytda (main.js), ham boshqaruv panelining jonli ko'rinishida ishlatiladi.
-import '../osmon/fonts/fonts.css';
 import './fonts/fonts.css';
 import './styles.css';
 import { deriveConfig, musicUrlOf, MONTHS } from '../../src/lib/config.js';
@@ -670,7 +669,7 @@ export async function mountVolume3(config, { preview = false } = {}) {
   document.documentElement.lang = LANGS[lang]?.html || 'uz';
   try {
     await Promise.race([
-      Promise.all([document.fonts.load('48px "Playfair Display"'), document.fonts.load('20px "Cormorant Garamond"')]),
+      Promise.all([document.fonts.load('48px "Playfair Display"'), document.fonts.load('20px "V3 Cormorant"')]),
       new Promise((r) => setTimeout(r, 2000)),
     ]);
   } catch {
