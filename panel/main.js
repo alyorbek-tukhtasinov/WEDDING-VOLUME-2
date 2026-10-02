@@ -564,6 +564,11 @@ function secMain() {
             <select data-path="eventType">
               <option value="nikoh" ${c.eventType !== 'kelin-salom' ? 'selected' : ''}>Nikoh to‘yi</option>
               <option value="kelin-salom" ${c.eventType === 'kelin-salom' ? 'selected' : ''}>Kelin salom</option>
+            </select></label>
+            <label class="f" data-field="palette"><span>Rang</span>
+            <select data-path="palette">
+              <option value="green" ${c.palette !== 'pink' ? 'selected' : ''}>Yashil</option>
+              <option value="pink" ${c.palette === 'pink' ? 'selected' : ''}>Pushti</option>
             </select></label>`
         : ''}
       ${c.template !== 'yz' ? field('Taklif qiluvchilar (oila nomi)', 'hosts', { placeholder: 'To‘rayevlar va Qurbonovlar oilasi', hint: 'Bo‘sh qoldirilsa ko‘rsatilmaydi' }) : ''}

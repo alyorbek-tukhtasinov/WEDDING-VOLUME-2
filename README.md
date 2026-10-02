@@ -278,6 +278,8 @@ yoqiladi). So'ng: marosim haqida (to'yxona, hafta kuni · sana · oy), aziz mehm
 manzil va xarita tugmalari, R.S.V.P., mehmonlar kitobi (tilak javob bilan birga saqlanadi), yakun.
 Dastur va dress-kod — ixtiyoriy. Tillar: `"languages": ["uz", "ru"]` (yoki `uzc`) — chap yuqorida tugmalar.
 Rasmlar: `public/images/garden/` (floral-background, flower2-decoration, flower5-bottom).
+Rang: `"palette": "pink"` — pushti ohang (panelda "Rang"). O'z fon rasmi: `"backgroundImage": "fon.webp"` (media/ da;
+telefonda qoplaydi, kompyuterda balandligi bo'yicha yonma-yon takrorlanadi).
 Marosim turi: `"eventType": "kelin-salom"` — matnlar "Kelin salom" marosimiga moslashadi (panelda "Marosim turi").
 Namuna: `clients/faxriddin-feruza-kelin-salom`.
 Shrift: Playfair Display (SIL OFL) — `templates/volume3/fonts`. Namuna: `clients/demo-volume3`.

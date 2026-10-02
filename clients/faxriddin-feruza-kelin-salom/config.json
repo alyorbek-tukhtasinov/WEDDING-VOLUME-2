@@ -1,6 +1,8 @@
 {
   "template": "volume3",
   "eventType": "kelin-salom",
+  "palette": "pink",
+  "backgroundImage": "fon-pushti.webp",
   "couple": {
     "groom": "Faxriddin",
     "bride": "Feruza",
@@ -53,7 +55,8 @@
   "contacts": [],
   "seo": {
     "title": "Faxriddin & Feruza — Kelin salom",
-    "description": "Feruzaning “Kelin salom” marosimiga taklifnoma. 2026-yil 4-oktabr, soat 16:00 da Buxoro shahri, Shabi Shabnam restoranida sizni kutamiz."
+    "description": "Feruzaning “Kelin salom” marosimiga taklifnoma. 2026-yil 4-oktabr, soat 16:00 da Buxoro shahri, Shabi Shabnam restoranida sizni kutamiz.",
+    "ogImage": "og.jpg"
   },
   "effects": {
     "countdown": true

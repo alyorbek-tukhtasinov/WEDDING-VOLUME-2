@@ -5,7 +5,7 @@
 // mountVolume3() ham saytda (main.js), ham boshqaruv panelining jonli ko'rinishida ishlatiladi.
 import './fonts/fonts.css';
 import './styles.css';
-import { deriveConfig, musicUrlOf, MONTHS } from '../../src/lib/config.js';
+import { deriveConfig, musicUrlOf, mediaUrl, MONTHS } from '../../src/lib/config.js';
 import { html, raw } from '../../src/lib/dom.js';
 import { LANGS, siteLangs, pickLang, rememberLang, localize, cyr } from '../../src/lib/i18n.js';
 import brand from '@brand-config';
@@ -698,6 +698,17 @@ export async function mountVolume3(config, { preview = false } = {}) {
   const L = texts(lang, config.eventType);
   const d = deriveConfig(c);
   document.documentElement.lang = LANGS[lang]?.html || 'uz';
+  // Rang va fon: config.palette ("pink" — pushti), config.backgroundImage (media/ dagi fon rasmi)
+  const rootEl = document.documentElement;
+  if (c.palette === 'pink') rootEl.dataset.palette = 'pink';
+  else delete rootEl.dataset.palette;
+  if (c.backgroundImage) {
+    rootEl.dataset.bg = 'custom';
+    rootEl.style.setProperty('--g-bg-image', `url("${mediaUrl(c.backgroundImage)}")`);
+  } else {
+    delete rootEl.dataset.bg;
+    rootEl.style.removeProperty('--g-bg-image');
+  }
   try {
     await Promise.race([
       Promise.all([document.fonts.load('48px "Playfair Display"'), document.fonts.load('20px "V3 Cormorant"')]),

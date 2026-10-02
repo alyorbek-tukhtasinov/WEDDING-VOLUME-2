@@ -51,6 +51,7 @@ export function validateConfig(c, mediaFiles = null) {
 
   need(!c.template || TEMPLATES.some((t) => t.id === c.template), `template noma'lum: "${c.template}" (${TEMPLATES.map((t) => t.id).join(', ')})`);
   need(c.demo == null || typeof c.demo === 'boolean', 'demo faqat true yoki false bo\'lishi mumkin');
+  need(c.palette == null || ['green', 'pink'].includes(c.palette), `palette noma'lum: "${c.palette}" (green, pink)`);
   need(c.eventType == null || ['nikoh', 'kelin-salom'].includes(c.eventType), `eventType noma'lum: "${c.eventType}" (nikoh, kelin-salom)`);
   need(c.couple?.groom?.trim(), 'couple.groom (kuyov ismi) kiritilmagan');
   need(c.couple?.bride?.trim(), 'couple.bride (kelin ismi) kiritilmagan');
