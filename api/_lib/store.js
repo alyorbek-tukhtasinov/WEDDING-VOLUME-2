@@ -216,3 +216,22 @@ export async function getFinance() {
 export async function setFinance(data) {
   await redis('SET', FINANCE_KEY, JSON.stringify(data));
 }
+
+/**
+ * Bazada ma'lumoti bor sayt nomlari (taklifnoma:<nom>:rsvp / settings / admin ...). Baza Vercel'dagi
+ * eski loyihalar bilan umumiy — shu nom bilan yangi sayt ochilsa, eski javoblar va parol unga o'tib qoladi.
+ */
+export async function slugsWithData() {
+  const out = new Set();
+  let cursor = '0';
+  let rounds = 0;
+  do {
+    const r = await redis('SCAN', cursor, 'MATCH', 'taklifnoma:*', 'COUNT', '500');
+    cursor = String(r?.[0] ?? '0');
+    for (const k of r?.[1] || []) {
+      const m = /^taklifnoma:([a-z0-9][a-z0-9-]*):/.exec(String(k));
+      if (m) out.add(m[1]);
+    }
+  } while (cursor !== '0' && ++rounds < 200);
+  return [...out];
+}

@@ -406,6 +406,7 @@ async function refreshStatus() {
 /* ------------------------------------------------------------------ */
 async function showList() {
   state.ed = null;
+  state.taken = null; // yangi sayt ochilganda band nomlar qaytadan olinadi
   root.innerHTML = html`${topbar()}<div class="wrap"><p class="empty">Yuklanmoqda…</p></div>`;
   const [r, fin] = await Promise.all([api('clients').catch(() => null), api('finance').catch(() => null)]);
   if (!r?.ok) return;
@@ -709,6 +710,7 @@ function onEventChange(prevId, nextId) {
     notes.push('dress-kod');
   }
   markDirty();
+  updateSlugFromNames();
   showEditor();
   toast(notes.length ? `${N.title}: ${notes.join(', ')} moslandi` : `${N.title} tanlandi`);
 }
@@ -760,7 +762,7 @@ function section(id, title, body, { open = false, toggle = null } = {}) {
 function secMain() {
   const ed = state.ed;
   const c = ed.config;
-  const slugTaken = ed.isNew && state.clients.some((x) => x.slug === ed.slug);
+  const slugTaken = ed.isNew && !!slugTakenWhy(ed.slug);
   return section(
     'main',
     'Asosiy ma’lumotlar',
@@ -794,7 +796,7 @@ function secMain() {
             <label class="f ${slugTaken ? 'f--bad' : ''}">
               <span>Sayt manzili</span>
               <input id="slug" value="${ed.slug}" placeholder="sanjar-dilnoza" />
-              <small class="hint ${slugTaken ? '' : 'hint--ok'}" id="slug-hint">${slugTaken ? 'Bu nom band — boshqasini yozing' : ed.slug ? `${siteUrl(ed.slug)}` : 'Ismlardan avtomatik tuziladi'}</small>
+              <small class="hint ${slugTaken ? '' : 'hint--ok'}" id="slug-hint">${slugHintText(ed.slug)}</small>
             </label>
           `
         : html`<p class="hint">Sayt: <a href="${siteUrl(ed.slug)}" target="_blank" rel="noopener">${siteUrl(ed.slug)}</a></p>`}
@@ -1722,6 +1724,7 @@ async function openExisting(slug, { copy = false } = {}) {
 function showEditor() {
   const ed = state.ed;
   const c = ed.config;
+  if (ed.isNew && !state.taken) loadTakenSlugs();
   const yz = c.template === 'yz';
   const tpl = findTemplate(c.template);
   const osmon = c.template === 'osmon';
@@ -1801,10 +1804,42 @@ function rerender(sel, fn) {
   if (el) el.innerHTML = fn();
 }
 
+/* --- Sayt manzili: band nomlar (mavjud, o'chirilgan, bazada eski loyihasi bor) takrorlanmaydi --- */
+function slugTakenWhy(slug) {
+  if (!slug) return '';
+  if (state.clients.some((x) => x.slug === slug)) return 'mavjud sayt';
+  return state.taken?.[slug] || '';
+}
+
+// Ism band bo'lsa — to'y tafsiloti qo'shiladi: marosim turi, oy, yil; oxirida raqam
+const EVENT_SLUG = { nikoh: 'nikoh', 'nikoh-kunduzgi': 'nikoh', 'qiz-uzatish': 'qiz-uzatish', 'nahorgi-osh': 'nahorgi-osh', fotiha: 'fotiha', 'kelin-salom': 'kelin-salom' };
+function uniqueSlug(base, c) {
+  if (!base || !slugTakenWhy(base)) return base;
+  const date = isValidDate(c.event?.date) ? c.event.date : '';
+  const month = date ? MONTHS[Number(date.slice(5, 7)) - 1] : '';
+  const ev = EVENT_SLUG[c.eventType] || 'nikoh';
+  const cands = [`${base}-${ev}`, month && `${base}-${month}`, month && `${base}-${ev}-${month}`, date && `${base}-${date.slice(0, 4)}`, date && `${base}-${month}-${date.slice(0, 4)}`]
+    .filter(Boolean)
+    .map((x) => toSlug(x));
+  for (const x of cands) if (!slugTakenWhy(x)) return x;
+  for (let i = 2; i < 100; i++) if (!slugTakenWhy(`${base}-${i}`)) return `${base}-${i}`;
+  return `${base}-${Date.now().toString(36)}`;
+}
+
+function slugHintText(slug) {
+  const ed = state.ed;
+  const why = slugTakenWhy(slug);
+  if (why) return `Bu nom band (${why}) — boshqasini yozing`;
+  if (!slug) return 'Ismlardan avtomatik tuziladi';
+  const base = toSlug(ed.config.couple?.groom, ed.config.couple?.bride);
+  const note = !ed.slugTouched && base && base !== slug && slugTakenWhy(base) ? ` — "${base}" band (${slugTakenWhy(base)}), shuning uchun tafsilot qo‘shildi` : '';
+  return `${siteUrl(slug)}${note}`;
+}
+
 function updateSlugFromNames() {
   const ed = state.ed;
   if (!ed.isNew || ed.slugTouched) return;
-  ed.slug = toSlug(ed.config.couple.groom, ed.config.couple.bride);
+  ed.slug = uniqueSlug(toSlug(ed.config.couple.groom, ed.config.couple.bride), ed.config);
   const input = $('#slug');
   if (input) input.value = ed.slug;
   updateSlugHint();
@@ -1814,10 +1849,24 @@ function updateSlugHint() {
   const ed = state.ed;
   const hint = $('#slug-hint');
   if (!hint) return;
-  const taken = state.clients.some((x) => x.slug === ed.slug);
+  const taken = !!slugTakenWhy(ed.slug);
   hint.className = `hint ${taken ? '' : 'hint--ok'}`;
-  hint.textContent = taken ? 'Bu nom band — boshqasini yozing' : ed.slug ? siteUrl(ed.slug) : 'Ismlardan avtomatik tuziladi';
+  hint.textContent = slugHintText(ed.slug);
   hint.closest('.f')?.classList.toggle('f--bad', taken);
+}
+
+/** Band nomlar ro'yxatini serverdan olish (yangi sayt ochilganda bir marta). */
+async function loadTakenSlugs() {
+  try {
+    const r = await api('slugs');
+    if (r?.ok) state.taken = r.taken || {};
+  } catch {
+    /* ro'yxat kelmasa ham server saqlashda baribir tekshiradi */
+  }
+  if (state.ed?.isNew) {
+    updateSlugFromNames();
+    updateSlugHint();
+  }
 }
 
 function applyMapInput(text) {
@@ -1989,6 +2038,7 @@ function bindEditor() {
         rerender('#program-rows', programRows);
       }
       // Sana o'zgarsa, javob muddati ham (avvalgi farq bilan) suriladi
+      if (path === 'event.date' && isValidDate(v)) updateSlugFromNames();
       if (path === 'event.date' && isValidDate(v) && c.rsvp) {
         c.rsvp.deadline = addDays(v, -1);
         const dl = $('[data-path="rsvp.deadline"]');

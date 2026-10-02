@@ -5,6 +5,7 @@
 //   POST /api/panel/save               — { slug, isNew, config, media: {nom: base64}, deleteMedia: [nom] }
 //   GET  /api/panel/status             — serverdagi versiya va oxirgi deploy holati
 //   POST /api/panel/password           — { slug } → mijozning /admin paroli (bir marta ko'rsatiladi)
+//   GET  /api/panel/slugs              — band sayt nomlari va sababi (yangi sayt uchun)
 //   POST /api/panel/paid               — { slug, paid } → ro'yxatdagi "To'langan" belgisi (daromad yozuvida)
 //
 // Saqlash: serverdagi alohida git nusxada (PANEL_WORK_DIR) clients/<nom>/ yoziladi → commit →
@@ -17,7 +18,7 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { requestContext } from '../api/_lib/context.js';
 import { safeEqual, hashPassword } from '../api/_lib/http.js';
-import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance } from '../api/_lib/store.js';
+import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance, slugsWithData } from '../api/_lib/store.js';
 import { SLUG_RE } from '../api/_lib/slug.js';
 import { validateConfig } from '../src/lib/config.js';
 
@@ -241,6 +242,41 @@ function checkSlug(slug) {
   if (RESERVED.has(slug)) throw new UserError('bad_slug', `"${slug}" nomi band — boshqa nom tanlang`);
 }
 
+/**
+ * Band sayt nomlari va sababi. Yangi sayt shu nomlardan birini ololmaydi: ishlab turgan sayt, avval
+ * o'chirilgan sayt (git tarixi, daromad yozuvi), bazada boshqa (masalan, Vercel'dagi eski) loyihaning
+ * javoblari/paroli bor nom, tizim nomlari. Bitta domen ostida ikki loyiha bo'lib qolmasligi uchun.
+ */
+async function takenSlugs() {
+  const taken = {};
+  const add = (slug, why) => {
+    if (SLUG_RE.test(slug) && !taken[slug]) taken[slug] = why;
+  };
+  for (const s of RESERVED) add(s, 'tizim nomi');
+  const dir = path.join(WORK(), 'clients');
+  for (const s of fs.existsSync(dir) ? fs.readdirSync(dir) : []) add(s, 'mavjud sayt');
+  try {
+    const out = await git(['log', '--diff-filter=D', '--name-only', '--pretty=format:', '--', 'clients/']);
+    for (const line of out.split('\n')) {
+      const m = /^clients\/([a-z0-9-]+)\//.exec(line.trim());
+      if (m) add(m[1], 'avval o‘chirilgan sayt');
+    }
+  } catch {
+    /* git tarixi qisqa bo'lsa ham davom etamiz */
+  }
+  if (storeConfigured()) {
+    try {
+      const fin = await withFinanceStore(() => getFinance());
+      for (const s of Object.keys(fin.items || {})) add(s, 'avval ishlatilgan nom (daromad yozuvi bor)');
+      const data = await withFinanceStore(() => slugsWithData());
+      for (const s of data) if (s !== PANEL_SLUG) add(s, 'bazada boshqa loyihaning javoblari bor');
+    } catch (err) {
+      console.error('Band nomlarni bazadan o‘qib bo‘lmadi:', err.message);
+    }
+  }
+  return taken;
+}
+
 async function save(body) {
   const { slug, isNew } = body;
   const config = body.config;
@@ -264,6 +300,10 @@ async function save(body) {
     const dir = clientDir(slug);
     const exists = fs.existsSync(dir);
     if (isNew && exists) throw new UserError('exists', `"${slug}" nomli mijoz allaqachon bor — boshqa nom tanlang`);
+    if (isNew) {
+      const why = (await takenSlugs())[slug];
+      if (why) throw new UserError('exists', `"${slug}" nomi band (${why}) — boshqa nom tanlang`);
+    }
     if (!isNew && !exists) throw new UserError('not_found', `"${slug}" topilmadi`);
 
     const current = exists ? mediaFiles(slug) : [];
@@ -518,6 +558,7 @@ export async function panelHandler(req, res, name) {
     }
     if (req.method === 'GET' && name === 'status') return send(res, 200, { ok: true, ...status() });
     if (req.method === 'POST' && name === 'save') return send(res, 200, { ok: true, ...(await save(await readJson(req))) });
+    if (req.method === 'GET' && name === 'slugs') return send(res, 200, { ok: true, taken: await takenSlugs() });
     if (req.method === 'GET' && name === 'finance') return send(res, 200, { ok: true, ...(await loadFinance()) });
     if (req.method === 'POST' && name === 'finance') return send(res, 200, { ok: true, ...(await saveFinance(await readJson(req))) });
     if (req.method === 'POST' && name === 'paid') return send(res, 200, { ok: true, ...(await setPaid(await readJson(req))) });
