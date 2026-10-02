@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { wedding } from '../wedding';
+import { isNikoh, findEvent } from '../../../src/lib/events.js';
 
 export type Lang = 'uz' | 'ru';
 
@@ -188,6 +189,12 @@ export function buildTranslations(): Record<Lang, T> {
   };
   const pick = (over: Record<string, string>) =>
     Object.fromEntries(Object.entries(over).filter(([k, v]) => k in base.uz && typeof v === 'string' && v.trim()));
+  // Nikoh to'yidan boshqa marosim (src/lib/events.js) — sarlavha, taklif matni va sanoq shu marosimniki
+  if (!isNikoh({ eventType: w.eventType })) {
+    const e = findEvent(w.eventType);
+    Object.assign(uz, { heroSubtitle: e.uz.heroCaption, invText: e.uz.invitation(w.groom, w.bride), countdownTitle: e.uz.until });
+    Object.assign(ru, { heroSubtitle: e.ru.heroCaption, invText: e.ru.invitation(w.groomRu, w.brideRu), countdownTitle: e.ru.until });
+  }
   return { uz: { ...uz, ...pick(w.texts.uz) }, ru: { ...ru, ...pick(w.texts.ru) } };
 }
 

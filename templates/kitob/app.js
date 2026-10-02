@@ -12,6 +12,7 @@ import brand from '@brand-config';
 import { createBook, unlockSound } from './book.js';
 import { celebrate, drizzle, setReducedFx } from '../suzani/fx.js';
 import { sceneCouple, sceneCalendar, sceneMusic, sceneVenue, sceneDress, sceneLetter, sceneCake } from './art.js';
+import { phrases } from '../../src/lib/events.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -115,7 +116,7 @@ function renderPages(c, d) {
   add('cover', '📖', 'Muqova', html`
     <article class="pg cover" data-page="cover">
       <div class="cover__frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-      <p class="cover__eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
+      <p class="cover__eyebrow">${t.heroCaption || phrases(c)('heroCaption', 'Nikoh to‘yiga taklifnoma')}</p>
       <div class="cover__mono" aria-hidden="true"><span>${d.initials}</span></div>
       <h1 class="cover__names"><span>${d.groom}</span><em>&amp;</em><span>${d.bride}</span></h1>
       <p class="cover__date">${pad(d.day)} · ${pad(d.month)} · ${d.year}</p>
@@ -129,7 +130,7 @@ function renderPages(c, d) {
         ${scene(sceneCouple())}
         <div class="pg__body">
           <p class="eyebrow">${t.greeting || 'Hurmatli mehmonimiz!'}</p>
-          <p class="invite__text">${t.invitation || `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`}</p>
+          <p class="invite__text">${t.invitation || phrases(c)('invitation', `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`, d.groom, d.bride)}</p>
           ${c.hosts ? html`<p class="invite__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
         </div>
       </div>
@@ -141,13 +142,13 @@ function renderPages(c, d) {
       <div class="pg__scroll">
         ${scene(sceneCalendar(d.day, MONTHS[d.month - 1].toUpperCase()))}
         <div class="pg__body">
-          ${head('To‘y kuni', `${weekday}, ${d.day}-${MONTHS[d.month - 1]}`)}
+          ${head(phrases(c)('badge', 'To‘y kuni'), `${weekday}, ${d.day}-${MONTHS[d.month - 1]}`)}
           <p class="date__line">${d.year}-yil · soat <b>${c.event.time}</b></p>
           ${c.effects?.countdown === false ? '' : html`
-          <div class="count" id="countdown" aria-label="To‘ygacha qolgan vaqt">
+          <div class="count" id="countdown" aria-label="${phrases(c)('untilLong', 'To‘ygacha qolgan vaqt')}">
             ${['kun', 'soat', 'daqiqa', 'soniya'].map((u) => html`<div class="count__cell"><b data-unit="${u}">00</b><span>${u}</span></div>`)}
           </div>
-          <p class="count__done" id="countdown-done" hidden>🎉 To‘y kuni keldi!</p>`}
+          <p class="count__done" id="countdown-done" hidden>🎉 ${phrases(c)('came', 'To‘y kuni keldi!')}</p>`}
           <div class="btn-row">
             <a class="btn no-drag" id="gcal" target="_blank" rel="noopener">${raw(ICON.calendar)}<span>Google taqvim</span></a>
             <button class="btn no-drag" id="ics" type="button">${raw(ICON.calendar)}<span>Telefon taqvimi</span></button>
@@ -163,7 +164,7 @@ function renderPages(c, d) {
       <div class="pg__scroll">
         ${scene(sceneMusic())}
         <div class="pg__body">
-          ${head('To‘y dasturi', 'Kecha qanday o‘tadi')}
+          ${head(phrases(c)('programTitle', 'To‘y dasturi'), phrases(c)('programLead', 'Kecha qanday o‘tadi'))}
           <ol class="prog">
             ${program.map((p, i) => html`<li style="--i:${i}"><time>${p.time}</time><p>${p.title}</p></li>`)}
           </ol>
@@ -382,7 +383,7 @@ function initCountdown(d) {
 
 const utcStamp = (date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 function initCalendar(c, d) {
-  const title = `${d.names} — to‘y`;
+  const title = phrases(c)('calTitle', `${d.names} — to‘y`, d.names);
   const where = `${c.venue.name}, ${c.venue.address}`;
   const details = `${c.texts?.invitation || ''}\n\n${location.href}`;
   const gcal = $('#gcal');
@@ -475,7 +476,7 @@ function initRsvp(c, d, preview, goTo) {
   };
   let saved = preview ? null : store.get();
   const guestId = saved?.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`);
-  const thanks = (a, name) => (a === 'yes' ? `Rahmat, ${name}! 🥰 Sizni to‘yda intizorlik bilan kutamiz.` : `Rahmat, ${name}! 🤍 Xabar berganingiz uchun minnatdormiz.`);
+  const thanks = (a, name) => (a === 'yes' ? `Rahmat, ${name}! 🥰 Sizni ${phrases(c)('thanksAt', 'to‘yda')} intizorlik bilan kutamiz.` : `Rahmat, ${name}! 🤍 Xabar berganingiz uchun minnatdormiz.`);
   const showDone = (text, withChange = true) => {
     form.hidden = true;
     doneBox.hidden = false;

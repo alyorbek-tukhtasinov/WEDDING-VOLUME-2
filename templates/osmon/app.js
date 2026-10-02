@@ -8,7 +8,7 @@ import { parseMapInput } from '../../src/lib/maps.js';
 import { html, raw, esc } from '../../src/lib/dom.js';
 import brand from '@brand-config';
 import { nightMoment } from './sky/astro.js';
-import { STR, LANGS, siteLangs, localize, phaseName, dirName, brandText } from './i18n.js';
+import { STR, LANGS, siteLangs, localize, phaseName, dirName, brandText, textsFor } from './i18n.js';
 import { introHtml, initIntro } from '../../src/lib/intro.js';
 import { fixScriptGlyphs, scriptSafe } from '../../src/lib/i18n.js';
 import { createSky } from './sky/scene.js';
@@ -549,7 +549,7 @@ export async function mountOsmon(c0, { preview = false, lang = null, resume = fa
   const sc = newScope();
   const langs = siteLangs(c0);
   const L = langs.includes(lang) ? lang : pickLang(langs);
-  T = STR[L];
+  T = textsFor(L, c0);
   document.documentElement.lang = LANGS[L].html;
   const c = localize(c0, L);
   const d = deriveConfig(c);

@@ -1,5 +1,6 @@
 import { findTrack } from './music.js';
 import { TEMPLATES } from './templates.js';
+import { EVENT_IDS, findEvent } from './events.js';
 
 // Konfiguratsiyani tekshirish va undan hosila qiymatlarni hisoblash.
 // Bu fayl ham brauzerda, ham build vaqtida (Node) ishlatiladi — DOM ishlatmang.
@@ -52,7 +53,7 @@ export function validateConfig(c, mediaFiles = null) {
   need(!c.template || TEMPLATES.some((t) => t.id === c.template), `template noma'lum: "${c.template}" (${TEMPLATES.map((t) => t.id).join(', ')})`);
   need(c.demo == null || typeof c.demo === 'boolean', 'demo faqat true yoki false bo\'lishi mumkin');
   need(c.palette == null || ['green', 'pink'].includes(c.palette), `palette noma'lum: "${c.palette}" (green, pink)`);
-  need(c.eventType == null || ['nikoh', 'kelin-salom'].includes(c.eventType), `eventType noma'lum: "${c.eventType}" (nikoh, kelin-salom)`);
+  need(c.eventType == null || EVENT_IDS.includes(c.eventType), `eventType noma'lum: "${c.eventType}" (${EVENT_IDS.join(', ')})`);
   need(c.couple?.groom?.trim(), 'couple.groom (kuyov ismi) kiritilmagan');
   need(c.couple?.bride?.trim(), 'couple.bride (kelin ismi) kiritilmagan');
   need(isValidDate(c.event?.date), `event.date noto'g'ri: "${c.event?.date}" (format: YYYY-MM-DD)`);
@@ -245,9 +246,13 @@ export function deriveConfig(c) {
   const names = `${groom} & ${bride}`;
   const dateText = `${y}-yil ${d}-${MONTHS[m - 1]}`;
   const title = c.seo?.title?.trim() || `${names} — Taklifnoma`;
+  // Nikoh to'yidan boshqa marosimlar uchun tavsif o'sha marosim nomi bilan (eski saytlarda matn o'zgarmaydi)
+  const ev = c.eventType && c.eventType !== 'nikoh' && c.eventType !== 'nikoh-kunduzgi' ? findEvent(c.eventType) : null;
   const description =
     c.seo?.description?.trim() ||
-    `${groom} va ${bride}ning to‘y taklifnomasi. ${dateText}, soat ${c.event.time} da ${c.venue.name.trim()}da sizni kutamiz.`;
+    (ev
+      ? `${ev.uz.heroCaption}: ${groom} va ${bride}. ${dateText}, soat ${c.event.time} da ${c.venue.name.trim()}da sizni kutamiz.`
+      : `${groom} va ${bride}ning to‘y taklifnomasi. ${dateText}, soat ${c.event.time} da ${c.venue.name.trim()}da sizni kutamiz.`);
 
   const rsvpOpen = !!c.rsvp?.enabled;
   let rsvpClosesAt = null;

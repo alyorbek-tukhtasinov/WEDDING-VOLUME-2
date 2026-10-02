@@ -13,6 +13,7 @@ import { createSky } from './sky.js';
 import { createSkywriter } from './skywrite.js';
 import { balloonSvg, BALLOON_SETS, parachuteSvg, PAPER_PLANE, BIRD, barcodeSvg } from './art.js';
 import { celebrate, setReducedFx } from '../suzani/fx.js';
+import { phrases } from '../../src/lib/events.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -136,7 +137,7 @@ function renderPage(c, d) {
         </div>
         <div class="pass__stub">
           <div class="pass__barcode">${raw(barcodeSvg(d.names))}</div>
-          <p>${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
+          <p>${t.heroCaption || phrases(c)('heroCaption', 'Nikoh to‘yiga taklifnoma')}</p>
         </div>
       </div>
       <button class="btn btn--coral gate__btn" id="gate-open" type="button">✈️ Parvozni boshlash</button>
@@ -147,7 +148,7 @@ function renderPage(c, d) {
 
     <main class="page" id="page">
       <section class="hero" aria-label="Taklifnoma">
-        <p class="eyebrow hero__eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
+        <p class="eyebrow hero__eyebrow">${t.heroCaption || phrases(c)('heroCaption', 'Nikoh to‘yiga taklifnoma')}</p>
         <h1 class="sr-only">${d.names}</h1>
         <div class="hero__sky"><canvas id="skywrite" aria-hidden="true"></canvas></div>
         <p class="hero__date"><span>${weekday}</span><b>${pad(d.day)} · ${pad(d.month)} · ${d.year}</b><span>soat ${c.event.time}</span></p>
@@ -157,7 +158,7 @@ function renderPage(c, d) {
       <section class="section invite reveal">
         <div class="card cloudy">
           <p class="eyebrow">${t.greeting || 'Hurmatli mehmonimiz!'}</p>
-          <p class="invite__text">${t.invitation || `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`}</p>
+          <p class="invite__text">${t.invitation || phrases(c)('invitation', `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`, d.groom, d.bride)}</p>
           ${c.hosts ? html`<p class="invite__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
         </div>
       </section>
@@ -170,7 +171,7 @@ function renderPage(c, d) {
           <div class="board__row" id="countdown">
             ${['kun', 'soat', 'daqiqa', 'soniya'].map((u) => html`<div class="board__unit"><div class="flaps" data-unit="${u}"></div><span>${u}</span></div>`)}
           </div>
-          <p class="board__done" id="countdown-done" hidden>🛬 Qo‘ndik! To‘y kuni keldi 🎉</p>`}
+          <p class="board__done" id="countdown-done" hidden>🛬 Qo‘ndik! ${phrases(c)('came', 'To‘y kuni keldi')} 🎉</p>`}
           <div class="board__info">
             <span>Uchish: <b>${c.event.time}</b></span>
             <span>Sana: <b>${pad(d.day)}.${pad(d.month)}.${d.year}</b></span>
@@ -335,7 +336,7 @@ function initCountdown(d) {
 
 const utcStamp = (date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 function initCalendar(c, d) {
-  const title = `${d.names} — to‘y`;
+  const title = phrases(c)('calTitle', `${d.names} — to‘y`, d.names);
   const where = `${c.venue.name}, ${c.venue.address}`;
   const details = `${c.texts?.invitation || ''}\n\n${location.href}`;
   const gcal = $('#gcal');
@@ -473,7 +474,7 @@ function initRsvp(c, d, preview) {
   };
   let saved = preview ? null : store.get();
   const guestId = saved?.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`);
-  const thanks = (a, name) => (a === 'yes' ? `Rahmat, ${name}! Chiptangiz tasdiqlandi — sizni to‘yda intizorlik bilan kutamiz.` : `Rahmat, ${name}! 🤍 Xabar berganingiz uchun minnatdormiz.`);
+  const thanks = (a, name) => (a === 'yes' ? `Rahmat, ${name}! Chiptangiz tasdiqlandi — sizni ${phrases(c)('thanksAt', 'to‘yda')} intizorlik bilan kutamiz.` : `Rahmat, ${name}! 🤍 Xabar berganingiz uchun minnatdormiz.`);
   const showDone = (text, withChange = true) => {
     form.hidden = true;
     doneBox.hidden = false;

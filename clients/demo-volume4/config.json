@@ -1,0 +1,37 @@
+{
+  "template": "volume4",
+  "languages": [
+    "uz",
+    "ru"
+  ],
+  "couple": {
+    "groom": "Akmal",
+    "bride": "Nilufar"
+  },
+  "event": {
+    "date": "2027-05-15",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Karimovlar va Usmonovlar oilasi",
+  "texts": {},
+  "venue": {
+    "name": "“Bahor” to‘yxonasi",
+    "address": "Toshkent shahri, Yakkasaroy tumani",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.290000%2C69.255000",
+    "yandexMaps": ""
+  },
+  "program": [],
+  "musicTrack": "musiqa-5",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2027-05-13",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "effects": {
+    "countdown": true
+  }
+}

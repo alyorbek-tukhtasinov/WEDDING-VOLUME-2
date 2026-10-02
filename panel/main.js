@@ -2,7 +2,8 @@
 import './panel.css';
 import { html, raw, esc } from '../src/lib/dom.js';
 import { TEMPLATES, findTemplate } from '../src/lib/templates.js';
-import { PROGRAM_PRESETS, buildProgram, suggestProgramPreset, shiftProgram, DRESS_PRESETS } from '../src/lib/presets.js';
+import { PROGRAM_PRESETS, buildProgram, suggestProgramPreset, shiftProgram, DRESS_PRESETS, findDressPreset } from '../src/lib/presets.js';
+import { EVENTS, findEvent, eventTexts } from '../src/lib/events.js';
 import { parseMapInput } from '../src/lib/maps.js';
 import { MUSIC_LIBRARY, findTrack } from '../src/lib/music.js';
 import { validateConfig, isValidDate, TIME_RE, MONTHS } from '../src/lib/config.js';
@@ -106,10 +107,17 @@ function toSlug(...parts) {
 }
 
 function autoInvitation(c) {
-  const g = c.couple?.groom?.trim() || 'Kuyov';
-  const b = c.couple?.bride?.trim() || 'Kelin';
-  return `Sizni farzandlarimiz ${g} va ${b}ning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.`;
+  return eventTexts(c.eventType, c.couple?.groom, c.couple?.bride).invitation;
 }
+
+// Avvalgi (marosim turlari qo'shilishidan oldingi) avtomatik matnlar — ular ham "qo'lda yozilmagan" hisoblanadi
+const LEGACY_TEXTS = {
+  heroCaption: ['Nikoh to‘yiga taklifnoma', 'To‘yga taklifnoma'],
+  greeting: ['Hurmatli mehmonimiz!'],
+  closing: ['Tashrifingiz biz uchun katta sharaf!'],
+};
+const legacyInvitation = (c) =>
+  `Sizni farzandlarimiz ${c.couple?.groom?.trim() || 'Kuyov'} va ${c.couple?.bride?.trim() || 'Kelin'}ning hayotlaridagi eng quvonchli kun — nikoh to‘yi marosimiga taklif etamiz. Ushbu baxtli kunimizni siz bilan birga nishonlashdan mamnun bo‘lamiz.`;
 
 // Config'dagi barcha matn qiymatlari (qaysi media fayllar ishlatilayotganini aniqlash uchun)
 function strings(v, out = new Set()) {
@@ -197,7 +205,24 @@ async function addUpload(prefix, file, maxSide) {
 /* ------------------------------------------------------------------ */
 /*  Boshlang'ich config'lar                                             */
 /* ------------------------------------------------------------------ */
-function defaultConfig(template) {
+function defaultConfig(template, eventId = 'nikoh') {
+  return withEvent(baseConfig(template), eventId);
+}
+
+/** Marosim turining boshlang'ich qiymatlari: vaqt, davomiylik, dastur, dress-kod, taklif matnlari. */
+function withEvent(c, eventId) {
+  const e = findEvent(eventId);
+  c.eventType = e.id;
+  c.event = { ...c.event, time: e.time, durationHours: e.durationHours };
+  if (c.template === 'yz') return c;
+  c.texts = { ...c.texts, ...eventTexts(e.id, '', '') };
+  if (Array.isArray(c.program)) c.program = buildProgram(e.program, e.time);
+  const dress = findDressPreset(e.dress);
+  if (c.dressCode && dress) c.dressCode = { text: dress.text, colors: [...dress.colors] };
+  return c;
+}
+
+function baseConfig(template) {
   const date = addDays(todayIso(), 45);
   if (template === 'yz') {
     return {
@@ -214,7 +239,7 @@ function defaultConfig(template) {
     };
   }
   const kechki = DRESS_PRESETS.find((p) => p.id === 'kechki');
-  if (['suzani', 'kitob', 'bulut', 'volume3'].includes(template)) {
+  if (['suzani', 'kitob', 'bulut', 'volume3', 'volume4'].includes(template)) {
     return {
       template,
       couple: { groom: '', bride: '', initials: '' },
@@ -382,25 +407,78 @@ async function refreshStatus() {
 async function showList() {
   state.ed = null;
   root.innerHTML = html`${topbar()}<div class="wrap"><p class="empty">Yuklanmoqda…</p></div>`;
-  const r = await api('clients').catch(() => null);
+  const [r, fin] = await Promise.all([api('clients').catch(() => null), api('finance').catch(() => null)]);
   if (!r?.ok) return;
   state.clients = r.clients;
   state.deploy = r.deploy;
   state.deployed = r.deployed;
-  renderList('');
+  // To'lov belgilari daromad yozuvida (Redis); baza ulanmagan bo'lsa — to'lov filtri va tugmasi ko'rinmaydi
+  state.finance = fin?.ok ? fin.items || {} : null;
+  renderList();
+}
+
+/* --- Ro'yxat filtrlari (tanlov brauzerda eslab qolinadi) --- */
+const FILTER_KEY = 'boshqaruv-filter';
+const WHEN = [
+  { id: '', title: 'Hammasi' },
+  { id: 'week', title: '1 hafta ichida' },
+  { id: 'month', title: '1 oy ichida' },
+  { id: 'later', title: '1 oydan keyin' },
+  { id: 'past', title: 'O‘tib ketgan' },
+];
+function loadFilter() {
+  try {
+    return { q: '', when: '', template: '', event: '', paid: '', ...JSON.parse(localStorage.getItem(FILTER_KEY) || '{}'), q: '' };
+  } catch {
+    return { q: '', when: '', template: '', event: '', paid: '' };
+  }
+}
+function saveFilter(f) {
+  try {
+    const { q, ...rest } = f;
+    localStorage.setItem(FILTER_KEY, JSON.stringify(rest));
+  } catch {
+    /* localStorage yo'q */
+  }
+}
+const isPaid = (slug) => !!state.finance?.[slug]?.paid;
+
+function matchFilter(c, f, today) {
+  if (f.q && !`${c.slug} ${c.groom} ${c.bride} ${c.venue}`.toLowerCase().includes(f.q)) return false;
+  if (f.template && (c.template || 'volume2') !== f.template) return false;
+  if (f.event && (c.eventType || 'nikoh') !== f.event) return false;
+  if (f.paid && state.finance) {
+    if (c.demo) return false;
+    if ((f.paid === 'yes') !== isPaid(c.slug)) return false;
+  }
+  if (f.when) {
+    const d = c.date || '';
+    if (!d) return false;
+    if (f.when === 'past' && !(d < today)) return false;
+    if (f.when === 'week' && !(d >= today && d <= addDays(today, 7))) return false;
+    if (f.when === 'month' && !(d >= today && d <= addDays(today, 30))) return false;
+    if (f.when === 'later' && !(d > addDays(today, 30))) return false;
+  }
+  return true;
 }
 
 function clientCard(c, today) {
   const past = c.date && c.date < today;
   const soon = !past && c.date && c.date <= addDays(today, 7);
   const tpl = findTemplate(c.template);
+  const ev = findEvent(c.eventType);
+  const paid = isPaid(c.slug);
   return html`
     <article class="card ${past && !c.demo ? 'card--past' : ''} ${c.demo ? 'card--demo' : ''}">
       <div class="actions-row">
-        <span class="badge ${c.template === 'yz' ? 'badge--yz' : c.template === 'osmon' ? 'badge--osmon' : c.template === 'suzani' ? 'badge--suzani' : c.template === 'kitob' ? 'badge--kitob' : c.template === 'bulut' ? 'badge--bulut' : c.template === 'volume3' ? 'badge--volume3' : ''}">${tpl?.title || c.template}</span>
+        <span class="badge badge--${c.template}">${tpl?.title || c.template}</span>
+        <span class="badge badge--event" title="${ev.title}">${ev.icon} ${ev.title}</span>
         ${c.demo ? html`<span class="badge badge--demo">Demo</span>` : ''}
         ${soon && !c.demo ? html`<span class="badge badge--soon">Yaqinda</span>` : ''}
         ${past && !c.demo ? html`<span class="badge">O‘tgan</span>` : ''}
+        ${state.finance && !c.demo
+          ? html`<button class="paid-toggle ${paid ? 'is-paid' : ''}" type="button" data-paid="${c.slug}" aria-pressed="${paid}" title="Bosing — belgini almashtirish">${paid ? '✅ To‘langan' : '⏳ To‘lanmagan'}</button>`
+          : ''}
       </div>
       <p class="card__names">${c.groom} & ${c.bride}</p>
       <p class="card__meta">${prettyDate(c.date)}${c.time ? `, soat ${c.time}` : ''} · ${c.venue}</p>
@@ -415,11 +493,22 @@ function clientCard(c, today) {
   `;
 }
 
-function renderList(filter) {
+function filterSelect(id, label, value, options) {
+  return html`
+    <label class="filter">
+      <span>${label}</span>
+      <select data-filter="${id}" class="${value ? 'is-set' : ''}">
+        ${options.map((o) => html`<option value="${o.id}" ${o.id === value ? 'selected' : ''}>${o.title}</option>`)}
+      </select>
+    </label>`;
+}
+
+function renderList() {
   const today = todayIso();
-  const q = filter.trim().toLowerCase();
+  state.listFilter ||= loadFilter();
+  const f = state.listFilter;
   const items = state.clients
-    .filter((c) => !q || `${c.slug} ${c.groom} ${c.bride} ${c.venue}`.toLowerCase().includes(q))
+    .filter((c) => matchFilter(c, f, today))
     .sort((a, b) => {
       const pa = a.date < today;
       const pb = b.date < today;
@@ -429,23 +518,38 @@ function renderList(filter) {
   const real = items.filter((c) => !c.demo);
   const demos = items.filter((c) => c.demo);
   const realTotal = state.clients.filter((c) => !c.demo).length;
+  const active = f.when || f.template || f.event || f.paid || f.q;
+  const paidCount = state.finance ? state.clients.filter((c) => !c.demo && isPaid(c.slug)).length : 0;
 
   root.innerHTML = html`
     ${topbar()}
     <div class="wrap">
       <div class="list-head">
-        <h1>To‘ylar (${realTotal})</h1>
-        <input class="search" id="search" type="search" placeholder="Qidirish: ism, manzil…" value="${filter}" />
+        <h1>To‘ylar (${active ? `${real.length} / ` : ''}${realTotal})</h1>
+        <input class="search" id="search" type="search" placeholder="Qidirish: ism, manzil…" value="${f.q}" />
         <a class="btn" href="#/daromad">💰 Daromad</a>
         <a class="btn" href="#/musiqa">🎵 Musiqalar</a>
         <a class="btn btn--primary" href="#/yangi">+ Yangi to‘y</a>
       </div>
+      <div class="filters">
+        ${filterSelect('when', 'Muddat', f.when, WHEN)}
+        ${filterSelect('template', 'Shablon', f.template, [{ id: '', title: 'Hammasi' }, ...TEMPLATES.map((t) => ({ id: t.id, title: t.title }))])}
+        ${filterSelect('event', 'Marosim turi', f.event, [{ id: '', title: 'Hammasi' }, ...EVENTS.map((e) => ({ id: e.id, title: `${e.icon} ${e.title}` }))])}
+        ${state.finance
+          ? filterSelect('paid', 'To‘lov', f.paid, [
+              { id: '', title: 'Hammasi' },
+              { id: 'yes', title: `To‘langan (${paidCount})` },
+              { id: 'no', title: `To‘lanmagan (${realTotal - paidCount})` },
+            ])
+          : ''}
+        ${active ? html`<button class="btn btn--small btn--ghost" type="button" id="filter-reset">✕ Tozalash</button>` : ''}
+      </div>
       <div class="cards">
-        ${real.length ? real.map((c) => clientCard(c, today)) : html`<p class="empty">${q ? 'Hech narsa topilmadi' : 'Hozircha mijoz saytlari yo‘q'}</p>`}
+        ${real.length ? real.map((c) => clientCard(c, today)) : html`<p class="empty">${active ? 'Bu filtr bo‘yicha hech narsa topilmadi' : 'Hozircha mijoz saytlari yo‘q'}</p>`}
       </div>
       ${demos.length
         ? html`
-            <details class="demo-group" ${q || state.demoOpen ? 'open' : ''}>
+            <details class="demo-group" ${f.q || state.demoOpen ? 'open' : ''}>
               <summary>Demo saytlar (${demos.length}) <small>— namuna uchun, daromad hisobiga kirmaydi</small></summary>
               <div class="cards">${demos.map((c) => clientCard(c, today))}</div>
             </details>
@@ -456,17 +560,49 @@ function renderList(filter) {
   $('.demo-group')?.addEventListener('toggle', (e) => (state.demoOpen = e.target.open));
   const search = $('#search');
   search.addEventListener('input', () => {
-    renderList(search.value);
-    const s = $('#search');
-    s.focus();
-    s.setSelectionRange(s.value.length, s.value.length);
+    f.q = search.value.trim().toLowerCase();
+    renderList();
+    const s2 = $('#search');
+    s2.value = search.value;
+    s2.focus();
+    s2.setSelectionRange(s2.value.length, s2.value.length);
   });
+  $$('[data-filter]').forEach((sel) =>
+    sel.addEventListener('change', () => {
+      f[sel.dataset.filter] = sel.value;
+      saveFilter(f);
+      renderList();
+    }),
+  );
+  $('#filter-reset')?.addEventListener('click', () => {
+    state.listFilter = { q: '', when: '', template: '', event: '', paid: '' };
+    saveFilter(state.listFilter);
+    renderList();
+  });
+  $$('[data-paid]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const slug = b.dataset.paid;
+      const next = !isPaid(slug);
+      b.disabled = true;
+      try {
+        const r = await api('paid', { method: 'POST', body: { slug, paid: next } });
+        if (!r.ok) return toast(r.message || 'Saqlab bo‘lmadi');
+        state.finance = r.items || {};
+        renderList();
+        toast(next ? 'To‘langan deb belgilandi' : 'To‘lanmagan deb belgilandi');
+      } catch (err) {
+        if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
+      } finally {
+        b.disabled = false;
+      }
+    }),
+  );
 }
 
 /* ------------------------------------------------------------------ */
 /*  Shablon tanlash                                                     */
 /* ------------------------------------------------------------------ */
-const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg', volume3: '/images/og-volume3.jpg' };
+const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg', volume3: '/images/og-volume3.jpg', volume4: '/images/og-volume4.jpg' };
 
 function showTemplatePicker() {
   root.innerHTML = html`
@@ -489,12 +625,92 @@ function showTemplatePicker() {
       <p class="hint" style="margin-top:1rem">Namunalar: <a href="${siteUrl('demo')}" target="_blank" rel="noopener">Volume 2</a> · <a href="${siteUrl('demo-yz')}" target="_blank" rel="noopener">Yusuf & Zulayho</a></p>
     </div>
   `;
-  $$('[data-template]').forEach((b) =>
+  $$('[data-template]').forEach((b) => b.addEventListener('click', () => showEventPicker(b.dataset.template)));
+}
+
+/** 2-qadam: marosim turi — vaqt, dastur, dress-kod va taklif matnlari shunga moslab tayyorlanadi. */
+function showEventPicker(template) {
+  const tpl = findTemplate(template);
+  root.innerHTML = html`
+    ${topbar()}
+    <div class="wrap">
+      <div class="list-head">
+        <a class="btn btn--small btn--ghost" href="#/yangi" id="back-tpl">← Shablonlar</a>
+        <h1>${tpl?.title} — marosim turini tanlang</h1>
+      </div>
+      <p class="hint">Tanlangan marosimga mos vaqt, dastur, dress-kod va taklif matnlari tayyorlab qo‘yiladi — keyin istalganini o‘zgartirishingiz mumkin.</p>
+      <div class="events">
+        ${EVENTS.map(
+          (e) => html`
+            <button class="ev" type="button" data-event="${e.id}">
+              <span class="ev__icon" aria-hidden="true">${e.icon}</span>
+              <span class="ev__title">${e.title}</span>
+              <span class="ev__hint">${e.hint}</span>
+              <span class="ev__time">Odatda soat ${e.time}</span>
+            </button>
+          `,
+        )}
+      </div>
+    </div>
+  `;
+  $('#back-tpl').addEventListener('click', (ev) => {
+    ev.preventDefault();
+    showTemplatePicker();
+  });
+  $$('[data-event]').forEach((b) =>
     b.addEventListener('click', () => {
-      state.ed = newEditor({ isNew: true, config: defaultConfig(b.dataset.template) });
+      state.ed = newEditor({ isNew: true, config: defaultConfig(template, b.dataset.event) });
       showEditor();
     }),
   );
+}
+
+/**
+ * Tahrirlashda marosim turi almashtirilsa: qo'lda o'zgartirilmagan matnlar, vaqt, dastur va dress-kod
+ * yangi marosimga moslanadi. Qo'lda yozilgan matnlar faqat tasdiqlansa almashtiriladi.
+ */
+function onEventChange(prevId, nextId) {
+  const ed = state.ed;
+  const c = ed.config;
+  const P = findEvent(prevId);
+  const N = findEvent(nextId);
+  const g = c.couple?.groom;
+  const b = c.couple?.bride;
+  const notes = [];
+  if (c.template !== 'yz' && c.texts) {
+    const old = eventTexts(P.id, g, b);
+    const keys = ['heroCaption', 'greeting', 'invitation', 'closing'];
+    const auto = keys.every((k) => !c.texts[k] || c.texts[k] === old[k] || LEGACY_TEXTS[k]?.includes(c.texts[k]) || (k === 'invitation' && c.texts[k] === legacyInvitation(c)));
+    if (auto || confirm('Taklif matnlari qo‘lda o‘zgartirilgan. Ularni yangi marosimga mos matnlar bilan almashtiraymi?')) {
+      Object.assign(c.texts, eventTexts(N.id, g, b));
+      ed.invitationTouched = false;
+      notes.push('matnlar');
+    }
+  }
+  const oldTime = c.event?.time;
+  if (!TIME_RE.test(oldTime || '') || oldTime === P.time) {
+    c.event.time = N.time;
+    if (oldTime !== N.time) notes.push(`vaqt ${N.time}`);
+  }
+  c.event.durationHours = N.durationHours;
+  if (Array.isArray(c.program) && c.program.length) {
+    const autoProg = JSON.stringify(c.program) === JSON.stringify(buildProgram(suggestProgramPreset(oldTime, P.id), oldTime));
+    if (autoProg) {
+      c.program = buildProgram(N.program, c.event.time);
+      notes.push('dastur');
+    } else if (TIME_RE.test(oldTime || '') && oldTime !== c.event.time) {
+      c.program = shiftProgram(c.program, oldTime, c.event.time);
+    }
+  }
+  const pd = findDressPreset(P.dress);
+  const nd = findDressPreset(N.dress);
+  if (c.dressCode?.text && nd && (c.dressCode.text === pd?.text) && pd?.id !== nd.id) {
+    c.dressCode = { text: nd.text, colors: [...nd.colors] };
+    notes.push('dress-kod');
+  }
+  markDirty();
+  showEditor();
+  toast(notes.length ? `${N.title}: ${notes.join(', ')} moslandi` : `${N.title} tanlandi`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -559,16 +775,17 @@ function secMain() {
         ${field('Muhrdagi harflar', 'couple.initials', { placeholder: 'avtomatik', hint: 'Bo‘sh — ismlardan' })}
       </div>
       <div class="toggle-row">${check('Demo (namuna) sayt — ro‘yxatda alohida turadi, daromad hisobiga kirmaydi', 'demo', /^demo(-|$)/.test(ed.slug || ''))}</div>
-      ${c.template === 'volume3'
-        ? html`<label class="f" data-field="eventType"><span>Marosim turi</span>
-            <select data-path="eventType">
-              <option value="nikoh" ${c.eventType !== 'kelin-salom' ? 'selected' : ''}>Nikoh to‘yi</option>
-              <option value="kelin-salom" ${c.eventType === 'kelin-salom' ? 'selected' : ''}>Kelin salom</option>
-            </select></label>
-            <label class="f" data-field="palette"><span>Rang</span>
+      <label class="f" data-field="eventType"><span>Marosim turi</span>
+        <select data-path="eventType">
+          ${EVENTS.map((e) => html`<option value="${e.id}" ${findEvent(c.eventType).id === e.id ? 'selected' : ''}>${e.icon} ${e.title}</option>`)}
+        </select>
+        <small class="hint">Almashtirsangiz, vaqt, dastur va taklif matnlari shu marosimga moslanadi</small>
+      </label>
+      ${['volume3', 'volume4'].includes(c.template)
+        ? html`<label class="f" data-field="palette"><span>Rang</span>
             <select data-path="palette">
-              <option value="green" ${c.palette !== 'pink' ? 'selected' : ''}>Yashil</option>
-              <option value="pink" ${c.palette === 'pink' ? 'selected' : ''}>Pushti</option>
+              <option value="green" ${(c.palette || (c.template === 'volume4' ? 'pink' : 'green')) === 'green' ? 'selected' : ''}>Yashil</option>
+              <option value="pink" ${(c.palette || (c.template === 'volume4' ? 'pink' : 'green')) === 'pink' ? 'selected' : ''}>Pushti</option>
             </select></label>`
         : ''}
       ${c.template !== 'yz' ? field('Taklif qiluvchilar (oila nomi)', 'hosts', { placeholder: 'To‘rayevlar va Qurbonovlar oilasi', hint: 'Bo‘sh qoldirilsa ko‘rsatilmaydi' }) : ''}
@@ -749,7 +966,7 @@ function secProgram() {
     html`
       <div class="actions-row">
         <select id="program-preset">
-          ${PROGRAM_PRESETS.map((p) => html`<option value="${p.id}" ${p.id === suggestProgramPreset(c.event?.time) ? 'selected' : ''}>${p.title}</option>`)}
+          ${PROGRAM_PRESETS.map((p) => html`<option value="${p.id}" ${p.id === suggestProgramPreset(c.event?.time, c.eventType) ? 'selected' : ''}>${p.title}</option>`)}
         </select>
         <button class="btn btn--small" type="button" data-action="program-preset">Shablondan qo‘yish</button>
         <button class="btn btn--small btn--gold" type="button" data-action="program-auto">✨ Vaqtga qarab avtomatik</button>
@@ -1143,7 +1360,7 @@ function secMusicRsvp() {
         </label>
         <button class="btn btn--small" type="button" data-action="music-play" style="align-self:end">▶ Tinglash</button>
       </div>
-      <div class="toggle-row">${check('Mehmonlar javob yubora olsin', 'rsvp.enabled', true)} ${c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3'].includes(c.template) ? check('Tilaklarni saytda ko‘rsatish', 'rsvp.showWishes', true) : ''}</div>
+      <div class="toggle-row">${check('Mehmonlar javob yubora olsin', 'rsvp.enabled', true)} ${c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4'].includes(c.template) ? check('Tilaklarni saytda ko‘rsatish', 'rsvp.showWishes', true) : ''}</div>
       <div class="grid2">
         ${field('Javob qabul qilish muddati', 'rsvp.deadline', { type: 'date', hint: 'Odatda to‘ydan 1 kun oldin' })}
         ${field('Bir javobda ko‘pi bilan necha kishi', 'rsvp.maxGuests', { type: 'number', attrs: 'min="1" max="20"' })}
@@ -1157,7 +1374,7 @@ function secEffects() {
   if (state.ed.config.template === 'suzani') {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq (kashta gardishlari)', 'effects.countdown', true)}</div>`);
   }
-  if (state.ed.config.template === 'volume3') {
+  if (['volume3', 'volume4'].includes(state.ed.config.template)) {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq', 'effects.countdown', true)}</div>`);
   }
   if (state.ed.config.template === 'bulut') {
@@ -1390,7 +1607,7 @@ async function showFinance() {
       <section class="fin-summary" id="fin-summary">${financeSummary(financeStats(items, clients))}</section>
       <form id="fin-form" autocomplete="off">
         <div class="fin-table">
-          <div class="fin-row fin-row--head"><span>Sayt</span><span>To‘y sanasi</span><span>Narxi (so‘m)</span><span>Izoh</span></div>
+          <div class="fin-row fin-row--head"><span>Sayt</span><span>To‘y sanasi</span><span>Narxi (so‘m)</span><span>Izoh</span><span>To‘langan</span></div>
           ${clients.map(
             (c) => html`
               <div class="fin-row">
@@ -1399,7 +1616,8 @@ async function showFinance() {
                   : html`<span class="fin-name"><b>${c.groom} &amp; ${c.bride}</b><a href="${siteUrl(c.slug)}" target="_blank" rel="noopener">${c.slug}</a></span>`}
                 <span class="fin-date">${prettyDate(c.date) || '—'}</span>
                 <input class="fin-amount" inputmode="numeric" data-fin="${c.slug}" data-key="amount" placeholder="0" value="${items[c.slug]?.amount != null ? groupDigits(String(items[c.slug].amount)) : ''}" />
-                <input class="fin-note" data-fin="${c.slug}" data-key="note" maxlength="200" placeholder="masalan: to‘landi / avans" value="${items[c.slug]?.note || ''}" />
+                <input class="fin-note" data-fin="${c.slug}" data-key="note" maxlength="200" placeholder="masalan: avans" value="${items[c.slug]?.note || ''}" />
+                <label class="fin-paid"><input type="checkbox" data-fin="${c.slug}" data-key="paid" ${items[c.slug]?.paid ? 'checked' : ''} /> ✅</label>
               </div>
             `,
           )}
@@ -1428,6 +1646,9 @@ async function showFinance() {
       if (d) items[slug].amount = Number(d);
       else delete items[slug].amount;
       refreshSummary();
+    } else if (t.dataset.key === 'paid') {
+      if (t.checked) items[slug].paid = true;
+      else delete items[slug].paid;
     } else {
       items[slug].note = t.value;
     }
@@ -1485,7 +1706,7 @@ async function openExisting(slug, { copy = false } = {}) {
     if (c.seo) c.seo.ogImage = '';
     if (c.music) {
       c.music = '';
-      c.musicTrack ||= c.template === 'yz' ? 'musiqa-4' : c.template === 'osmon' ? 'musiqa-3' : ['suzani', 'kitob', 'bulut', 'volume3'].includes(c.template) ? 'musiqa-5' : 'musiqa-1';
+      c.musicTrack ||= c.template === 'yz' ? 'musiqa-4' : c.template === 'osmon' ? 'musiqa-3' : ['suzani', 'kitob', 'bulut', 'volume3', 'volume4'].includes(c.template) ? 'musiqa-5' : 'musiqa-1';
     }
     delete c.giftCard;
     state.ed = newEditor({ isNew: true, config: c });
@@ -1507,7 +1728,7 @@ function showEditor() {
   const suzani = c.template === 'suzani';
   const kitob = c.template === 'kitob';
   const bulut = c.template === 'bulut';
-  const volume3 = c.template === 'volume3';
+  const volume3 = c.template === 'volume3' || c.template === 'volume4';
   const sections = yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secYzRu(), secYzTexts(), secSeo()]
     : osmon
@@ -1517,7 +1738,7 @@ function showEditor() {
         : [secMain(), secOsmonLangs(), secTexts(), secIntroVideo(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
 
   root.innerHTML = html`
-    ${topbar(html`<span class="badge ${yz ? 'badge--yz' : osmon ? 'badge--osmon' : suzani ? 'badge--suzani' : kitob ? 'badge--kitob' : bulut ? 'badge--bulut' : volume3 ? 'badge--volume3' : ''}">${tpl?.title}</span>`)}
+    ${topbar(html`<span class="badge badge--${c.template || 'volume2'}">${tpl?.title}</span>`)}
     <div class="wrap">
       <div class="list-head">
         <a class="btn btn--small btn--ghost" href="#/">← Ro‘yxat</a>
@@ -1650,7 +1871,7 @@ function setToggle(id, on) {
   const sec = $(`#sec-${id}`);
   sec?.classList.toggle('sec--off', !on);
   if (id === 'program') {
-    c.program = on ? (c.program?.length ? c.program : buildProgram(suggestProgramPreset(c.event.time), c.event.time)) : [];
+    c.program = on ? (c.program?.length ? c.program : buildProgram(suggestProgramPreset(c.event.time, c.eventType), c.event.time)) : [];
     rerender('#program-rows', programRows);
   }
   if (id === 'dress') {
@@ -1748,7 +1969,9 @@ function bindEditor() {
       else if (t.dataset.kind === 'number' || t.type === 'number' || t.type === 'range') v = t.value === '' ? '' : Number(t.value);
       const path = t.dataset.path;
       const oldTime = c.event?.time;
+      const prevEvent = c.eventType;
       set(c, path, v);
+      if (path === 'eventType') return onEventChange(prevEvent || 'nikoh', v);
       if (path === 'backgroundOverlay') $('#veil-val').textContent = `${Math.round(v * 100)}%`;
       if (path.startsWith('sky.') || path.startsWith('venue.')) updateSkyStatus();
       if (path === 'couple.groom' || path === 'couple.bride') {
@@ -1825,7 +2048,7 @@ function bindEditor() {
     const a = b.dataset.action;
     if (a) e.preventDefault();
     if (a === 'program-preset' || a === 'program-auto') {
-      const id = a === 'program-auto' ? suggestProgramPreset(c.event.time) : $('#program-preset').value;
+      const id = a === 'program-auto' ? suggestProgramPreset(c.event.time, c.eventType) : $('#program-preset').value;
       if (!TIME_RE.test(c.event.time || '')) return toast('Avval to‘y vaqtini kiriting');
       c.program = buildProgram(id, c.event.time);
       $('#program-preset').value = id;

@@ -42,7 +42,7 @@ let base = null; // admin o'zgarishlari qo'shilgan asl (lotin) config
 function mount(lang, resume = false) {
   const langs = siteLangs(base);
   const L = langs.includes(lang) ? lang : pickLang(langs);
-  setLang(L);
+  setLang(L, base);
   document.documentElement.lang = LANGS[L].html;
   const c = localize(base, L, T);
   const derived = deriveConfig(c);

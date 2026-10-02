@@ -62,6 +62,16 @@ export const PROGRAM_PRESETS = [
       { at: 60, title: 'Dasturxon atrofida ziyofat' },
     ],
   },
+  {
+    id: 'kelin-salom',
+    title: 'Kelin salom',
+    hint: 'Kelin qarindoshlarga salom beradi',
+    items: [
+      { at: 0, title: 'Mehmonlarni kutib olish' },
+      { at: 30, title: 'Kelin salom marosimi' },
+      { at: 60, title: 'Dasturxon atrofida suhbat' },
+    ],
+  },
 ];
 
 const toMin = (t) => {
@@ -74,8 +84,14 @@ const toTime = (min) => {
 };
 const round5 = (n) => Math.round(n / 5) * 5;
 
-/** Vaqtga qarab eng mos shablon: tong — nahorgi osh, kunduz — kunduzgi, kech — kechki. */
-export function suggestProgramPreset(time) {
+/**
+ * Eng mos dastur shabloni. Marosim turi nikoh to'yidan boshqa bo'lsa — shu turning o'z dasturi
+ * (kelin salom, fotiha, nahorgi osh, qiz uzatish); nikoh to'yida vaqtga qarab: tong — nahorgi osh,
+ * kunduz — kunduzgi, kech — kechki.
+ */
+const EVENT_PROGRAM = { 'qiz-uzatish': 'kelin-uyida', 'nahorgi-osh': 'nahorgi-osh', fotiha: 'fotiha', 'kelin-salom': 'kelin-salom' };
+export function suggestProgramPreset(time, eventType) {
+  if (EVENT_PROGRAM[eventType]) return EVENT_PROGRAM[eventType];
   if (!TIME_RE.test(time || '')) return 'kechki';
   const m = toMin(time);
   if (m < 9 * 60) return 'nahorgi-osh';

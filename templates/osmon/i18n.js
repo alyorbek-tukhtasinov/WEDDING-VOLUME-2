@@ -5,6 +5,7 @@
 // (yo'q bo'lsa: tayyor ruscha matn yoki kirillcha o'girma).
 import { MONTHS, WEEKDAYS } from '../../src/lib/config.js';
 import { LANGS, siteLangs, ruPlural, cyr, localize as localizeContent, brandText as brandTextOf } from '../../src/lib/i18n.js';
+import { applyEvent } from '../../src/lib/events.js';
 
 export { LANGS, siteLangs };
 
@@ -228,7 +229,7 @@ UZ.unitNames = UZ.units;
 export const STR = { uz: UZ, uzc: UZC, ru: RU };
 
 /** Sayt pastidagi buyurtma havolasi matni (brand.config.js — lotinda). */
-export const brandText = (t, text) => brandTextOf(t === RU ? 'ru' : t === UZC ? 'uzc' : 'uz', text);
+export const brandText = (t, text) => brandTextOf(t.__lang || (t === RU ? 'ru' : t === UZC ? 'uzc' : 'uz'), text);
 
 /** Oy fazasi nomi (astro.js dagi moonPhaseName bilan bir xil chegaralar). */
 export function phaseName(t, illumination, waxing) {
@@ -243,3 +244,18 @@ export const dirName = (t, az) => t.dirs[Math.round((((az % 360) + 360) % 360) /
 
 /** Config'ning shu tildagi nusxasi (ruscha matn berilmagan joyda — shu shablonning ruscha matni). */
 export const localize = (c, lang) => localizeContent(c, lang, RU);
+
+// Marosim turi (config.eventType) bo'yicha farq qiladigan matnlar — nikoh to'yida o'zgarmaydi
+const EVENT_MAP = {
+  heroCaption: (p) => p.heroCaption,
+  invitation: (p) => p.invitation,
+  countdownEyebrow: (p) => p.until,
+  countdownDone: (p) => p.came,
+  calTitle: (p) => p.calTitle,
+  detailsEyebrow: (p) => p.badge,
+  thanksYes: (p, orig) => (n) => orig(n).replace(/to‘y kechasida|на свадьбе/, p.thanksAt),
+};
+export const textsFor = (lang, c) => {
+  const t = applyEvent(STR[lang], c, lang, EVENT_MAP, cyr);
+  return t === STR[lang] ? t : { ...t, __lang: lang };
+};

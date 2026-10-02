@@ -2,6 +2,7 @@
 // Tillar va mijoz matnlarining tarjimasi — src/lib/i18n.js (osmon shabloni bilan umumiy).
 // T — joriy til matnlari (setLang() bilan almashtiriladi; import qilganlar yangi qiymatni ko'radi).
 import { cyr } from './lib/i18n.js';
+import { applyEvent } from './lib/events.js';
 import { MONTHS, WEEKDAYS, WEEKDAYS_SHORT } from './lib/config.js';
 
 const UZ = {
@@ -151,7 +152,21 @@ const RU = {
 export const STR = { uz: UZ, uzc: UZC, ru: RU };
 export let T = UZ;
 export let LANG = 'uz';
-export function setLang(l) {
+// Marosim turi (config.eventType) bo'yicha farq qiladigan matnlar — nikoh to'yida o'zgarmaydi
+const EVENT_MAP = {
+  heroCaption: (p) => p.heroCaption,
+  invitation: (p) => p.invitation,
+  countdownTitle: (p) => p.untilLong,
+  countdownEnded: (p) => p.came,
+  countdownStarted: (p) => p.came,
+  calTitle: (p) => p.calTitle,
+  guestEyebrow: (p) => p.badge,
+  program: (p) => p.programTitle,
+  thanksYes: (p, orig) => (n) => orig(n).replace(/to‘yimizda|на свадьбе/, p.thanksAt),
+};
+
+/** Til (va config berilsa — marosim turi) bo'yicha matnlar. */
+export function setLang(l, config = null) {
   LANG = STR[l] ? l : 'uz';
-  T = STR[LANG];
+  T = config ? applyEvent(STR[LANG], config, LANG, EVENT_MAP, cyr) : STR[LANG];
 }

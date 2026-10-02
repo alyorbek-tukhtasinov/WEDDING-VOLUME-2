@@ -5,6 +5,7 @@
 //   POST /api/panel/save               — { slug, isNew, config, media: {nom: base64}, deleteMedia: [nom] }
 //   GET  /api/panel/status             — serverdagi versiya va oxirgi deploy holati
 //   POST /api/panel/password           — { slug } → mijozning /admin paroli (bir marta ko'rsatiladi)
+//   POST /api/panel/paid               — { slug, paid } → ro'yxatdagi "To'langan" belgisi (daromad yozuvida)
 //
 // Saqlash: serverdagi alohida git nusxada (PANEL_WORK_DIR) clients/<nom>/ yoziladi → commit →
 // GitHub'ga push → deploy darhol boshlanadi (DEPLOY_TRIGGER fayli). GitHub — yagona manba:
@@ -178,6 +179,7 @@ async function listClients() {
     out.push({
       slug,
       template: c.template || 'volume2',
+      eventType: typeof c.eventType === 'string' ? c.eventType : 'nikoh',
       demo: isDemo(slug, c),
       groom: c.couple?.groom || '',
       bride: c.couple?.bride || '',
@@ -460,13 +462,25 @@ function cleanFinance(items) {
       throw new UserError('bad_amount', `${slug}: summa butun musbat son bo'lishi kerak`);
     }
     const note = String(v?.note ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 200);
-    if (amount === null && !note) continue; // bo'sh qator saqlanmaydi
-    out[slug] = { ...(amount !== null ? { amount } : {}), ...(note ? { note } : {}) };
+    const paid = v?.paid === true;
+    if (amount === null && !note && !paid) continue; // bo'sh qator saqlanmaydi
+    out[slug] = { ...(amount !== null ? { amount } : {}), ...(note ? { note } : {}), ...(paid ? { paid } : {}) };
   }
   return out;
 }
 
 const loadFinance = () => withFinanceStore(() => getFinance());
+// Ro'yxatdagi "To'langan / To'lanmagan" tugmasi: faqat shu saytning belgisi o'zgaradi (boshqa yozuvlar joyida)
+const setPaid = (body) =>
+  withFinanceStore(async () => {
+    const slug = String(body?.slug || '');
+    if (!SLUG_RE.test(slug) || slug.length > 60) throw new UserError('bad_slug', `Noto'g'ri sayt nomi: ${slug}`);
+    const cur = (await getFinance())?.items || {};
+    const items = cleanFinance({ ...cur, [slug]: { ...(cur[slug] || {}), paid: body?.paid === true } });
+    const data = { items, updatedAt: new Date().toISOString() };
+    await setFinance(data);
+    return data;
+  });
 const saveFinance = (body) =>
   withFinanceStore(async () => {
     const items = cleanFinance(body?.items);
@@ -506,6 +520,7 @@ export async function panelHandler(req, res, name) {
     if (req.method === 'POST' && name === 'save') return send(res, 200, { ok: true, ...(await save(await readJson(req))) });
     if (req.method === 'GET' && name === 'finance') return send(res, 200, { ok: true, ...(await loadFinance()) });
     if (req.method === 'POST' && name === 'finance') return send(res, 200, { ok: true, ...(await saveFinance(await readJson(req))) });
+    if (req.method === 'POST' && name === 'paid') return send(res, 200, { ok: true, ...(await setPaid(await readJson(req))) });
     if (req.method === 'POST' && name === 'delete') return send(res, 200, { ok: true, ...(await removeClient(await readJson(req))) });
     if (req.method === 'POST' && name === 'music') return send(res, 200, { ok: true, ...(await addMusic(await readJson(req))) });
     if (req.method === 'POST' && name === 'password') {

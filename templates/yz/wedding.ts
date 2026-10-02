@@ -5,6 +5,7 @@ import config from '@wedding-config';
 import { applyOverrides, mediaUrl, musicUrlOf, isValidDate } from '../../src/lib/config.js';
 import { parseMapInput, yandexEmbed, googleLink, yandexLink } from '../../src/lib/maps.js';
 import { latinToCyrillic } from '../../src/lib/translit.js';
+import { phrases } from '../../src/lib/events.js';
 
 const MONTHS_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
 const MONTHS_RU = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -45,6 +46,7 @@ export interface Wedding {
   rsvp: { enabled: boolean; closesAt: Date | null; maxGuests: number };
   storageKey: string;
   texts: { uz: Record<string, string>; ru: Record<string, string> };
+  eventType: string;
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -123,6 +125,7 @@ function build(c: any): Wedding {
     },
     storageKey: `rsvp:${c.couple.groom.trim()} & ${c.couple.bride.trim()}:${c.event.originalDate || c.event.date}`,
     texts: { uz: { ...(c.texts?.uz || {}) }, ru: { ...(c.texts?.ru || {}) } },
+    eventType: typeof c.eventType === 'string' ? c.eventType : '',
   };
 }
 
@@ -159,7 +162,7 @@ export function downloadICS() {
     `DTSTAMP:${fmt(new Date())}`,
     `DTSTART:${fmt(w.start)}`,
     `DTEND:${fmt(w.end)}`,
-    `SUMMARY:${esc(`${w.groom} & ${w.bride} — To‘y marosimi`)}`,
+    `SUMMARY:${esc(phrases({ eventType: w.eventType })('calTitle', `${w.groom} & ${w.bride} — To‘y marosimi`, `${w.groom} & ${w.bride}`))}`,
     `LOCATION:${esc(`${w.venueName}, ${w.address}`)}`,
     `DESCRIPTION:${esc(`${w.groom} va ${w.bride}ning to‘y marosimiga taklif etamiz.`)}`,
     'END:VEVENT',

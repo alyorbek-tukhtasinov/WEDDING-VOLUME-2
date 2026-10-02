@@ -45,6 +45,12 @@ export const TEMPLATES = [
     description: 'To‘q ko‘k konvert va tilla muhr, ko‘k kartush ichida ismlar, haftalik taqvim, saroy surati, sanoq, javob va mehmonlar kitobi (o‘zbek/rus)',
     features: ['program', 'dressCode', 'rsvp', 'wishes'],
   },
+  {
+    id: 'volume4',
+    title: 'Volume 4',
+    description: 'Volume 3 ning pushti ko‘rinishi: gulli fon, pushti ranglar, xira oynali kartochkalar, sanoq, javob va mehmonlar kitobi (o‘zbek/rus)',
+    features: ['program', 'dressCode', 'rsvp', 'wishes'],
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';

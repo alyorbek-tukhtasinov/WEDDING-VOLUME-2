@@ -3,6 +3,7 @@ import '../src/styles.css';
 import brand from '@brand-config';
 import { deriveConfig } from '../src/lib/config.js';
 import { renderPage } from '../src/render.js';
+import { setLang } from '../src/strings.js';
 import { initCountdown, initCalendar, initGallery } from '../src/features.js';
 
 // Qayta chizishda eski taymerlar (hisoblagich) to'planib qolmasligi uchun
@@ -24,6 +25,7 @@ function render({ config, media, mediaBase }) {
   timers.clear();
   let d;
   try {
+    setLang('uz', c);
     d = deriveConfig(c);
     app.innerHTML = renderPage(c, d, brand);
   } catch (err) {

@@ -284,6 +284,25 @@ Marosim turi: `"eventType": "kelin-salom"` — matnlar "Kelin salom" marosimiga 
 Namuna: `clients/faxriddin-feruza-kelin-salom`.
 Shrift: Playfair Display (SIL OFL) — `templates/volume3/fonts`. Namuna: `clients/demo-volume3`.
 
+### "Volume 4" shabloni (volume4)
+
+Volume 3 ning pushti ko‘rinishi (kod umumiy: `templates/volume3/app.js`): gulli fon (`public/images/volume4/fon.webp`)
+va pushti ranglar o‘zi qo‘yiladi; `palette` va `backgroundImage` bilan almashtirsa bo‘ladi. Namuna: `clients/demo-volume4`.
+
+### Marosim turlari (eventType)
+
+`src/lib/events.js`: nikoh to‘yi (kechki / kunduzgi), qiz uzatish, nahorgi osh, fotiha to‘yi, kelin salom.
+Panelda "Yangi to‘y" → shablon → **marosim turi**: vaqt, to‘y dasturi, dress-kod va taklif matnlari shunga moslab
+tayyorlanadi. Tahrirlashda "Marosim turi" almashtirilsa, qo‘lda o‘zgartirilmagan matnlar, vaqt va dastur moslanadi.
+Barcha shablonlardagi "To‘yimizgacha", "To‘y dasturi" kabi iboralar marosimga qarab o‘zgaradi; `eventType`
+yozilmagan (eski) saytlar — nikoh to‘yi, matnlari avvalgidek.
+
+### Ro‘yxat filtrlari va to‘lov
+
+Panel ro‘yxatida: muddat (1 hafta ichida, 1 oy ichida, 1 oydan keyin, o‘tib ketgan), shablon, marosim turi va
+to‘lov (to‘langan / to‘lanmagan). Kartadagi "⏳ To‘lanmagan / ✅ To‘langan" tugmasi bir bosishda almashadi
+(`POST /api/panel/paid`, daromad yozuvida `paid`); "Daromad" sahifasida ham ustun bor.
+
 ### "3D sehrli kitob" shabloni (kitob)
 
 Taklifnoma — charm muqovali kitob (`templates/kitob/`). Muqova bosilganda musiqa yoqiladi va

@@ -10,6 +10,7 @@ import brand from '@brand-config';
 import { PALETTE, medallion, rosette, pomegranate, tulip, heart, rings, DOVE, spoolSvg, wishFlower } from './motifs.js';
 import { installDefs, renderMotif, track, setReduced, resetTracks } from './stitch.js';
 import { burstSeeds, celebrate, drizzle, swingTassels, tasselsHtml, setReducedFx } from './fx.js';
+import { phrases } from '../../src/lib/events.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -79,6 +80,7 @@ function brandLink() {
 /* ------------------------------------ Sahifa ------------------------------------ */
 function renderPage(c, d) {
   const t = c.texts || {};
+  const ph = phrases(c);
   const program = (c.program || []).filter((p) => p?.time && p?.title);
   const dress = c.dressCode?.text?.trim() || c.dressCode?.colors?.length ? c.dressCode : null;
   const contacts = (c.contacts || []).filter((x) => x?.name && x?.phone);
@@ -93,7 +95,7 @@ function renderPage(c, d) {
       <div class="gate__cloth">
         ${[1, 2, 3, 4].map((i) => html`<div class="gate__corner gate__corner--${i}" aria-hidden="true"></div>`)}
         <div class="gate__inner">
-          <p class="eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
+          <p class="eyebrow">${t.heroCaption || ph('heroCaption', 'Nikoh to‘yiga taklifnoma')}</p>
           <p class="gate__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
           <p class="gate__date">${dateLine}</p>
           <button class="btn btn--gold gate__btn" id="gate-open" type="button">🪡 Suzanini ochish</button>
@@ -108,11 +110,11 @@ function renderPage(c, d) {
     <main class="page" id="page">
       <section class="hero" aria-label="Taklifnoma">
         <h1 class="sr-only">${d.names}</h1>
-        <p class="eyebrow hero__eyebrow">${t.heroCaption || 'Nikoh to‘yiga taklifnoma'}</p>
+        <p class="eyebrow hero__eyebrow">${t.heroCaption || ph('heroCaption', 'Nikoh to‘yiga taklifnoma')}</p>
         <div class="medallion" id="medallion"></div>
         <p class="hero__date"><span>${weekday}</span><b>${pad(d.day)} · ${pad(d.month)} · ${d.year}</b><span>soat ${c.event.time}</span></p>
         <div class="patch patch--round patch--a" style="--rot:-10deg">💍</div>
-        <div class="patch patch--ribbon patch--b" style="--rot:6deg">Nikoh to‘yi</div>
+        <div class="patch patch--ribbon patch--b" style="--rot:6deg">${ph('badge', 'Nikoh to‘yi')}</div>
         <div class="hero__garden" aria-hidden="true"><div id="hg-1"></div><div id="hg-2"></div><div id="hg-3"></div></div>
         <p class="hero__hint" aria-hidden="true">✨ Suzaniga bosing — gul tikiladi</p>
         ${raw(tasselsHtml(9))}
@@ -124,7 +126,7 @@ function renderPage(c, d) {
         <div class="doves" id="doves" aria-hidden="true"></div>
         <div class="card framed">
           <p class="eyebrow">${t.greeting || 'Hurmatli mehmonimiz!'}</p>
-          <p class="invite__text">${t.invitation || `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`}</p>
+          <p class="invite__text">${t.invitation || ph('invitation', `Sizni farzandlarimiz ${d.groom} va ${d.bride}ning nikoh to‘yi marosimiga taklif etamiz.`, d.groom, d.bride)}</p>
           ${c.hosts ? html`<p class="invite__hosts"><span>Hurmat bilan,</span>${c.hosts}</p>` : ''}
           <div class="patch patch--oval patch--c" style="--rot:-7deg">Baxtli bo‘ling! 🌷</div>
         </div>
@@ -134,11 +136,11 @@ function renderPage(c, d) {
         ? ''
         : html`
       <section class="section when">
-        ${head('To‘yimizgacha', 'Har bir chok — kutilgan bir lahza')}
+        ${head(ph('until', 'To‘yimizgacha'), 'Har bir chok — kutilgan bir lahza')}
         <div class="hoops" id="countdown">
           ${['kun', 'soat', 'daqiqa', 'soniya'].map((u) => html`<div class="hoop"><div class="hoop__cloth"><b data-unit="${u}">00</b></div><span>${u}</span></div>`)}
         </div>
-        <p class="when__done" id="countdown-done" hidden>🎉 To‘y kuni keldi — biz bilan bo‘lganingiz uchun rahmat!</p>
+        <p class="when__done" id="countdown-done" hidden>🎉 ${ph('came', 'To‘y kuni keldi — biz bilan bo‘lganingiz uchun rahmat!')}</p>
         <div class="motif-rings" id="rings"></div>
         <div class="btn-row">
           <a class="btn" id="gcal" target="_blank" rel="noopener">${raw(ICON.calendar)}<span>Google taqvim</span></a>
@@ -148,7 +150,7 @@ function renderPage(c, d) {
 
       ${program.length ? html`
       <section class="section program">
-        ${head('To‘y dasturi', 'Kecha qanday o‘tadi')}
+        ${head(ph('programTitle', 'To‘y dasturi'), ph('programLead', 'Kecha qanday o‘tadi'))}
         <ol class="vine" id="vine">
           ${program.map((p, i) => html`<li class="vine__item" style="--i:${i}"><span class="vine__flower" data-flower="${i}"></span><time>${p.time}</time><p>${p.title}</p></li>`)}
         </ol>
@@ -389,7 +391,7 @@ function initCountdown(d) {
 
 const utcStamp = (date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 function initCalendar(c, d) {
-  const title = `${d.names} — to‘y`;
+  const title = phrases(c)('calTitle', `${d.names} — to‘y`, d.names);
   const where = `${c.venue.name}, ${c.venue.address}`;
   const details = `${c.texts?.invitation || ''}\n\n${location.href}`;
   const gcal = $('#gcal');
@@ -531,7 +533,7 @@ function initRsvp(c, d, preview) {
   };
   let saved = preview ? null : store.get();
   const guestId = saved?.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`);
-  const thanks = (a, name) => (a === 'yes' ? `Rahmat, ${name}! 🥰 Sizni to‘yda intizorlik bilan kutamiz.` : `Rahmat, ${name}! 🤍 Xabar berganingiz uchun minnatdormiz.`);
+  const thanks = (a, name) => (a === 'yes' ? `Rahmat, ${name}! 🥰 Sizni ${phrases(c)('thanksAt', 'to‘yda')} intizorlik bilan kutamiz.` : `Rahmat, ${name}! 🤍 Xabar berganingiz uchun minnatdormiz.`);
   const showDone = (text, withChange = true) => {
     form.hidden = true;
     doneBox.hidden = false;

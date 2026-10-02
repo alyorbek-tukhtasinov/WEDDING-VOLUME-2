@@ -5,6 +5,7 @@
 // (yo'q bo'lsa: shablonning tayyor ruscha matni yoki kirillcha o'girma).
 // Interfeys matnlari (tugmalar, sarlavhalar) — har bir shablonning o'z lug'atida.
 import { latinToCyrillic } from './translit.js';
+import { isNikoh, eventOf } from './events.js';
 
 export const LANGS = {
   uz: { label: 'O‘zbekcha', short: 'UZ', html: 'uz' },
@@ -96,6 +97,10 @@ const RU_PROGRAM = {
   'Kelin salom marosimi': 'Обряд «Келин салом»',
   'Qur’on tilovati va duo': 'Чтение Корана и дуа',
   'Fotiha marosimi': 'Обряд фатиха',
+  'Dasturxon atrofida suhbat': 'Беседа за дастарханом',
+  'Kuyov va uning yaqinlarining kirib kelishi': 'Приезд жениха и его близких',
+  'Kelinni kuyov xonadoniga kuzatish': 'Проводы невесты в дом жениха',
+  'Nahorgi osh tortilishi': 'Подача утреннего плова',
 };
 
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
@@ -132,6 +137,11 @@ export function localize(c, lang, ruDefaults = {}) {
     return out;
   }
   if (lang !== 'ru') return c;
+  // Nikoh to'yidan boshqa marosim — ruscha tayyor matnlar shu marosimniki
+  if (!isNikoh(c)) {
+    const e = eventOf(c).ru;
+    ruDefaults = { ...ruDefaults, heroCaption: e.heroCaption, greeting: e.greeting, invitation: e.invitation, closing: e.closing };
+  }
   const r = c.i18n?.ru || {};
   const base = cyrContent(c);
   // Ruscha matn berilmagan bo'lsa — tayyor ruscha matn (o'zbekcha kirill emas)

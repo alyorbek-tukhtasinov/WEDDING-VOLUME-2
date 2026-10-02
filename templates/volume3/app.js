@@ -9,6 +9,7 @@ import { deriveConfig, musicUrlOf, mediaUrl, MONTHS } from '../../src/lib/config
 import { html, raw } from '../../src/lib/dom.js';
 import { LANGS, siteLangs, pickLang, rememberLang, localize, cyr } from '../../src/lib/i18n.js';
 import brand from '@brand-config';
+import { isNikoh, phrases } from '../../src/lib/events.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -132,36 +133,80 @@ const T = {
     musicOff: 'Выключить музыку',
   },
 };
-// Marosim turi (config.eventType): nikoh to'yi (asosiy) yoki "Kelin salom" — farq qiladigan matnlar
-export const EVENT_TYPES = ['nikoh', 'kelin-salom'];
+// Marosim turi (config.eventType, src/lib/events.js): nikoh to'yida asosiy matnlar, boshqalarida — quyidagilar
 const EVENTS = {
+  'qiz-uzatish': {
+    uz: {
+      gateInvite: 'QIZIMIZNI OQ YO‘LGA KUZATAR EKANMIZ, SHU QUVONCHLI VA HAYAJONLI KUNDA SIZNI YONIMIZDA KO‘RISHNI ISTAYMIZ',
+      ceremonyInvite: 'SIZNI QIZIMIZNI UZATISH TO‘YIGA CHIN QALBDAN TAKLIF ETAMIZ',
+      willHold: 'QIZ UZATISH TO‘YI BO‘LIB O‘TADI',
+      dearText: ['Qizimizni yangi hayotga', 'kuzatish kunida duolaringiz', 'bizga hamroh bo‘lsin'],
+    },
+    ru: {
+      gateInvite: 'МЫ ПРОВОЖАЕМ НАШУ ДОЧЬ В НОВУЮ ЖИЗНЬ И БУДЕМ СЧАСТЛИВЫ ВИДЕТЬ ВАС РЯДОМ В ЭТОТ ТРОГАТЕЛЬНЫЙ ДЕНЬ',
+      ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА ПРОВОДЫ НАШЕЙ ДОЧЕРИ',
+      willHold: 'ПРОВОДЫ НЕВЕСТЫ СОСТОЯТСЯ',
+      dearText: ['В день, когда наша дочь', 'начинает новую жизнь,', 'нам важны ваши благословения'],
+    },
+  },
+  'nahorgi-osh': {
+    uz: {
+      gateInvite: 'TONG SAHARDA DAMLANGAN OSHIMIZGA, DUO VA DASTURXONIMIZ BARAKASIGA SIZNI SAMIMIY TAKLIF ETAMIZ',
+      ceremonyInvite: 'SIZNI FARZANDLARIMIZ TO‘YI MUNOSABATI BILAN BERILADIGAN NAHORGI OSHGA TAKLIF ETAMIZ',
+      willHold: 'NAHORGI OSH TORTILADI',
+      dearText: ['Tong saharda dasturxonimiz', 'atrofida jam bo‘lib,', 'duo qilib ketishingizni so‘raymiz'],
+    },
+    ru: {
+      gateInvite: 'НА РАССВЕТЕ НАШ ДОМ ЖДЁТ ВАС К ПРАЗДНИЧНОМУ ПЛОВУ И ДОБРЫМ МОЛИТВАМ',
+      ceremonyInvite: 'ПРИГЛАШАЕМ ВАС НА УТРЕННИЙ ПЛОВ В ЧЕСТЬ СВАДЬБЫ НАШИХ ДЕТЕЙ',
+      willHold: 'УТРЕННИЙ ПЛОВ СОСТОИТСЯ',
+      dearText: ['Будем рады видеть вас', 'за утренним дастарханом', 'и услышать ваши благословения'],
+    },
+  },
+  fotiha: {
+    uz: {
+      gateInvite: 'IKKI XONADONNI YAQINLASHTIRADIGAN MUBORAK KUNDA OQ FOTIHANGIZ BILAN BIZGA HAMROH BO‘LISHINGIZNI SO‘RAYMIZ',
+      ceremonyInvite: 'SIZNI FARZANDLARIMIZNING FOTIHA TO‘YIGA CHIN QALBDAN TAKLIF ETAMIZ',
+      willHold: 'FOTIHA TO‘YI BO‘LIB O‘TADI',
+      dearText: ['Ikki yoshning baxtiga', 'poydevor bo‘ladigan kunda', 'oq fotihangizni kutamiz'],
+    },
+    ru: {
+      gateInvite: 'В БЛАГОСЛОВЕННЫЙ ДЕНЬ, СБЛИЖАЮЩИЙ ДВЕ СЕМЬИ, ПРОСИМ ВАС РАЗДЕЛИТЬ С НАМИ РАДОСТЬ И БЛАГОСЛОВЕНИЕ',
+      ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА ФОТИХА-ТОЙ НАШИХ ДЕТЕЙ',
+      willHold: 'ФОТИХА-ТОЙ СОСТОИТСЯ',
+      dearText: ['В день, когда две семьи', 'становятся ближе,', 'ждём ваших благословений'],
+    },
+  },
   'kelin-salom': {
     uz: {
       gateInvite: 'QUVONCHLI KUNIMIZDA SIZNI DAVRAMIZDA KO‘RISHNI ISTAYMIZ VA KELINIMIZNING “KELIN SALOM” MAROSIMIGA SAMIMIY TAKLIF ETAMIZ',
       ceremonyInvite: 'SIZNI KELINIMIZNING “KELIN SALOM” MAROSIMIGA CHIN QALBDAN TAKLIF ETAMIZ',
       willHold: 'KELIN SALOM MAROSIMI BO‘LIB O‘TADI',
       dearText: ['Sizni kelinimizning', '“Kelin salom” marosimiga', 'taklif etamiz'],
-      timeRemaining: 'Marosimgacha qolgan vaqt',
-      program: 'Marosim dasturi',
-      ctaTitle: 'Taklifnomangizni buyurtma bering',
-      ctaSub: 'O‘zingizning go‘zal taklifnoma saytingizni yarating',
     },
     ru: {
       gateInvite: 'ОТ ВСЕЙ ДУШИ ПРИГЛАШАЕМ ВАС РАЗДЕЛИТЬ С НАМИ РАДОСТЬ И ПОЧТИТЬ СВОИМ ПРИСУТСТВИЕМ ЦЕРЕМОНИЮ «КЕЛИН САЛОМ» НАШЕЙ НЕВЕСТКИ',
       ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА ЦЕРЕМОНИЮ «КЕЛИН САЛОМ» НАШЕЙ НЕВЕСТКИ',
       willHold: 'ЦЕРЕМОНИЯ «КЕЛИН САЛОМ» СОСТОИТСЯ',
       dearText: ['Приглашаем Вас', 'на церемонию «Келин салом»', 'нашей невестки'],
-      timeRemaining: 'Время до церемонии',
-      program: 'Программа',
-      ctaTitle: 'Закажите онлайн-приглашение',
-      ctaSub: 'Создайте свой красивый сайт-приглашение',
     },
   },
 };
-const texts = (lang, eventType) => {
-  const ev = EVENTS[eventType] || {};
-  if (lang === 'ru') return { ...T.ru, ...ev.ru };
-  const uz = { ...T.uz, ...ev.uz };
+const texts = (lang, c) => {
+  // Umumiy iboralar (sanoq, dastur sarlavhasi) — src/lib/events.js; nikoh to'yida asl matnlar
+  const ph = phrases(c, lang === 'ru' ? 'ru' : 'uz');
+  const ev = isNikoh(c) ? {} : EVENTS[c.eventType] || {};
+  const common = (base) => ({
+    timeRemaining: ph('untilLong', base.timeRemaining),
+    program: ph('programTitle', base.program),
+    ...(isNikoh(c)
+      ? {}
+      : lang === 'ru'
+        ? { ctaTitle: 'Закажите онлайн-приглашение', ctaSub: 'Создайте свой красивый сайт-приглашение' }
+        : { ctaTitle: 'Taklifnomangizni buyurtma bering', ctaSub: 'O‘zingizning go‘zal taklifnoma saytingizni yarating' }),
+  });
+  if (lang === 'ru') return { ...T.ru, ...common(T.ru), ...ev.ru };
+  const uz = { ...T.uz, ...common(T.uz), ...ev.uz };
   return lang === 'uzc' ? { ...cyr(uz), google: 'Google Maps', rsvpLabel: 'R.S.V.P.' } : uz;
 };
 const RU_DEFAULTS = { heroCaption: '', greeting: '', invitation: () => '', closing: '' };
@@ -695,16 +740,19 @@ export async function mountVolume3(config, { preview = false } = {}) {
   const langs = siteLangs(config);
   const lang = preview ? langs[0] : pickLang(langs);
   const c = localize(config, lang, RU_DEFAULTS);
-  const L = texts(lang, config.eventType);
+  const L = texts(lang, config);
   const d = deriveConfig(c);
   document.documentElement.lang = LANGS[lang]?.html || 'uz';
-  // Rang va fon: config.palette ("pink" — pushti), config.backgroundImage (media/ dagi fon rasmi)
+  // Rang va fon: config.palette ("pink" — pushti), config.backgroundImage (media/ dagi fon rasmi).
+  // Volume 4 — shu shablonning pushti ko'rinishi: asli pushti rang va gulli fon (config'da almashtirsa bo'ladi).
+  const v4 = config.template === 'volume4';
   const rootEl = document.documentElement;
-  if (c.palette === 'pink') rootEl.dataset.palette = 'pink';
+  if ((c.palette || (v4 ? 'pink' : 'green')) === 'pink') rootEl.dataset.palette = 'pink';
   else delete rootEl.dataset.palette;
-  if (c.backgroundImage) {
+  const bg = c.backgroundImage ? mediaUrl(c.backgroundImage) : v4 ? '/images/volume4/fon.webp' : '';
+  if (bg) {
     rootEl.dataset.bg = 'custom';
-    rootEl.style.setProperty('--g-bg-image', `url("${mediaUrl(c.backgroundImage)}")`);
+    rootEl.style.setProperty('--g-bg-image', `url("${bg}")`);
   } else {
     delete rootEl.dataset.bg;
     rootEl.style.removeProperty('--g-bg-image');

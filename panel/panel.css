@@ -307,6 +307,11 @@ a {
   color: #f4d98e;
 }
 
+.badge--volume4 {
+  background: #b04f72;
+  color: #fff6f9;
+}
+
 .badge--volume3 {
   background: #112250;
   color: #e6c472;
@@ -326,6 +331,117 @@ a {
   padding: 3rem 1rem;
   text-align: center;
   color: var(--muted);
+}
+
+/* Ro'yxat filtrlari */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem 0.8rem;
+  margin: 0 0 1rem;
+}
+
+.filter {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.filter select {
+  min-width: 150px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.filter select.is-set {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-soft);
+}
+
+.badge--event {
+  background: #f6efe2;
+  color: #6b4e1f;
+  font-weight: 500;
+}
+
+/* To'langan / to'lanmagan — bir bosishda almashadi */
+.paid-toggle {
+  margin-left: auto;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid #e5c58a;
+  border-radius: 999px;
+  background: #fff7e6;
+  color: #7a5200;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.paid-toggle.is-paid {
+  border-color: #9fd3b5;
+  background: #e8f6ee;
+  color: var(--green);
+}
+
+.paid-toggle:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Marosim turini tanlash */
+.events {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.ev {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.1rem 1.1rem 1rem;
+  text-align: left;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ev:hover,
+.ev:focus-visible {
+  border-color: var(--gold);
+  outline: none;
+}
+
+.ev__icon {
+  font-size: 1.8rem;
+}
+
+.ev__title {
+  font-family: var(--f-caps);
+  font-size: 1.05rem;
+  color: var(--navy);
+}
+
+.ev__hint {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.ev__time {
+  font-size: 0.78rem;
+  color: var(--gold);
+  font-weight: 600;
 }
 
 /* Shablon tanlash */
@@ -935,11 +1051,18 @@ a {
 
 .fin-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) 80px;
   gap: 0.75rem;
   align-items: center;
   padding: 0.6rem 1rem;
   border-bottom: 1px solid var(--line);
+}
+
+.fin-paid {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
 }
 
 .fin-row:last-child {
