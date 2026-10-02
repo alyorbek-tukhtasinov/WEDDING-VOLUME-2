@@ -1,0 +1,68 @@
+{
+  "template": "volume3",
+  "couple": {
+    "groom": "Yusuf",
+    "bride": "Zulayho",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-11-16",
+    "time": "17:00",
+    "timezone": "+05:00",
+    "durationHours": 4
+  },
+  "hosts": "Aliyevlar oilasi",
+  "texts": {
+    "heroCaption": "Fotiha to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Ikki xonadonni yaqinlashtirgan, ikki yoshning baxtiga poydevor bo‘ladigan muborak kun yetib keldi. Yusuf va Zulayhoning fotiha to‘yida duo va oq fotihangiz bilan bizga hamroh bo‘lishingizni so‘raymiz.",
+    "closing": "Oq fotihangiz — ularning baxtiga kalit!"
+  },
+  "venue": {
+    "name": "\"Zumrad\" to'yxonasi",
+    "address": "Toshkent shahar",
+    "googleMaps": "",
+    "yandexMaps": ""
+  },
+  "program": [
+    {
+      "time": "17:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "17:30",
+      "title": "Fotiha marosimi"
+    },
+    {
+      "time": "18:00",
+      "title": "Dasturxon atrofida ziyofat"
+    }
+  ],
+  "dressCode": {
+    "text": "Bayramona libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "musicTrack": "musiqa-5",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-11-15",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "effects": {
+    "countdown": true
+  },
+  "eventType": "fotiha",
+  "palette": "green"
+}
