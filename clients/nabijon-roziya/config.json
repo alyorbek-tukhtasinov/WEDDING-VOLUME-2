@@ -63,5 +63,6 @@
     "maxGuests": 5,
     "showWishes": true
   },
-  "contacts": []
+  "contacts": [],
+  "paused": true
 }
