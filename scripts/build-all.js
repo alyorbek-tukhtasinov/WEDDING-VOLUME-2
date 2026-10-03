@@ -5,7 +5,8 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, listClients } from './client.js';
+import { ROOT, listClients, loadClient } from './client.js';
+import { pausedPage } from './paused-page.js';
 
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
@@ -24,8 +25,21 @@ if (!fs.existsSync(vite)) {
 const clients = listClients();
 fs.mkdirSync(out, { recursive: true });
 const started = Date.now();
+const paused = [];
 
 for (const slug of clients) {
+  // To'xtatilgan sayt (panel: "To'xtatish"): taklifnoma yig'ilmaydi — faqat "to'lov kutilmoqda" sahifasi.
+  // Ism, rasm, musiqa diskda umuman bo'lmaydi; .paused belgisi bo'yicha server API'ni ham yopadi.
+  if ((await loadClient(slug)).config.paused === true) {
+    const target = path.join(out, slug);
+    fs.rmSync(target, { recursive: true, force: true });
+    fs.mkdirSync(target, { recursive: true });
+    fs.writeFileSync(path.join(target, 'index.html'), pausedPage());
+    fs.copyFileSync(path.join(ROOT, 'public', 'favicon.ico'), path.join(target, 'favicon.ico'));
+    fs.writeFileSync(path.join(target, '.paused'), '');
+    paused.push(slug);
+    continue;
+  }
   const env = { ...process.env, WEDDING: slug, SITE_URL: domain ? `https://${slug}.${domain}` : '' };
   // Vercel o'zgaruvchilari tasodifan qolgan bo'lsa, nom/manzil aniqlashga aralashmasin
   for (const k of Object.keys(env)) if (k.startsWith('VERCEL')) delete env[k];
@@ -59,7 +73,7 @@ for (const slug of clients) {
 
 // Umumiy fayllar (musiqa, dizayn rasmlari) har saytda bir xil — diskda bir marta turishi uchun hardlink
 let saved = 0;
-const [first, ...rest] = clients;
+const [first, ...rest] = clients.filter((s) => !paused.includes(s));
 for (const dir of ['images', 'music']) {
   const base = path.join(out, first, dir);
   if (!fs.existsSync(base)) continue;
@@ -79,4 +93,5 @@ for (const dir of ['images', 'music']) {
 }
 if (saved) console.log(`  umumiy fayllar birlashtirildi: ${(saved / 1048576).toFixed(0)} MB tejaldi`);
 
+if (paused.length) console.log(`  to'xtatilgan (to'lov kutilmoqda): ${paused.join(', ')}`);
 console.log(`✔ ${clients.length - 1} ta taklifnoma va boshqaruv paneli yig'ildi → ${out} (${((Date.now() - started) / 1000).toFixed(1)} s)`);

@@ -39,7 +39,10 @@ set_status() { # set_status <holat> <sha> [xabar] [log fayli]
 
 health() {
   local slug
-  slug=$(ls "$APP/current/sites" | grep -x demo || ls "$APP/current/sites" | head -n1)
+  # To'xtatilgan sayt (.paused) API'da 403 qaytaradi — tekshiruv uchun ishlab turgan sayt olinadi
+  slug=$(ls "$APP/current/sites" | grep -x demo || for s in $(ls "$APP/current/sites"); do
+    [ "$s" != boshqaruv ] && [ ! -e "$APP/current/sites/$s/.paused" ] && echo "$s" && break
+  done)
   for _ in $(seq 1 15); do
     curl -fsS -m 3 -H "X-Wedding-Slug: $slug" http://127.0.0.1:3190/api/settings >/dev/null 2>&1 && return 0
     sleep 1

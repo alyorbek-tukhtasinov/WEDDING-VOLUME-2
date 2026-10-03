@@ -1180,3 +1180,19 @@ a {
   font-size: 0.8rem;
   color: var(--red);
 }
+
+/* Vaqtincha to'xtatilgan sayt (to'lov kutilmoqda) */
+.card--paused {
+  border-color: #e3b25c;
+  background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(227, 178, 92, 0.07) 14px 28px), var(--paper);
+}
+.badge--paused {
+  background: #fdecc8;
+  color: #7a4a00;
+  font-weight: 600;
+}
+.btn--resume {
+  background: #2f8f5b;
+  border-color: #2f8f5b;
+  color: #fff;
+}

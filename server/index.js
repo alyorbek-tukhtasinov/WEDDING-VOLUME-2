@@ -27,6 +27,8 @@ const HANDLERS = { rsvp, wishes, settings, admin };
 export const passwordVar = (slug) => `ADMIN_PASSWORD__${slug.toUpperCase().replace(/-/g, '_')}`;
 
 const siteExists = (slug) => fs.existsSync(path.join(SITES_DIR, slug, 'index.html'));
+// To'xtatilgan sayt (to'lov kutilmoqda) — javoblar/tilaklar/admin ham yopiq (scripts/build-all.js)
+const sitePaused = (slug) => fs.existsSync(path.join(SITES_DIR, slug, '.paused'));
 
 function fail(res, status, error) {
   res.statusCode = status;
@@ -53,6 +55,9 @@ export const server = http.createServer((req, res) => {
   const handler = Object.hasOwn(HANDLERS, name) ? HANDLERS[name] : null;
   if (!pathname.startsWith('/api/') || !handler) return fail(res, 404, 'not_found');
   if (!SLUG_RE.test(slug) || !siteExists(slug)) return fail(res, 404, 'unknown_wedding');
+  // nginx har so'rovga X-Real-IP qo'yadi; u yo'q bo'lsa — serverning o'zidagi tekshiruv (deploy health-check),
+  // u to'xtatilgan saytga tushib qolsa ham deploy muvaffaqiyatsiz deb qaytarilmasin
+  if (sitePaused(slug) && req.headers['x-real-ip']) return fail(res, 403, 'site_paused');
 
   // Parol faqat shu mijozniki: umumiy ADMIN_PASSWORD ataylab ishlatilmaydi,
   // aks holda bir mijoz paroli bilan boshqasining javoblarini ko'rish mumkin bo'lardi.

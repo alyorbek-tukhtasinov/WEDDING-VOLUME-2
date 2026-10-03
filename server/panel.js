@@ -7,6 +7,8 @@
 //   POST /api/panel/password           — { slug } → mijozning /admin paroli (bir marta ko'rsatiladi)
 //   GET  /api/panel/slugs              — band sayt nomlari va sababi (yangi sayt uchun)
 //   POST /api/panel/paid               — { slug, paid } → ro'yxatdagi "To'langan" belgisi (daromad yozuvida)
+//   POST /api/panel/pause              — { slug, paused } → saytni vaqtincha to'xtatish / qayta yoqish
+//                                         (to'xtatilgan sayt "To'langan" belgilansa — o'zi yoqiladi)
 //
 // Saqlash: serverdagi alohida git nusxada (PANEL_WORK_DIR) clients/<nom>/ yoziladi → commit →
 // GitHub'ga push → deploy darhol boshlanadi (DEPLOY_TRIGGER fayli). GitHub — yagona manba:
@@ -182,6 +184,7 @@ async function listClients() {
       template: c.template || 'volume2',
       eventType: typeof c.eventType === 'string' ? c.eventType : 'nikoh',
       demo: isDemo(slug, c),
+      paused: c.paused === true,
       groom: c.couple?.groom || '',
       bride: c.couple?.bride || '',
       date: c.event?.date || '',
@@ -432,6 +435,59 @@ async function removeClient(body) {
   });
 }
 
+/* ------------------------------------------------------------------ */
+/*  Vaqtincha to'xtatish (to'lov kutilmoqda)                            */
+/* ------------------------------------------------------------------ */
+// config.paused = true → deploy'da taklifnoma o'rniga "to'lov kutilmoqda" sahifasi chiqadi
+// (scripts/build-all.js). Mehmon javoblari bazada qoladi — qayta yoqilganda hammasi joyida.
+// changed: false — sayt allaqachon shu holatda edi (commit/deploy qilinmaydi).
+async function setPausedFlag(slug, paused, why = '') {
+  checkSlug(slug);
+  return serial(async () => {
+    await syncWork(true);
+    const r = await readConfig(slug);
+    if (!r) throw new UserError('not_found', `"${slug}" topilmadi`);
+    if ((r.config.paused === true) === paused) return { slug, paused, changed: false };
+    const config = { ...r.config };
+    if (paused) config.paused = true;
+    else delete config.paused;
+    const dir = clientDir(slug);
+    fs.writeFileSync(path.join(dir, 'config.json'), JSON.stringify(config, null, 2) + '\n');
+    if (fs.existsSync(path.join(dir, 'config.js'))) fs.unlinkSync(path.join(dir, 'config.js'));
+    await git(['add', '-A', '--', `clients/${slug}`]);
+    const msg = `Panel: sayt ${paused ? 'to‘xtatildi' : 'yoqildi'}${why ? ` (${why})` : ''} — ${slug}`;
+    await git(['-c', 'user.name=Taklifnoma panel', '-c', 'user.email=panel@taklifnoma.local', 'commit', '-q', '-m', msg]);
+    try {
+      await git(['push', '-q', 'origin', `HEAD:${BRANCH()}`]);
+    } catch (err) {
+      lastFetch = 0;
+      await git(['reset', '-q', '--hard', `origin/${BRANCH()}`]).catch(() => {});
+      throw new UserError('push_failed', `GitHub'ga yozib bo'lmadi: ${err.message}`);
+    }
+    triggerDeploy();
+    return { slug, paused, changed: true, sha: await git(['rev-parse', 'HEAD']) };
+  });
+}
+
+const setPause = (body) => setPausedFlag(String(body?.slug || ''), body?.paused === true);
+
+// "To'langan" bo'lgan saytlar to'xtatilgan bo'lsa — avtomatik yoqiladi. Xato bo'lsa to'lov belgisi
+// baribir saqlangan bo'ladi; panel foydalanuvchiga qo'lda yoqishni aytadi.
+async function resumePaid(slugs) {
+  const resumed = [];
+  const failed = [];
+  for (const slug of slugs) {
+    if (!fs.existsSync(clientDir(slug))) continue;
+    try {
+      if ((await setPausedFlag(slug, false, 'to‘lov qilindi')).changed) resumed.push(slug);
+    } catch (err) {
+      console.error(`[${slug}] avtomatik yoqilmadi:`, err.message);
+      failed.push(slug);
+    }
+  }
+  return { resumed, resumeFailed: failed };
+}
+
 function triggerDeploy() {
   try {
     fs.mkdirSync(path.dirname(TRIGGER()), { recursive: true });
@@ -519,14 +575,17 @@ const setPaid = (body) =>
     const items = cleanFinance({ ...cur, [slug]: { ...(cur[slug] || {}), paid: body?.paid === true } });
     const data = { items, updatedAt: new Date().toISOString() };
     await setFinance(data);
-    return data;
+    return { ...data, ...(await resumePaid(items[slug]?.paid ? [slug] : [])) };
   });
 const saveFinance = (body) =>
   withFinanceStore(async () => {
+    const before = (await getFinance())?.items || {};
     const items = cleanFinance(body?.items);
     const data = { items, updatedAt: new Date().toISOString() };
     await setFinance(data);
-    return data;
+    // Faqat endi "To'langan" bo'lganlar (oldin to'langan bo'lib, qo'lda to'xtatilganlar tegilmaydi)
+    const newlyPaid = Object.keys(items).filter((s) => items[s].paid && !before[s]?.paid);
+    return { ...data, ...(await resumePaid(newlyPaid)) };
   });
 
 /* ------------------------------------------------------------------ */
@@ -562,6 +621,7 @@ export async function panelHandler(req, res, name) {
     if (req.method === 'GET' && name === 'finance') return send(res, 200, { ok: true, ...(await loadFinance()) });
     if (req.method === 'POST' && name === 'finance') return send(res, 200, { ok: true, ...(await saveFinance(await readJson(req))) });
     if (req.method === 'POST' && name === 'paid') return send(res, 200, { ok: true, ...(await setPaid(await readJson(req))) });
+    if (req.method === 'POST' && name === 'pause') return send(res, 200, { ok: true, ...(await setPause(await readJson(req))) });
     if (req.method === 'POST' && name === 'delete') return send(res, 200, { ok: true, ...(await removeClient(await readJson(req))) });
     if (req.method === 'POST' && name === 'music') return send(res, 200, { ok: true, ...(await addMusic(await readJson(req))) });
     if (req.method === 'POST' && name === 'password') {

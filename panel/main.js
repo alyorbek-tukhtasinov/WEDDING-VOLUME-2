@@ -427,11 +427,12 @@ const WHEN = [
   { id: 'later', title: '1 oydan keyin' },
   { id: 'past', title: 'O‘tib ketgan' },
 ];
+const EMPTY_FILTER = { q: '', when: '', template: '', event: '', paid: '', status: '' };
 function loadFilter() {
   try {
-    return { q: '', when: '', template: '', event: '', paid: '', ...JSON.parse(localStorage.getItem(FILTER_KEY) || '{}'), q: '' };
+    return { ...EMPTY_FILTER, ...JSON.parse(localStorage.getItem(FILTER_KEY) || '{}'), q: '' };
   } catch {
-    return { q: '', when: '', template: '', event: '', paid: '' };
+    return { ...EMPTY_FILTER };
   }
 }
 function saveFilter(f) {
@@ -452,6 +453,7 @@ function matchFilter(c, f, today) {
     if (c.demo) return false;
     if ((f.paid === 'yes') !== isPaid(c.slug)) return false;
   }
+  if (f.status && (f.status === 'paused') !== !!c.paused) return false;
   if (f.when) {
     const d = c.date || '';
     if (!d) return false;
@@ -470,10 +472,11 @@ function clientCard(c, today) {
   const ev = findEvent(c.eventType);
   const paid = isPaid(c.slug);
   return html`
-    <article class="card ${past && !c.demo ? 'card--past' : ''} ${c.demo ? 'card--demo' : ''}">
+    <article class="card ${past && !c.demo ? 'card--past' : ''} ${c.demo ? 'card--demo' : ''} ${c.paused ? 'card--paused' : ''}">
       <div class="actions-row">
         <span class="badge badge--${c.template}">${tpl?.title || c.template}</span>
         <span class="badge badge--event" title="${ev.title}">${ev.icon} ${ev.title}</span>
+        ${c.paused ? html`<span class="badge badge--paused" title="Havola ochilsa: “Saytning ishlashi uchun to‘lov amalga oshirilishi kutilmoqda”">⏸ To‘xtatilgan</span>` : ''}
         ${c.demo ? html`<span class="badge badge--demo">Demo</span>` : ''}
         ${soon && !c.demo ? html`<span class="badge badge--soon">Yaqinda</span>` : ''}
         ${past && !c.demo ? html`<span class="badge">O‘tgan</span>` : ''}
@@ -488,6 +491,9 @@ function clientCard(c, today) {
         <a class="btn btn--small btn--primary" href="#/tahrir/${c.slug}">Tahrirlash</a>
         <a class="btn btn--small" href="#/nusxa/${c.slug}">Nusxa olish</a>
         <a class="btn btn--small btn--ghost" href="${siteUrl(c.slug)}" target="_blank" rel="noopener">Saytni ochish ↗</a>
+        ${c.paused
+          ? html`<button class="btn btn--small btn--resume" type="button" data-pause="${c.slug}" data-next="0" title="Sayt qayta ochiladi">▶️ Yoqish</button>`
+          : html`<button class="btn btn--small btn--ghost" type="button" data-pause="${c.slug}" data-next="1" title="To‘lov qilinguncha havola ochilmaydi">⏸ To‘xtatish</button>`}
         <button class="btn btn--small btn--ghost btn--danger" type="button" data-delete="${c.slug}">O‘chirish</button>
       </div>
     </article>
@@ -519,7 +525,8 @@ function renderList() {
   const real = items.filter((c) => !c.demo);
   const demos = items.filter((c) => c.demo);
   const realTotal = state.clients.filter((c) => !c.demo).length;
-  const active = f.when || f.template || f.event || f.paid || f.q;
+  const active = f.when || f.template || f.event || f.paid || f.status || f.q;
+  const pausedCount = state.clients.filter((c) => c.paused).length;
   const paidCount = state.finance ? state.clients.filter((c) => !c.demo && isPaid(c.slug)).length : 0;
 
   root.innerHTML = html`
@@ -543,6 +550,11 @@ function renderList() {
               { id: 'no', title: `To‘lanmagan (${realTotal - paidCount})` },
             ])
           : ''}
+        ${filterSelect('status', 'Holat', f.status, [
+          { id: '', title: 'Hammasi' },
+          { id: 'live', title: `▶️ Ishlayapti (${state.clients.length - pausedCount})` },
+          { id: 'paused', title: `⏸ To‘xtatilgan (${pausedCount})` },
+        ])}
         ${active ? html`<button class="btn btn--small btn--ghost" type="button" id="filter-reset">✕ Tozalash</button>` : ''}
       </div>
       <div class="cards">
@@ -576,7 +588,7 @@ function renderList() {
     }),
   );
   $('#filter-reset')?.addEventListener('click', () => {
-    state.listFilter = { q: '', when: '', template: '', event: '', paid: '' };
+    state.listFilter = { ...EMPTY_FILTER };
     saveFilter(state.listFilter);
     renderList();
   });
@@ -589,8 +601,15 @@ function renderList() {
         const r = await api('paid', { method: 'POST', body: { slug, paid: next } });
         if (!r.ok) return toast(r.message || 'Saqlab bo‘lmadi');
         state.finance = r.items || {};
+        markResumed(r);
         renderList();
-        toast(next ? 'To‘langan deb belgilandi' : 'To‘lanmagan deb belgilandi');
+        toast(
+          r.resumed?.includes(slug)
+            ? 'To‘langan — sayt qayta yoqildi (1–2 daqiqada ochiladi)'
+            : r.resumeFailed?.includes(slug)
+              ? 'To‘langan deb belgilandi, lekin sayt yoqilmadi — “▶️ Yoqish”ni bosing'
+              : next ? 'To‘langan deb belgilandi' : 'To‘lanmagan deb belgilandi',
+        );
       } catch (err) {
         if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
       } finally {
@@ -598,6 +617,37 @@ function renderList() {
       }
     }),
   );
+  $$('[data-pause]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const slug = b.dataset.pause;
+      const paused = b.dataset.next === '1';
+      const ask = paused
+        ? `“${slug}” vaqtincha to‘xtatilsinmi?\n\nHavolani ochganlar taklifnoma o‘rniga “Saytning ishlashi uchun to‘lov amalga oshirilishi kutilmoqda” xabarini ko‘radi. Mehmon javoblari saqlanib qoladi. “To‘langan” belgilansa, sayt o‘zi qayta yoqiladi.`
+        : `“${slug}” qayta yoqilsinmi?`;
+      if (!confirm(ask)) return;
+      b.disabled = true;
+      try {
+        const r = await api('pause', { method: 'POST', body: { slug, paused } });
+        if (!r.ok) return toast(r.message || 'Saqlab bo‘lmadi');
+        const c = state.clients.find((x) => x.slug === slug);
+        if (c) c.paused = paused;
+        renderList();
+        toast(paused ? 'Sayt to‘xtatildi (1–2 daqiqada kuchga kiradi)' : 'Sayt yoqildi (1–2 daqiqada ochiladi)');
+      } catch (err) {
+        if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
+      } finally {
+        b.disabled = false;
+      }
+    }),
+  );
+}
+
+// To'lov belgilanganda server to'xtatilgan saytni o'zi yoqadi — ro'yxatda ham shunday ko'rsatamiz
+function markResumed(r) {
+  for (const slug of r?.resumed || []) {
+    const c = state.clients.find((x) => x.slug === slug);
+    if (c) c.paused = false;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -1684,8 +1734,16 @@ async function showFinance() {
         return;
       }
       dirty = false;
+      state.finance = r.items || {};
+      markResumed(r);
       $('#fin-progress').textContent = `✓ Saqlandi. Jami: ${fmtSum(financeStats(r.items, clients).total)}`;
-      toast('Saqlandi');
+      toast(
+        r.resumed?.length
+          ? `Saqlandi. To‘langan saytlar qayta yoqildi: ${r.resumed.join(', ')}`
+          : r.resumeFailed?.length
+            ? `Saqlandi, lekin yoqilmadi: ${r.resumeFailed.join(', ')} — ro‘yxatdan “▶️ Yoqish”ni bosing`
+            : 'Saqlandi',
+      );
     } catch (err) {
       if (err.message !== 'unauthorized') {
         $('#fin-progress').textContent = '';
@@ -1714,6 +1772,7 @@ async function openExisting(slug, { copy = false } = {}) {
   if (copy) {
     // Rasmlar boshqa mijoz papkasida — nusxada ular qaytadan yuklanadi
     const c = clone(config);
+    delete c.paused; // nusxa — yangi sayt, to'xtatilgan holati o'tmaydi
     c.couple = { groom: '', bride: '', initials: '' };
     delete c.backgroundImage;
     c.gallery = [];

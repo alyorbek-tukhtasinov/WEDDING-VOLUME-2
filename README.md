@@ -303,6 +303,14 @@ Panel ro‘yxatida: muddat (1 hafta ichida, 1 oy ichida, 1 oydan keyin, o‘tib 
 to‘lov (to‘langan / to‘lanmagan). Kartadagi "⏳ To‘lanmagan / ✅ To‘langan" tugmasi bir bosishda almashadi
 (`POST /api/panel/paid`, daromad yozuvida `paid`); "Daromad" sahifasida ham ustun bor.
 
+### Saytni vaqtincha to‘xtatish (to‘lov kutilmoqda)
+
+Kartadagi "⏸ To‘xtatish" — mijozga ko‘rsatib bo‘lingach, to‘lovgacha havolani yopish (`POST /api/panel/pause`,
+config'da `"paused": true`). Deploy'da bunday sayt o‘rniga faqat "Saytning ishlashi uchun to‘lov amalga
+oshirilishi kutilmoqda" sahifasi yig‘iladi (`scripts/paused-page.js`): ism, rasm, musiqa diskda bo‘lmaydi,
+`/api/*` ham yopiq (`.paused` belgisi). "▶️ Yoqish" yoki "To‘langan" belgilash (kartada yoki "Daromad"da)
+saytni qayta yoqadi — mehmon javoblari joyida qoladi. Ro‘yxatda "Holat" filtri bor.
+
 ### "3D sehrli kitob" shabloni (kitob)
 
 Taklifnoma — charm muqovali kitob (`templates/kitob/`). Muqova bosilganda musiqa yoqiladi va
