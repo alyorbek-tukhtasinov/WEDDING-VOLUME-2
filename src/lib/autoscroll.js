@@ -76,6 +76,8 @@ let current = null;
 export function initAutoScroll(c, o = {}) {
   current?.destroy();
   const mode = autoScrollMode(c);
+  // Saytga xos tezlik (config.autoScrollSpeed, standart 1): 1.5 — 1.5 baravar tez
+  const k = Number(c?.autoScrollSpeed) > 0 ? Math.min(3, Math.max(0.5, Number(c.autoScrollSpeed))) : 1;
   if (mode === 'off') return (current = { ready() {}, destroy() {} });
   ensureStyle();
 
@@ -162,7 +164,7 @@ export function initAutoScroll(c, o = {}) {
 
   /* ---------------------------- flow ---------------------------- */
   function speed() {
-    const base = Math.min(115, Math.max(62, viewH() * 0.11));
+    const base = Math.min(115, Math.max(62, viewH() * 0.11)) * k;
     if (!o.slow) return base;
     const mid = viewH() * 0.5;
     const box = isWin ? null : scroller.getBoundingClientRect();
@@ -220,7 +222,7 @@ export function initAutoScroll(c, o = {}) {
     render();
     if (state !== 'playing') return;
     if (o.step.atEnd()) return finish();
-    timer = setTimeout(tick, o.step.dwell?.() ?? 4000);
+    timer = setTimeout(tick, (o.step.dwell?.() ?? 4000) / k);
   }
 
   function play() {

@@ -12,6 +12,13 @@ import { LANGS, STR as OSMON_STR } from '../templates/osmon/i18n.js';
 import { autoScrollMode } from '../src/lib/autoscroll.js';
 import { prepareAudio, toBase64 } from './audio-convert.js';
 
+const AUTOSCROLL_SPEED = [
+  { v: 0.75, title: 'Tezlik: sekinroq' },
+  { v: 1, title: 'Tezlik: odatiy' },
+  { v: 1.25, title: 'Tezlik: tezroq' },
+  { v: 1.5, title: 'Tezlik: tez' },
+  { v: 2, title: 'Tezlik: juda tez' },
+];
 const AUTOSCROLL = [
   { id: 'off', title: 'O‘chiq — tugma yo‘q' },
   { id: 'button', title: 'Tugma — mehmon o‘zi bosadi' },
@@ -852,6 +859,9 @@ function secMain() {
       <label class="f" data-field="autoScroll"><span>Avto-aylantirish</span>
         <select data-path="autoScroll">
           ${AUTOSCROLL.map((o) => html`<option value="${o.id}" ${autoScrollMode(c) === o.id ? 'selected' : ''}>${o.title}</option>`)}
+        </select>
+        <select data-path="autoScrollSpeed" data-kind="number" aria-label="Avto-aylantirish tezligi" style="margin-top:.4rem">
+          ${AUTOSCROLL_SPEED.map((o) => html`<option value="${o.v}" ${(c.autoScrollSpeed || 1) === o.v ? 'selected' : ''}>${o.title}</option>`)}
         </select>
         <small class="hint">${c.template === 'kitob' ? 'Kitobda varaqlar o‘zi ochiladi' : c.template === 'yz' ? 'Bo‘limlar birin-ketin o‘zi almashadi' : 'Sayt musiqa bilan asta o‘zi pastga suriladi; javob formasida to‘xtaydi'}</small>
       </label>

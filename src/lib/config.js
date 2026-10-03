@@ -53,6 +53,7 @@ export function validateConfig(c, mediaFiles = null) {
   need(!c.template || TEMPLATES.some((t) => t.id === c.template), `template noma'lum: "${c.template}" (${TEMPLATES.map((t) => t.id).join(', ')})`);
   need(c.demo == null || typeof c.demo === 'boolean', 'demo faqat true yoki false bo\'lishi mumkin');
   need(c.autoScroll == null || ['off', 'button', 'auto'].includes(c.autoScroll), `autoScroll noma'lum: "${c.autoScroll}" (off, button, auto)`);
+  need(c.autoScrollSpeed == null || (typeof c.autoScrollSpeed === 'number' && c.autoScrollSpeed >= 0.5 && c.autoScrollSpeed <= 3), 'autoScrollSpeed 0.5 dan 3 gacha son bo\'lishi kerak');
   need(c.paused == null || typeof c.paused === 'boolean', 'paused faqat true yoki false bo\'lishi mumkin');
   need(c.palette == null || ['green', 'pink'].includes(c.palette), `palette noma'lum: "${c.palette}" (green, pink)`);
   need(c.eventType == null || EVENT_IDS.includes(c.eventType), `eventType noma'lum: "${c.eventType}" (${EVENT_IDS.join(', ')})`);

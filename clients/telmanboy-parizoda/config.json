@@ -70,5 +70,6 @@
   "eventType": "nikoh",
   "backgroundImage": "fon-muspmbzvbk2.jpg",
   "backgroundOverlay": 0.84,
-  "autoScroll": "auto"
+  "autoScroll": "auto",
+  "autoScrollSpeed": 1.5
 }
