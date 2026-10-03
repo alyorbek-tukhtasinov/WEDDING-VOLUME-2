@@ -111,6 +111,11 @@ a {
   color: var(--red);
 }
 
+.link--danger {
+  color: var(--red) !important;
+  font-size: inherit;
+}
+
 .link {
   padding: 0;
   border: 0;

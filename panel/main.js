@@ -1614,7 +1614,7 @@ async function showFinance() {
             (c) => html`
               <div class="fin-row">
                 ${c.deleted
-                  ? html`<span class="fin-name"><b>${c.slug}</b><small>o‘chirilgan sayt</small></span>`
+                  ? html`<span class="fin-name"><b>${c.slug}</b><small>o‘chirilgan sayt · <button class="link link--danger" type="button" data-fin-remove="${c.slug}">ro‘yxatdan olib tashlash</button></small></span>`
                   : html`<span class="fin-name"><b>${c.groom} &amp; ${c.bride}</b><a href="${siteUrl(c.slug)}" target="_blank" rel="noopener">${c.slug}</a></span>`}
                 <span class="fin-date">${prettyDate(c.date) || '—'}</span>
                 <input class="fin-amount" inputmode="numeric" data-fin="${c.slug}" data-key="amount" placeholder="0" value="${items[c.slug]?.amount != null ? groupDigits(String(items[c.slug].amount)) : ''}" />
@@ -1636,6 +1636,20 @@ async function showFinance() {
   `;
 
   const form = $('#fin-form');
+  // O'chirilgan sayt qatorini daromad ro'yxatidan olib tashlash ("Saqlash" bosilganda bazadan ham o'chadi)
+  form.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fin-remove]');
+    if (!b) return;
+    const slug = b.dataset.finRemove;
+    if (!confirm(`"${slug}" daromad ro‘yxatidan olib tashlansinmi? Summasi jami daromaddan ham chiqadi.`)) return;
+    delete items[slug];
+    const i = clients.findIndex((c) => c.slug === slug);
+    if (i > -1) clients.splice(i, 1);
+    b.closest('.fin-row')?.remove();
+    refreshSummary();
+    dirty = true;
+    $('#fin-progress').textContent = 'Saqlanmagan o‘zgarishlar bor — “Saqlash”ni bosing';
+  });
   const refreshSummary = () => ($('#fin-summary').innerHTML = financeSummary(financeStats(items, clients)));
   form.addEventListener('input', (e) => {
     const t = e.target;
