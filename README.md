@@ -308,8 +308,8 @@ to‘lov (to‘langan / to‘lanmagan). Kartadagi "⏳ To‘lanmagan / ✅ To‘
 `config.autoScroll`: `off` (yoki yo‘q — eski saytlar) | `button` | `auto` — panelda "Avto-aylantirish".
 Mehmon ⌄⌄ tugmasini bossa, sayt musiqa bilan asta o‘zi pastga suriladi (`src/lib/autoscroll.js`, barcha shablonlar):
 taklif matni va sanada sekinlashadi, javob formasida to‘xtaydi, ekranga tegilsa to‘xtaydi, oxirida ↑ "Boshiga
-qaytish". Kitobda varaqlar o‘zi ochiladi, yz’da bo‘limlar birin-ketin almashadi. `auto` — ochilgach 2–3 soniyada
-o‘zi boshlanadi (reel yozish uchun). Yangi saytlar `button` bilan yaratiladi.
+qaytish". Kitobda varaqlar o‘zi ochiladi, yz’da bo‘limlar birin-ketin almashadi. `auto` — muhr/eshik ochilishi bilan
+o‘zi boshlanadi, mehmon tegsa to‘xtaydi. Yangi saytlar `auto` bilan yaratiladi.
 
 ### Saytni vaqtincha to‘xtatish (to‘lov kutilmoqda)
 

@@ -7,7 +7,7 @@
 
 export default {
   // Avto-aylantirish tugmasi: off | button | auto
-  autoScroll: 'button',
+  autoScroll: 'auto',
   // Kelin va kuyov
   couple: {
     groom: 'Yusuf',

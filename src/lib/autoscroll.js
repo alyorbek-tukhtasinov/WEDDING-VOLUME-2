@@ -70,7 +70,8 @@ let current = null;
  *   anchor     — tugma yoniga qo'yiladigan element (standart: #music-toggle, pastda bo'lsa)
  *   above      — pastdagi doimiy panel selektori: tugma undan yuqorida turadi
  *   theme      — { bg, ink } tugma ranglari
- * @returns {{ ready(): void, destroy(): void }}
+ * @returns {{ ready(start?: boolean): void, destroy(): void }}
+ *   ready(false) — til almashtirilganda/qayta chizilganda: tugma chiqadi, lekin o'zi boshlanmaydi
  */
 export function initAutoScroll(c, o = {}) {
   current?.destroy();
@@ -268,7 +269,7 @@ export function initAutoScroll(c, o = {}) {
 
   let shown = false;
   const api = {
-    ready() {
+    ready(start = true) {
       if (!alive || shown) return;
       shown = true;
       btn.hidden = false;
@@ -278,7 +279,8 @@ export function initAutoScroll(c, o = {}) {
       // Musiqa tugmasi kechroq ko'rinsa ham yonida turishi uchun
       setTimeout(place, 400);
       setTimeout(place, 1600);
-      if (mode === 'auto' && !reduced) autoTimer = setTimeout(play, 2600);
+      // Ochilish (muhr/eshik) animatsiyasi tugashi bilan — mehmon tegsa to'xtaydi
+      if (mode === 'auto' && start && !reduced) autoTimer = setTimeout(play, 1200);
     },
     /** Varaq/sahifa o'zgarganda (step) halqani yangilash */
     update: () => {

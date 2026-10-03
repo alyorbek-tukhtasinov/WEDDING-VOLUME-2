@@ -84,7 +84,7 @@ function mount(lang, resume = false) {
     document.documentElement.classList.remove('is-locked');
     initPetals(c.effects?.petals !== false);
     window.scrollTo(0, y);
-    auto.ready();
+    auto.ready(false);
     return;
   }
   initReveal();

@@ -1,6 +1,6 @@
 {
   "template": "suzani",
-  "autoScroll": "button",
+  "autoScroll": "auto",
   "couple": { "groom": "Yusuf", "bride": "Zulayho" },
   "event": { "date": "2026-11-21", "time": "18:00", "timezone": "+05:00", "durationHours": 5 },
   "hosts": "Karimovlar va Rahimovlar oilasi",

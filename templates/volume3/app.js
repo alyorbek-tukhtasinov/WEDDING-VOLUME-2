@@ -804,7 +804,7 @@ export async function mountVolume3(config, { preview = false } = {}) {
   if (session.get('v3:opened')) {
     opened();
     window.scrollTo(0, y);
-    ascroll.ready();
+    ascroll.ready(false);
     return;
   }
   document.documentElement.classList.add('is-locked');

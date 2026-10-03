@@ -1,6 +1,6 @@
 {
   "template": "osmon",
-  "autoScroll": "button",
+  "autoScroll": "auto",
   "couple": { "groom": "Yusuf", "bride": "Zulayho" },
   "event": { "date": "2026-11-14", "time": "19:00", "timezone": "+05:00", "durationHours": 5 },
   "hosts": "Karimovlar va Rahimovlar oilasi",

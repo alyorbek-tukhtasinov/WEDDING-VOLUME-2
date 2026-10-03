@@ -14,7 +14,7 @@ import { autoScrollMode } from '../src/lib/autoscroll.js';
 const AUTOSCROLL = [
   { id: 'off', title: 'O‘chiq — tugma yo‘q' },
   { id: 'button', title: 'Tugma — mehmon o‘zi bosadi' },
-  { id: 'auto', title: 'O‘zi boshlansin — ochilgach 2–3 soniyada (reel uchun qulay)' },
+  { id: 'auto', title: 'O‘zi boshlansin — ochilishi bilan (tegilsa to‘xtaydi)' },
 ];
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -213,8 +213,8 @@ async function addUpload(prefix, file, maxSide) {
 /*  Boshlang'ich config'lar                                             */
 /* ------------------------------------------------------------------ */
 function defaultConfig(template, eventId = 'nikoh') {
-  // Yangi saytlarda avto-aylantirish tugmasi bor (eski saytlarda — yo'q, ya'ni "off")
-  return { ...withEvent(baseConfig(template), eventId), autoScroll: 'button' };
+  // Yangi saytlar ochilganda o'zi aylana boshlaydi (eski saytlarda — yo'q, ya'ni "off")
+  return { ...withEvent(baseConfig(template), eventId), autoScroll: 'auto' };
 }
 
 /** Marosim turining boshlang'ich qiymatlari: vaqt, davomiylik, dastur, dress-kod, taklif matnlari. */
@@ -1787,7 +1787,7 @@ async function openExisting(slug, { copy = false } = {}) {
     // Rasmlar boshqa mijoz papkasida — nusxada ular qaytadan yuklanadi
     const c = clone(config);
     delete c.paused; // nusxa — yangi sayt, to'xtatilgan holati o'tmaydi
-    c.autoScroll ||= 'button';
+    c.autoScroll ||= 'auto';
     c.couple = { groom: '', bride: '', initials: '' };
     delete c.backgroundImage;
     c.gallery = [];

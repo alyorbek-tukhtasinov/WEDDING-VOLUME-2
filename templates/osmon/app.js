@@ -613,7 +613,7 @@ export async function mountOsmon(c0, { preview = false, lang = null, resume = fa
     document.body.classList.add('is-open');
     $$('.fab').forEach((b) => (b.hidden = false));
     window.scrollTo(0, y);
-    auto.ready();
+    auto.ready(false);
   } else {
     const openBtn = $('#gate-open');
     requestAnimationFrame(() => gate.classList.add('is-ready'));
