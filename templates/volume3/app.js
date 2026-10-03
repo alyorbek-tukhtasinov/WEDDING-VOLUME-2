@@ -9,7 +9,7 @@ import { deriveConfig, musicUrlOf, mediaUrl, MONTHS } from '../../src/lib/config
 import { html, raw } from '../../src/lib/dom.js';
 import { LANGS, siteLangs, pickLang, rememberLang, localize, cyr } from '../../src/lib/i18n.js';
 import brand from '@brand-config';
-import { isNikoh, phrases } from '../../src/lib/events.js';
+import { isNikoh, phrases, voiceOf } from '../../src/lib/events.js';
 import { initAutoScroll } from '../../src/lib/autoscroll.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -193,6 +193,74 @@ const EVENTS = {
     },
   },
 };
+// "Taklif kimning nomidan" (config.invitedBy, src/lib/events.js): yozilmagan bo'lsa — asl matnlar.
+// Ota-ona nomidan (nikoh to'yi): eshik va "Aziz mehmonimiz" matnlari ham "farzandlarimiz" tilida.
+const PARENTS_NIKOH = {
+  uz: {
+    gateInvite: 'FARZANDLARIMIZNING BAXTLI KUNINI SIZ BILAN BIRGA NISHONLASH VA QUVONCHIMIZGA SHERIK BO‘LISHINGIZ UCHUN SIZNI NIKOH TO‘YIGA SAMIMIY TAKLIF ETAMIZ',
+    dearText: ['Sizni farzandlarimizning nikoh to‘yi', 'munosabati bilan bo‘ladigan', '“Visol oqshomi”ga taklif etamiz'],
+  },
+  ru: {
+    gateInvite: 'ОТ ВСЕЙ ДУШИ ПРИГЛАШАЕМ ВАС РАЗДЕЛИТЬ С НАМИ РАДОСТЬ СЧАСТЛИВОГО ДНЯ НАШИХ ДЕТЕЙ И ПОЧТИТЬ СВОИМ ПРИСУТСТВИЕМ ИХ БРАКОСОЧЕТАНИЕ',
+    dearText: ['По случаю бракосочетания', 'наших детей приглашаем Вас', 'на торжественный свадебный вечер'],
+  },
+};
+// Kelin-kuyov nomidan: "biz", "to‘yimiz"
+const COUPLE_NIKOH = {
+  uz: { ceremonyInvite: 'SIZNI NIKOH TO‘YIMIZ MUNOSABATI BILAN O‘TKAZILADIGAN TANTANAGA CHIN QALBDAN TAKLIF ETAMIZ' },
+  ru: { ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА НАШЕ СВАДЕБНОЕ ТОРЖЕСТВО' },
+};
+const COUPLE = {
+  nikoh: COUPLE_NIKOH,
+  'nikoh-kunduzgi': COUPLE_NIKOH,
+  'qiz-uzatish': {
+    uz: {
+      gateInvite: 'HAYOTIMIZDA YANGI SAHIFA OCHILAYOTGAN SHU QUVONCHLI VA HAYAJONLI KUNDA SIZNI YONIMIZDA KO‘RISHNI ISTAYMIZ',
+      ceremonyInvite: 'SIZNI QIZ UZATISH TO‘YIMIZGA CHIN QALBDAN TAKLIF ETAMIZ',
+      dearText: ['Yangi hayotga qadam', 'qo‘yayotgan kunimizda duolaringiz', 'bizga hamroh bo‘lsin'],
+    },
+    ru: {
+      gateInvite: 'МЫ ДЕЛАЕМ ПЕРВЫЙ ШАГ В НОВУЮ ЖИЗНЬ И БУДЕМ СЧАСТЛИВЫ ВИДЕТЬ ВАС РЯДОМ В ЭТОТ ТРОГАТЕЛЬНЫЙ ДЕНЬ',
+      ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА НАШ ПРАЗДНИК ПРОВОДОВ НЕВЕСТЫ',
+      dearText: ['В день, когда мы', 'начинаем новую жизнь,', 'нам важны ваши благословения'],
+    },
+  },
+  'nahorgi-osh': {
+    uz: { ceremonyInvite: 'SIZNI TO‘YIMIZ MUNOSABATI BILAN BERILADIGAN NAHORGI OSHGA TAKLIF ETAMIZ' },
+    ru: { ceremonyInvite: 'ПРИГЛАШАЕМ ВАС НА УТРЕННИЙ ПЛОВ В ЧЕСТЬ НАШЕЙ СВАДЬБЫ' },
+  },
+  fotiha: {
+    uz: {
+      gateInvite: 'HAYOTIMIZDAGI MUBORAK KUNDA OQ FOTIHANGIZ BILAN BIZGA HAMROH BO‘LISHINGIZNI SO‘RAYMIZ',
+      ceremonyInvite: 'SIZNI FOTIHA TO‘YIMIZGA CHIN QALBDAN TAKLIF ETAMIZ',
+      dearText: ['Baxtimizga poydevor', 'bo‘ladigan kunda', 'oq fotihangizni kutamiz'],
+    },
+    ru: {
+      gateInvite: 'В БЛАГОСЛОВЕННЫЙ ДЛЯ НАС ДЕНЬ ПРОСИМ ВАС РАЗДЕЛИТЬ С НАМИ РАДОСТЬ И БЛАГОСЛОВЕНИЕ',
+      ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА НАШ ФОТИХА-ТОЙ',
+      dearText: ['В день, когда начинается', 'наш общий путь,', 'ждём ваших благословений'],
+    },
+  },
+  'kelin-salom': {
+    uz: {
+      gateInvite: 'QUVONCHLI KUNIMIZDA SIZNI DAVRAMIZDA KO‘RISHNI ISTAYMIZ VA “KELIN SALOM” MAROSIMIMIZGA SAMIMIY TAKLIF ETAMIZ',
+      ceremonyInvite: 'SIZNI “KELIN SALOM” MAROSIMIMIZGA CHIN QALBDAN TAKLIF ETAMIZ',
+      dearText: ['Sizni', '“Kelin salom” marosimimizga', 'taklif etamiz'],
+    },
+    ru: {
+      gateInvite: 'ОТ ВСЕЙ ДУШИ ПРИГЛАШАЕМ ВАС РАЗДЕЛИТЬ С НАМИ РАДОСТЬ НА НАШЕЙ ЦЕРЕМОНИИ «КЕЛИН САЛОМ»',
+      ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА НАШУ ЦЕРЕМОНИЮ «КЕЛИН САЛОМ»',
+      dearText: ['Приглашаем Вас', 'на нашу церемонию', '«Келин салом»'],
+    },
+  },
+};
+const voiceText = (c) => {
+  const v = voiceOf(c);
+  if (v === 'couple') return COUPLE[c.eventType || 'nikoh'] || {};
+  if (v === 'parents' && isNikoh(c)) return PARENTS_NIKOH;
+  return {};
+};
+
 const texts = (lang, c) => {
   // Umumiy iboralar (sanoq, dastur sarlavhasi) — src/lib/events.js; nikoh to'yida asl matnlar
   const ph = phrases(c, lang === 'ru' ? 'ru' : 'uz');
@@ -206,8 +274,9 @@ const texts = (lang, c) => {
         ? { ctaTitle: 'Закажите онлайн-приглашение', ctaSub: 'Создайте свой красивый сайт-приглашение' }
         : { ctaTitle: 'Taklifnomangizni buyurtma bering', ctaSub: 'O‘zingizning go‘zal taklifnoma saytingizni yarating' }),
   });
-  if (lang === 'ru') return { ...T.ru, ...common(T.ru), ...ev.ru };
-  const uz = { ...T.uz, ...common(T.uz), ...ev.uz };
+  const vo = voiceText(c);
+  if (lang === 'ru') return { ...T.ru, ...common(T.ru), ...ev.ru, ...vo.ru };
+  const uz = { ...T.uz, ...common(T.uz), ...ev.uz, ...vo.uz };
   return lang === 'uzc' ? { ...cyr(uz), google: 'Google Maps', rsvpLabel: 'R.S.V.P.' } : uz;
 };
 const RU_DEFAULTS = { heroCaption: '', greeting: '', invitation: () => '', closing: '' };

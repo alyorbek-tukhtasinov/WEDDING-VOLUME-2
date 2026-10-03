@@ -121,8 +121,9 @@ function toSlug(...parts) {
     .slice(0, 60);
 }
 
+const voiceOfC = (c) => (c.invitedBy === 'couple' ? 'couple' : 'parents');
 function autoInvitation(c) {
-  return eventTexts(c.eventType, c.couple?.groom, c.couple?.bride).invitation;
+  return eventTexts(c.eventType, c.couple?.groom, c.couple?.bride, 'uz', voiceOfC(c)).invitation;
 }
 
 // Avvalgi (marosim turlari qo'shilishidan oldingi) avtomatik matnlar — ular ham "qo'lda yozilmagan" hisoblanadi
@@ -733,6 +734,34 @@ function showEventPicker(template) {
 }
 
 /**
+ * "Taklif kimning nomidan" almashtirilsa: qo'lda o'zgartirilmagan taklif matnlari yangi ovozga moslanadi
+ * (qo'lda yozilgan bo'lsa — tasdiqlansa). yz shablonida matnni shablonning o'zi tanlaydi.
+ */
+function onVoiceChange(prev, next) {
+  const ed = state.ed;
+  const c = ed.config;
+  if (c.template !== 'yz' && c.texts) {
+    const g = c.couple?.groom;
+    const b = c.couple?.bride;
+    const old = eventTexts(c.eventType, g, b, 'uz', prev);
+    const neu = eventTexts(c.eventType, g, b, 'uz', next);
+    const keys = ['invitation', 'closing'];
+    const auto = keys.every((k) => !c.texts[k] || c.texts[k] === old[k] || c.texts[k] === neu[k] || LEGACY_TEXTS[k]?.includes(c.texts[k]) || (k === 'invitation' && c.texts[k] === legacyInvitation(c)));
+    if (auto || confirm('Taklif matni qo‘lda o‘zgartirilgan. Uni tanlangan ovozdagi tayyor matn bilan almashtiraymi?')) {
+      for (const k of keys) c.texts[k] = neu[k];
+      ed.invitationTouched = false;
+      for (const k of keys) {
+        const el = $(`[data-path="texts.${k}"]`);
+        if (el) el.value = c.texts[k];
+      }
+      toast(next === 'couple' ? 'Taklif matni kelin-kuyov nomidan yozildi' : 'Taklif matni ota-ona nomidan yozildi');
+    }
+  }
+  markDirty();
+  schedulePreview();
+}
+
+/**
  * Tahrirlashda marosim turi almashtirilsa: qo'lda o'zgartirilmagan matnlar, vaqt, dastur va dress-kod
  * yangi marosimga moslanadi. Qo'lda yozilgan matnlar faqat tasdiqlansa almashtiriladi.
  */
@@ -745,11 +774,11 @@ function onEventChange(prevId, nextId) {
   const b = c.couple?.bride;
   const notes = [];
   if (c.template !== 'yz' && c.texts) {
-    const old = eventTexts(P.id, g, b);
+    const old = eventTexts(P.id, g, b, 'uz', voiceOfC(c));
     const keys = ['heroCaption', 'greeting', 'invitation', 'closing'];
     const auto = keys.every((k) => !c.texts[k] || c.texts[k] === old[k] || LEGACY_TEXTS[k]?.includes(c.texts[k]) || (k === 'invitation' && c.texts[k] === legacyInvitation(c)));
     if (auto || confirm('Taklif matnlari qo‘lda o‘zgartirilgan. Ularni yangi marosimga mos matnlar bilan almashtiraymi?')) {
-      Object.assign(c.texts, eventTexts(N.id, g, b));
+      Object.assign(c.texts, eventTexts(N.id, g, b, 'uz', voiceOfC(c)));
       ed.invitationTouched = false;
       notes.push('matnlar');
     }
@@ -848,6 +877,13 @@ function secMain() {
           ${EVENTS.map((e) => html`<option value="${e.id}" ${findEvent(c.eventType).id === e.id ? 'selected' : ''}>${e.icon} ${e.title}</option>`)}
         </select>
         <small class="hint">Almashtirsangiz, vaqt, dastur va taklif matnlari shu marosimga moslanadi</small>
+      </label>
+      <label class="f" data-field="invitedBy"><span>Taklif kimning nomidan</span>
+        <select data-path="invitedBy">
+          <option value="parents" ${voiceOfC(c) === 'parents' ? 'selected' : ''}>👨‍👩‍👧 Ota-ona nomidan — “farzandlarimiz…”</option>
+          <option value="couple" ${voiceOfC(c) === 'couple' ? 'selected' : ''}>💑 Kelin-kuyov nomidan — “biz, … va …”</option>
+        </select>
+        <small class="hint">Almashtirsangiz, taklif matni shunga moslanadi</small>
       </label>
       ${['volume3', 'volume4'].includes(c.template)
         ? html`<label class="f" data-field="palette"><span>Rang</span>
@@ -2171,6 +2207,7 @@ function bindEditor() {
       const prevEvent = c.eventType;
       set(c, path, v);
       if (path === 'eventType') return onEventChange(prevEvent || 'nikoh', v);
+      if (path === 'invitedBy') return onVoiceChange(v === 'couple' ? 'parents' : 'couple', v);
       if (path === 'backgroundOverlay') $('#veil-val').textContent = `${Math.round(v * 100)}%`;
       if (path.startsWith('sky.') || path.startsWith('venue.')) updateSkyStatus();
       if (path === 'couple.groom' || path === 'couple.bride') {

@@ -47,6 +47,7 @@ export interface Wedding {
   storageKey: string;
   texts: { uz: Record<string, string>; ru: Record<string, string> };
   eventType: string;
+  invitedBy: string;
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -126,6 +127,7 @@ function build(c: any): Wedding {
     storageKey: `rsvp:${c.couple.groom.trim()} & ${c.couple.bride.trim()}:${c.event.originalDate || c.event.date}`,
     texts: { uz: { ...(c.texts?.uz || {}) }, ru: { ...(c.texts?.ru || {}) } },
     eventType: typeof c.eventType === 'string' ? c.eventType : '',
+    invitedBy: typeof c.invitedBy === 'string' ? c.invitedBy : '',
   };
 }
 

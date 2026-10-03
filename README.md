@@ -303,6 +303,13 @@ Panel ro‘yxatida: muddat (1 hafta ichida, 1 oy ichida, 1 oydan keyin, o‘tib 
 to‘lov (to‘langan / to‘lanmagan). Kartadagi "⏳ To‘lanmagan / ✅ To‘langan" tugmasi bir bosishda almashadi
 (`POST /api/panel/paid`, daromad yozuvida `paid`); "Daromad" sahifasida ham ustun bor.
 
+### Taklif kimning nomidan
+
+`config.invitedBy`: `parents` — ota-ona nomidan ("farzandlarimiz…"), `couple` — kelin-kuyov nomidan ("biz, … va …").
+Panelda "Asosiy ma’lumotlar" → "Taklif kimning nomidan"; almashtirilsa taklif matni (va yakuniy so‘z) shunga moslanadi.
+Har marosim uchun kelin-kuyov tilidagi matnlar — `src/lib/events.js` (COUPLE), volume3 eshik/marosim iboralari —
+`templates/volume3/app.js`. Yozilmagan bo‘lsa — shablonning asl matnlari (eski saytlar o‘zgarmaydi).
+
 ### Avto-aylantirish
 
 `config.autoScroll`: `off` (yoki yo‘q — eski saytlar) | `button` | `auto` — panelda "Avto-aylantirish".

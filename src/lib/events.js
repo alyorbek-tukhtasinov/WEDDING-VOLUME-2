@@ -233,15 +233,93 @@ export const EVENTS = [
   },
 ];
 
+// Taklif kimning nomidan (config.invitedBy): 'parents' — ota-ona ("farzandlarimiz…"), 'couple' — kelin-kuyov
+// ("biz, … va …"). Yozilmagan bo'lsa — shablonning asl matnlari (eski saytlar o'zgarmaydi).
+// Bu yerda faqat kelin-kuyov tilidagi farqli iboralar; qolganlari marosimning o'z matnlaridan olinadi.
+const NIKOH_COUPLE = {
+  uz: {
+    invitation: (g, b) =>
+      `Ikki qalbni bir taqdirga bog‘lagan Yaratganga hamdlar bo‘lsin! Biz — ${g} va ${b} — hayotimizdagi eng nurli kunda, nikoh to‘yimizda sizni davramizda ko‘rishni chin dildan istaymiz. Duolaringiz va tabassumingiz bu kunni yanada go‘zal qiladi.`,
+  },
+  ru: {
+    invitation: (g, b) =>
+      `Мы, ${g} и ${b}, с радостью приглашаем вас на нашу свадьбу. Этот день — один из самых светлых в нашей жизни, и мы будем счастливы разделить его с вами.`,
+  },
+};
+export const INVITED_BY = ['parents', 'couple'];
+const COUPLE = {
+  nikoh: NIKOH_COUPLE,
+  'nikoh-kunduzgi': NIKOH_COUPLE,
+  'qiz-uzatish': {
+    uz: {
+      invitation: (g, b) =>
+        `Hayotimizda yangi sahifa ochilmoqda. Biz — ${g} va ${b} — birgalikdagi yo‘limizning ilk qadamini qo‘yayotgan shu hayajonli kunda duolaringiz bilan yonimizda bo‘lishingizni chin dildan so‘raymiz.`,
+      closing: 'Duolaringiz — yangi hayotimizga eng qimmatli tuhfa!',
+      came: 'Muborak kun keldi — yonimizda bo‘lganingiz uchun rahmat!',
+    },
+    ru: {
+      invitation: (g, b) =>
+        `Мы, ${g} и ${b}, делаем первый шаг в новую жизнь. Будем счастливы, если в этот трогательный день вы будете рядом — с добрыми словами и благословением.`,
+      closing: 'Ваше благословение — лучший подарок нашей новой семье!',
+    },
+  },
+  'nahorgi-osh': {
+    uz: {
+      invitation: (g, b) =>
+        `Tong saharda damlangan osh — to‘yimizning ilk dasturxoni. Biz, ${g} va ${b}, to‘yimiz munosabati bilan beriladigan nahorgi oshga sizni chin dildan taklif etamiz. Kelib, duo qilib, oshimizdan tatib keting.`,
+    },
+    ru: {
+      invitation: (g, b) =>
+        `На рассвете будет готов праздничный плов в честь нашей свадьбы. Мы, ${g} и ${b}, приглашаем вас разделить с нами утреннее угощение и благословить нас.`,
+    },
+  },
+  fotiha: {
+    uz: {
+      invitation: (g, b) =>
+        `Hayotimizdagi muborak kun yetib keldi. Biz — ${g} va ${b} — fotiha to‘yimizda duo va oq fotihangiz bilan yonimizda bo‘lishingizni so‘raymiz.`,
+      closing: 'Oq fotihangiz — baxtimizga kalit!',
+    },
+    ru: {
+      invitation: (g, b) =>
+        `Настал благословенный для нас день. Мы, ${g} и ${b}, просим вас разделить с нами фотиха-той и благословить наше будущее.`,
+      closing: 'Ваше благословение — ключ к нашему счастью!',
+    },
+  },
+  'kelin-salom': {
+    uz: {
+      invitation: (g, b) =>
+        `Yangi oilamizning ilk iliq marosimi — kelin salom. Biz, ${g} va ${b}, shu kunda sizni davramizda ko‘rishni, salomimizni qabul qilib, oilamizga baraka tilashingizni istaymiz.`,
+      closing: 'Duolaringiz — oilamiz uchun eng aziz sovg‘a!',
+    },
+    ru: {
+      invitation: (g, b) =>
+        `Мы, ${g} и ${b}, приглашаем вас на «Келин салом» — первую тёплую церемонию нашей молодой семьи. Примите наш поклон и пожелайте нам счастья.`,
+      closing: 'Ваши пожелания — самый дорогой подарок нашей семье!',
+    },
+  },
+};
+
+/** 'couple' | 'parents' | null (yozilmagan — shablonning asl matni). */
+export const voiceOf = (c) => (INVITED_BY.includes(c?.invitedBy) ? c.invitedBy : null);
+const coupleOver = (id, lang) => COUPLE[id]?.[lang === 'ru' ? 'ru' : 'uz'] || {};
+/** Marosim matnlari shu tilda va ovozda (kelin-kuyov — farqli iboralar ustiga yoziladi). */
+function textsOf(e, lang, voice) {
+  const t = lang === 'ru' ? e.ru : e.uz;
+  return voice === 'couple' ? { ...t, ...coupleOver(e.id, lang) } : t;
+}
+
+/** Saytning marosim + ovoz bo'yicha matnlari (heroCaption, invitation(g,b), closing, …). */
+export const voiceTexts = (c, lang = 'uz') => textsOf(findEvent(c?.eventType), lang, voiceOf(c));
+
 export const DEFAULT_EVENT = 'nikoh';
 export const EVENT_IDS = EVENTS.map((e) => e.id);
 export const findEvent = (id) => EVENTS.find((e) => e.id === id) || EVENTS[0];
 export const eventOf = (c) => findEvent(c?.eventType);
 
 /** Taklif matnlari (config.texts uchun): heroCaption, greeting, invitation, closing. */
-export function eventTexts(eventId, groom, bride, lang = 'uz') {
+export function eventTexts(eventId, groom, bride, lang = 'uz', voice = 'parents') {
   const e = findEvent(eventId);
-  const t = lang === 'ru' ? e.ru : e.uz;
+  const t = textsOf(e, lang, voice);
   return {
     heroCaption: t.heroCaption,
     greeting: t.greeting,
@@ -261,9 +339,12 @@ export const isNikoh = (c) => !c?.eventType || c.eventType === 'nikoh' || c.even
 export function phrases(c, lang = 'uz') {
   const nikoh = isNikoh(c);
   const e = eventOf(c);
-  const t = lang === 'ru' ? e.ru : e.uz;
+  const voice = voiceOf(c);
+  const t = textsOf(e, lang, voice);
+  const over = voice === 'couple' ? coupleOver(e.id, lang) : {};
   return (key, original, ...args) => {
-    if (nikoh) return original;
+    // Nikoh to'yida asl matn; faqat "kelin-kuyov nomidan" tanlansa — shu iboralar almashadi
+    if (nikoh && !(key in over)) return original;
     const v = t[key];
     return typeof v === 'function' ? v(...args) : v ?? original;
   };
@@ -274,12 +355,17 @@ export function phrases(c, lang = 'uz') {
  * Nikoh to'yida T o'zgarmaydi. lang: 'uz' | 'uzc' | 'ru' (kirill — o'zbekcha iboralardan o'giriladi, cyr bilan).
  */
 export function applyEvent(T, c, lang, map, cyr = (x) => x) {
-  if (isNikoh(c)) return T;
+  const nikoh = isNikoh(c);
+  const voice = voiceOf(c);
+  if (nikoh && voice !== 'couple') return T;
   const e = eventOf(c);
-  const p = lang === 'ru' ? e.ru : lang === 'uzc' ? cyr(e.uz) : e.uz;
+  const base = textsOf(e, lang === 'ru' ? 'ru' : 'uz', voice);
+  const p = lang === 'uzc' ? cyr(base) : base;
+  // Nikoh to'yi + kelin-kuyov nomidan: faqat taklif matni almashadi, qolgani shablonniki
+  const keys = nikoh ? Object.keys(map).filter((k) => k in coupleOver(e.id, lang)) : Object.keys(map);
   const out = { ...T };
-  for (const [k, fn] of Object.entries(map)) {
-    if (k in T) out[k] = fn(p, T[k]);
+  for (const k of keys) {
+    if (k in T) out[k] = map[k](p, T[k]);
   }
   return out;
 }

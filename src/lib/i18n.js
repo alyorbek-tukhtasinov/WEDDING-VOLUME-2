@@ -5,7 +5,7 @@
 // (yo'q bo'lsa: shablonning tayyor ruscha matni yoki kirillcha o'girma).
 // Interfeys matnlari (tugmalar, sarlavhalar) — har bir shablonning o'z lug'atida.
 import { latinToCyrillic } from './translit.js';
-import { isNikoh, eventOf } from './events.js';
+import { isNikoh, voiceOf, voiceTexts } from './events.js';
 
 export const LANGS = {
   uz: { label: 'O‘zbekcha', short: 'UZ', html: 'uz' },
@@ -139,8 +139,11 @@ export function localize(c, lang, ruDefaults = {}) {
   if (lang !== 'ru') return c;
   // Nikoh to'yidan boshqa marosim — ruscha tayyor matnlar shu marosimniki
   if (!isNikoh(c)) {
-    const e = eventOf(c).ru;
+    const e = voiceTexts(c, 'ru');
     ruDefaults = { ...ruDefaults, heroCaption: e.heroCaption, greeting: e.greeting, invitation: e.invitation, closing: e.closing };
+  } else if (voiceOf(c) === 'couple') {
+    // Nikoh to'yi, kelin-kuyov nomidan — ruscha taklif matni ham "мы, … и …"
+    ruDefaults = { ...ruDefaults, invitation: voiceTexts(c, 'ru').invitation };
   }
   const r = c.i18n?.ru || {};
   const base = cyrContent(c);

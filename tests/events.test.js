@@ -48,3 +48,23 @@ test('config: eventType tekshiruvi va tavsif', () => {
   assert.match(deriveConfig(c).description, /to‘y taklifnomasi/);
   assert.equal(findEvent('yo‘q').id, 'nikoh');
 });
+
+test('taklif kimning nomidan: kelin-kuyov tilida "farzandlarimiz" yo‘q, yozilmasa — eski matn', () => {
+  for (const e of EVENTS) {
+    for (const lang of ['uz', 'ru']) {
+      const couple = eventTexts(e.id, 'Aziz', 'Malika', lang, 'couple');
+      assert.ok(couple.invitation.includes('Aziz') && couple.invitation.includes('Malika'), `${e.id}/${lang}`);
+      assert.doesNotMatch(couple.invitation, /farzand|qizimiz|kelinimiz|наших детей|нашу дочь|наша невестка/i, `${e.id}/${lang}`);
+      assert.doesNotMatch(couple.closing, /qizimiz|kelinimiz|нашей дочери|нашей невестки/i, `${e.id}/${lang}`);
+      assert.deepEqual(eventTexts(e.id, 'Aziz', 'Malika', lang, 'parents'), eventTexts(e.id, 'Aziz', 'Malika', lang));
+    }
+  }
+  // Eski saytlar (invitedBy yo'q) — shablon iboralari o'zgarmaydi
+  assert.equal(phrases({})('invitation', 'ASL', 'A', 'B'), 'ASL');
+  assert.equal(phrases({ invitedBy: 'parents' })('invitation', 'ASL', 'A', 'B'), 'ASL');
+  assert.match(phrases({ invitedBy: 'couple' })('invitation', 'ASL', 'A', 'B'), /Biz — A va B/);
+  assert.equal(phrases({ invitedBy: 'couple' })('until', 'ASL'), 'ASL');
+  const T = { invitation: () => 'asl' };
+  assert.equal(applyEvent(T, {}, 'uz', { invitation: (p) => p.invitation }), T);
+  assert.deepEqual(validateConfig({ ...JSON.parse(fs.readFileSync('clients/demo-osmon/config.json', 'utf8')), invitedBy: 'kimdir' }).length, 1);
+});
