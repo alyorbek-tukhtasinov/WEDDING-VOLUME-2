@@ -65,5 +65,7 @@
     "countdown": true
   },
   "eventType": "fotiha",
-  "palette": "green"
+  "palette": "green",
+  "autoScroll": "auto",
+  "autoScrollSpeed": 1.25
 }
