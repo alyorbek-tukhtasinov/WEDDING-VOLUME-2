@@ -10,6 +10,7 @@ import { validateConfig, isValidDate, TIME_RE, MONTHS } from '../src/lib/config.
 import { latinToCyrillic } from '../src/lib/translit.js';
 import { LANGS, STR as OSMON_STR } from '../templates/osmon/i18n.js';
 import { autoScrollMode } from '../src/lib/autoscroll.js';
+import { prepareAudio, toBase64 } from './audio-convert.js';
 
 const AUTOSCROLL = [
   { id: 'off', title: 'O‘chiq — tugma yo‘q' },
@@ -1496,6 +1497,8 @@ state.addedMusic ||= [];
 function titleFromFile(name) {
   return name
     .replace(/\.[^.]+$/, '')
+    // YouTube nomlaridagi qo'shimchalar: (Music Video), [Official Audio], (Lyrics)...
+    .replace(/\s*[([][^)\]]*(video|audio|lyric|official|klip|clip|hd|4k)[^)\]]*[)\]]/gi, '')
     .replace(/_/g, ' ')
     .replace(/\s+-\s+/g, ' — ')
     .replace(/\s+/g, ' ')
@@ -1531,8 +1534,8 @@ function showMusic() {
         <h2 style="margin:0 0 .75rem;font-size:1.05rem">Yangi qo‘shiq qo‘shish</h2>
         <form id="music-form" class="form" autocomplete="off">
           <label class="f">
-            <span>Audio fayl (MP3 yoki M4A, 15 MB gacha)</span>
-            <input type="file" id="music-file" accept=".mp3,.m4a,audio/mpeg,audio/mp4" />
+            <span>Audio fayl (MP3 yoki M4A; boshqa formatlar — WebM, OGG, WAV… — o‘zi MP3 ga o‘giriladi)</span>
+            <input type="file" id="music-file" accept="audio/*,.mp3,.m4a,.webm,.ogg,.opus,.wav,.flac,.aac" />
           </label>
           <label class="f">
             <span>Qo‘shiq nomi (ro‘yxatda shunday ko‘rinadi)</span>
@@ -1581,17 +1584,25 @@ function showMusic() {
     const progress = $('#music-progress');
     if (!f) return toast('Audio faylni tanlang');
     if (title.length < 2) return toast('Qo‘shiq nomini yozing');
-    if (f.size > 15 * 1024 * 1024) return toast('Fayl 15 MB dan katta');
+    if (f.size > 80 * 1024 * 1024) return toast('Fayl juda katta (80 MB dan oshmasin)');
     const btn = $('#music-save');
     btn.disabled = true;
-    progress.textContent = 'Yuklanmoqda…';
+    progress.textContent = 'Tayyorlanmoqda…';
     try {
-      const b64 = await new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
-        fr.onerror = reject;
-        fr.readAsDataURL(f);
-      });
+      let prepared;
+      try {
+        prepared = await prepareAudio(f, (x) => (progress.textContent = `MP3 ga o‘girilmoqda… ${Math.round(x * 100)}%`));
+      } catch (err) {
+        progress.textContent = '';
+        toast(err.message);
+        return;
+      }
+      if (prepared.bytes.length > 15 * 1024 * 1024) {
+        progress.textContent = '';
+        return toast('Fayl 15 MB dan katta — qisqaroq yoki siqilgan versiyasini yuklang');
+      }
+      progress.textContent = prepared.converted ? 'MP3 ga o‘girildi, yuklanmoqda…' : 'Yuklanmoqda…';
+      const b64 = toBase64(prepared.bytes);
       const r = await api('music', { method: 'POST', body: { title, file: b64 } });
       if (!r.ok) {
         progress.textContent = '';
