@@ -7,6 +7,7 @@
 //   POST /api/panel/password           — { slug } → mijozning /admin paroli (bir marta ko'rsatiladi)
 //   GET  /api/panel/slugs              — band sayt nomlari va sababi (yangi sayt uchun)
 //   POST /api/panel/paid               — { slug, paid } → ro'yxatdagi "To'langan" belgisi (daromad yozuvida)
+//   POST /api/panel/musicdelete        — { id } → to'plamdan qo'shiqni o'chirish (ishlatilayotgan bo'lsa — rad etiladi)
 //   POST /api/panel/pause              — { slug, paused } → saytni vaqtincha to'xtatish / qayta yoqish
 //                                         (to'xtatilgan sayt "To'langan" belgilansa — o'zi yoqiladi)
 //
@@ -20,7 +21,7 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { requestContext } from '../api/_lib/context.js';
 import { safeEqual, hashPassword } from '../api/_lib/http.js';
-import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance, slugsWithData } from '../api/_lib/store.js';
+import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance, slugsWithData, getSettings } from '../api/_lib/store.js';
 import { SLUG_RE } from '../api/_lib/slug.js';
 import { validateConfig } from '../src/lib/config.js';
 
@@ -384,6 +385,9 @@ async function addMusic(body) {
     const titles = [...src.matchAll(/title:\s*(['"])(.*?)\1/g)].map((m) => m[2].toLowerCase());
     if (titles.includes(title.toLowerCase())) throw new UserError('exists', `"${title}" allaqachon ro‘yxatda bor`);
     const nums = [...src.matchAll(/id:\s*'musiqa-(\d+)'/g)].map((m) => Number(m[1]));
+    // O'chirilgan qo'shiq raqami qayta berilmaydi (brauzer keshida eski fayl qolgan bo'lishi mumkin)
+    const gone = await git(['log', '--diff-filter=D', '--name-only', '--pretty=format:', '--', 'public/music/']).catch(() => '');
+    for (const m of gone.matchAll(/musiqa-(\d+)\./g)) nums.push(Number(m[1]));
     const id = `musiqa-${Math.max(0, ...nums) + 1}`;
     const end = src.indexOf('\n];', src.indexOf('export const MUSIC_LIBRARY'));
     if (end < 0) throw new Error('music.js tuzilishi kutilganidek emas');
@@ -403,6 +407,61 @@ async function addMusic(body) {
     }
     triggerDeploy();
     return { id, title, file: `/music/${id}.${ext}`, sha: await git(['rev-parse', 'HEAD']) };
+  });
+}
+
+// Qo'shiqni to'plamdan o'chirish. Biror to'y config'ida (musicTrack) yoki mijozning /admin tanlovida turgan
+// bo'lsa — o'chirilmaydi: aks holda o'sha sayt yig'ilmay qoladi yoki musiqasi almashib ketadi.
+async function removeMusic(body) {
+  const id = String(body?.id || '');
+  if (!/^[a-z0-9-]{1,40}$/.test(id)) throw new UserError('bad_request', 'Qo‘shiq tanlanmagan');
+  return serial(async () => {
+    await syncWork(true);
+    const src = fs.readFileSync(MUSIC_JS(), 'utf8');
+    const lineRe = new RegExp(`\\n[ \\t]*\\{[^\\n]*id:\\s*'${id}'[^\\n]*\\},?[ \\t]*(?=\\n)`);
+    const line = lineRe.exec(src);
+    if (!line) throw new UserError('not_found', 'Bu qo‘shiq to‘plamda topilmadi (ro‘yxatni yangilang)');
+    const file = /file:\s*'\/music\/([\w.-]+)'/.exec(line[0])?.[1];
+    const title = /title:\s*(['"])(.*?)\1/.exec(line[0])?.[2] || id;
+
+    const users = [];
+    const dir = path.join(WORK(), 'clients');
+    for (const slug of fs.readdirSync(dir).filter((n) => SLUG_RE.test(n))) {
+      const r = await readConfig(slug).catch(() => null);
+      if (r?.config?.musicTrack === id) users.push(slug);
+    }
+    if (storeConfigured()) {
+      for (const slug of fs.readdirSync(dir).filter((n) => SLUG_RE.test(n) && !users.includes(n))) {
+        const st = await requestContext.run({ slug, adminPassword: '' }, () => getSettings()).catch(() => null);
+        if (st?.music === id) users.push(`${slug} (mijoz /admin’da tanlagan)`);
+      }
+    }
+    // Shablon/panelning standart qo'shig'i (kodda id bilan yozilgan) — o'chirilsa yangi saytlar yig'ilmaydi
+    const codeFiles = (d) =>
+      fs.readdirSync(d, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? codeFiles(path.join(d, e.name)) : /\.(js|ts|tsx)$/.test(e.name) ? [path.join(d, e.name)] : [],
+      );
+    const inCode = ['panel', 'templates', 'src']
+      .flatMap((d) => codeFiles(path.join(WORK(), d)))
+      .some((f) => f !== MUSIC_JS() && fs.readFileSync(f, 'utf8').includes(`'${id}'`));
+    if (inCode) throw new UserError('in_use', `“${title}” — shablonning standart musiqasi, uni o‘chirib bo‘lmaydi.`);
+    if (users.length) {
+      throw new UserError('in_use', `“${title}” ishlatilmoqda: ${users.join(', ')}. Avval o‘sha saytlarda boshqa musiqa tanlang.`);
+    }
+
+    fs.writeFileSync(MUSIC_JS(), src.slice(0, line.index) + src.slice(line.index + line[0].length));
+    await git(['add', '--', 'src/lib/music.js']);
+    if (file && fs.existsSync(path.join(WORK(), 'public', 'music', file))) await git(['rm', '-q', '--', `public/music/${file}`]);
+    await git(['-c', 'user.name=Taklifnoma panel', '-c', 'user.email=panel@taklifnoma.local', 'commit', '-q', '-m', `Panel: musiqa o‘chirildi — ${title}`]);
+    try {
+      await git(['push', '-q', 'origin', `HEAD:${BRANCH()}`]);
+    } catch (err) {
+      lastFetch = 0;
+      await git(['reset', '-q', '--hard', `origin/${BRANCH()}`]).catch(() => {});
+      throw new UserError('push_failed', `GitHub'ga yozib bo'lmadi: ${err.message}`);
+    }
+    triggerDeploy();
+    return { id, title, sha: await git(['rev-parse', 'HEAD']) };
   });
 }
 
@@ -623,6 +682,7 @@ export async function panelHandler(req, res, name) {
     if (req.method === 'POST' && name === 'paid') return send(res, 200, { ok: true, ...(await setPaid(await readJson(req))) });
     if (req.method === 'POST' && name === 'pause') return send(res, 200, { ok: true, ...(await setPause(await readJson(req))) });
     if (req.method === 'POST' && name === 'delete') return send(res, 200, { ok: true, ...(await removeClient(await readJson(req))) });
+    if (req.method === 'POST' && name === 'musicdelete') return send(res, 200, { ok: true, ...(await removeMusic(await readJson(req))) });
     if (req.method === 'POST' && name === 'music') return send(res, 200, { ok: true, ...(await addMusic(await readJson(req))) });
     if (req.method === 'POST' && name === 'password') {
       const { slug } = await readJson(req);

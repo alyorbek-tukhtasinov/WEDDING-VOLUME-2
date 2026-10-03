@@ -1420,7 +1420,7 @@ function secMusicRsvp() {
         <label class="f" style="flex:1">
           <span>Fon musiqasi</span>
           <select id="music-select">
-            ${MUSIC_LIBRARY.map((t) => html`<option value="track:${t.id}" ${current === `track:${t.id}` ? 'selected' : ''}>${t.title}</option>`)}
+            ${MUSIC_LIBRARY.filter((t) => !state.removedMusic?.has(t.id) || current === `track:${t.id}`).map((t) => html`<option value="track:${t.id}" ${current === `track:${t.id}` ? 'selected' : ''}>${t.title}</option>`)}
             ${c.music ? html`<option value="file" ${current === 'file' ? 'selected' : ''}>Mijozning o‘z fayli (${c.music})</option>` : ''}
             <option value="none" ${current === 'none' ? 'selected' : ''}>Musiqasiz</option>
           </select>
@@ -1492,6 +1492,7 @@ function secSeo() {
 /* ------------------------------------------------------------------ */
 // Shu sessiyada qo'shilganlar: panel qayta yig'ilguncha ro'yxatda "yangilanmoqda" belgisi bilan turadi
 state.addedMusic ||= [];
+state.removedMusic ||= new Set();
 
 // "Benom_guruhi_-_Olib_ketaman.mp3" → "Benom guruhi — Olib ketaman"
 function titleFromFile(name) {
@@ -1507,7 +1508,9 @@ function titleFromFile(name) {
 
 function musicRows() {
   const known = new Set(MUSIC_LIBRARY.map((t) => t.id));
-  const list = [...MUSIC_LIBRARY, ...state.addedMusic.filter((t) => !known.has(t.id)).map((t) => ({ ...t, pending: true }))];
+  const list = [...MUSIC_LIBRARY, ...state.addedMusic.filter((t) => !known.has(t.id)).map((t) => ({ ...t, pending: true }))].filter(
+    (t) => !state.removedMusic.has(t.id),
+  );
   return html`
     ${list.map(
       (t) => html`
@@ -1515,6 +1518,7 @@ function musicRows() {
           <button class="icon-btn" type="button" data-music-play="${t.file}" aria-label="Tinglash">▶</button>
           <span class="music-row__title">${t.title}</span>
           ${t.pending ? html`<span class="badge badge--soon">2–3 daqiqada saytlarda</span>` : ''}
+          <button class="btn btn--small btn--ghost btn--danger" type="button" data-music-del="${t.id}" data-title="${t.title}" title="To‘plamdan o‘chirish">O‘chirish</button>
         </div>
       `,
     )}
@@ -1561,7 +1565,27 @@ function showMusic() {
     const f = fileInput.files[0];
     if (f && !titleInput.value.trim()) titleInput.value = titleFromFile(f.name);
   });
-  $('#music-list').addEventListener('click', (e) => {
+  $('#music-list').addEventListener('click', async (e) => {
+    const del = e.target.closest('[data-music-del]');
+    if (del) {
+      const { musicDel: id, title } = del.dataset;
+      if (!confirm(`“${title}” to‘plamdan o‘chirilsinmi?\n\nBiror to‘yda ishlatilayotgan bo‘lsa, o‘chirilmaydi — qaysi saytda ekani ko‘rsatiladi.`)) return;
+      del.disabled = true;
+      try {
+        const r = await api('musicdelete', { method: 'POST', body: { id } });
+        if (!r.ok) return toast(r.message || 'O‘chirib bo‘lmadi');
+        if (audio?.dataset.src && del.closest('.music-row')?.querySelector(`[data-music-play="${audio.dataset.src}"]`)) audio.pause();
+        state.removedMusic.add(id);
+        $('#music-list').innerHTML = musicRows();
+        toast(`O‘chirildi: ${title}`);
+        refreshStatus();
+      } catch (err) {
+        if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
+      } finally {
+        del.disabled = false;
+      }
+      return;
+    }
     const b = e.target.closest('[data-music-play]');
     if (!b) return;
     if (audio && !audio.paused && audio.dataset.src === b.dataset.musicPlay) {
