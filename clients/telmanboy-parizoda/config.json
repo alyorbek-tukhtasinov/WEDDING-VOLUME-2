@@ -69,5 +69,6 @@
   },
   "eventType": "nikoh",
   "backgroundImage": "fon-muspmbzvbk2.jpg",
-  "backgroundOverlay": 0.84
+  "backgroundOverlay": 0.84,
+  "autoScroll": "auto"
 }
