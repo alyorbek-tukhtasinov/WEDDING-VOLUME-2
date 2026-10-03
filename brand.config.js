@@ -3,8 +3,8 @@
 export default {
   enabled: true,
   text: 'Onlayn taklifnoma buyurtma qilish',
-  name: '@alyorbek.tukhtasinov',
-  url: 'https://www.instagram.com/alyorbek.tukhtasinov/',
+  name: '@taklifim.uz',
+  url: 'https://www.instagram.com/taklifim.uz/',
   // Aylana logotip rasmi (masalan '/images/my-logo.png'). Bo'sh bo'lsa Instagram belgisi chiqadi.
   logo: '',
 };
