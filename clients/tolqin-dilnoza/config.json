@@ -1,0 +1,73 @@
+{
+  "template": "osmon",
+  "couple": {
+    "groom": "To'lqin",
+    "bride": "Dilnoza",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-21",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Dusmatovlar va Yarmatovlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Ikki qalbni bir taqdirga bog‘lagan Yaratganga hamdlar bo‘lsin! Farzandlarimiz To'lqin va Dilnozaning nikoh to‘yi — hayotimizdagi eng nurli kunlardan biri. Shu quvonchli kunda sizni davramizda ko‘rish va duolaringizni olish biz uchun katta baxt.",
+    "closing": "Tashrifingiz — to‘yimizning eng go‘zal bezagi!"
+  },
+  "venue": {
+    "name": "\"Farovon\" to'yxonasi",
+    "address": "Qashqadaryo viloyati Shahrisabz shahri",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=38.969549%2C66.684046",
+    "yandexMaps": "https://yandex.uz/maps/?pt=66.684046,38.969549&z=17&l=map"
+  },
+  "sky": {
+    "city": "Shahrisabz",
+    "lat": 38.969549,
+    "lng": 66.684046
+  },
+  "program": [
+    {
+      "time": "18:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "18:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "19:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "23:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "musicTrack": "musiqa-3",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-20",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "eventType": "nikoh"
+}
