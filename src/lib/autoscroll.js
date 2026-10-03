@@ -111,7 +111,19 @@ export function initAutoScroll(c, o = {}) {
   const top = () => (isWin ? window.scrollY : scroller.scrollTop);
   const max = () => (isWin ? document.documentElement.scrollHeight - window.innerHeight : scroller.scrollHeight - scroller.clientHeight);
   const viewH = () => (isWin ? window.innerHeight : scroller.clientHeight);
-  const setTop = (y) => (isWin ? window.scrollTo({ top: y, behavior: 'instant' }) : scroller.scrollTo({ top: y, behavior: 'instant' }));
+  // behavior: 'instant' eski Safari'da xato beradi — oddiy shakl + CSS scroll-behavior vaqtincha "auto"
+  const setTop = (y) => (isWin ? window.scrollTo(0, y) : (scroller.scrollTop = y));
+  const smoothEl = isWin ? document.documentElement : scroller;
+  let savedBehavior = null;
+  const instantScroll = (onOff) => {
+    if (onOff && savedBehavior === null) {
+      savedBehavior = smoothEl.style.scrollBehavior;
+      smoothEl.style.scrollBehavior = 'auto';
+    } else if (!onOff && savedBehavior !== null) {
+      smoothEl.style.scrollBehavior = savedBehavior;
+      savedBehavior = null;
+    }
+  };
 
   const progress = () => (o.step ? o.step.progress() : max() > 0 ? Math.min(1, top() / max()) : 0);
   const atEnd = () => (o.step ? o.step.atEnd() : top() >= max() - 2);
@@ -173,6 +185,14 @@ export function initAutoScroll(c, o = {}) {
 
   function frame(now) {
     if (state !== 'playing') return;
+    try {
+      step(now);
+    } catch (err) {
+      console.error('autoscroll:', err);
+      stop();
+    }
+  }
+  function step(now) {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     // Mehmon (yoki boshqa narsa) sahifani surgan bo'lsa — to'xtaymiz
@@ -211,18 +231,21 @@ export function initAutoScroll(c, o = {}) {
     if (o.step) {
       timer = setTimeout(tick, 900);
     } else {
+      instantScroll(true);
       pos = top();
       last = performance.now();
       raf = requestAnimationFrame(frame);
     }
   }
   function stop() {
+    instantScroll(false);
     cancelAnimationFrame(raf);
     clearTimeout(timer);
     if (state === 'playing') state = 'idle';
     render();
   }
   function finish() {
+    instantScroll(false);
     cancelAnimationFrame(raf);
     clearTimeout(timer);
     state = 'end';
@@ -232,8 +255,9 @@ export function initAutoScroll(c, o = {}) {
     state = 'idle';
     passedStop = false;
     if (o.step) o.step.restart();
-    else if (isWin) window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
-    else scroller.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
+    else if (reduced) setTop(0);
+    else if (isWin) window.scrollTo({ top: 0, behavior: 'smooth' });
+    else scroller.scrollTo({ top: 0, behavior: 'smooth' });
     render();
   }
 
@@ -280,7 +304,8 @@ export function initAutoScroll(c, o = {}) {
       setTimeout(place, 400);
       setTimeout(place, 1600);
       // Ochilish (muhr/eshik) animatsiyasi tugashi bilan — mehmon tegsa to'xtaydi
-      if (mode === 'auto' && start && !reduced) autoTimer = setTimeout(play, 1200);
+      // Telefonda "animatsiyalarni kamaytirish" yoqilgan bo'lsa ham boshlanadi: harakat sekin va tegilsa to'xtaydi
+      if (mode === 'auto' && start) autoTimer = setTimeout(play, 1200);
     },
     /** Varaq/sahifa o'zgarganda (step) halqani yangilash */
     update: () => {
