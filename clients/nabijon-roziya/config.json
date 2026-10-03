@@ -6,7 +6,7 @@
     "bride": "Roziya"
   },
   "event": {
-    "date": "2026-11-22",
+    "date": "2026-10-22",
     "time": "14:00",
     "timezone": "+05:00",
     "durationHours": 4
@@ -30,19 +30,36 @@
     "lng": 71.545196
   },
   "program": [
-    { "time": "14:00", "title": "Mehmonlarni kutib olish" },
-    { "time": "14:30", "title": "Kelin-kuyovning kirib kelishi" },
-    { "time": "15:00", "title": "Tantanali ziyofat" },
-    { "time": "17:00", "title": "To‘y tortini kesish" }
+    {
+      "time": "14:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "14:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "15:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "17:00",
+      "title": "To‘y tortini kesish"
+    }
   ],
   "dressCode": {
     "text": "Bayramona libos. Iltimos, oq rangdagi liboslardan saqlaning.",
-    "colors": ["#0b1633", "#1f2d5c", "#c9ced9", "#d8b976"]
+    "colors": [
+      "#0b1633",
+      "#1f2d5c",
+      "#c9ced9",
+      "#d8b976"
+    ]
   },
   "musicTrack": "musiqa-3",
   "rsvp": {
     "enabled": true,
-    "deadline": "2026-11-20",
+    "deadline": "2026-10-21",
     "maxGuests": 5,
     "showWishes": true
   },
