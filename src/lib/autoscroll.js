@@ -149,14 +149,14 @@ export function initAutoScroll(c, o = {}) {
 
   /* ---------------------------- flow ---------------------------- */
   function speed() {
-    const base = Math.min(62, Math.max(34, viewH() * 0.06));
+    const base = Math.min(90, Math.max(48, viewH() * 0.085));
     if (!o.slow) return base;
     const mid = viewH() * 0.5;
     const box = isWin ? null : scroller.getBoundingClientRect();
     for (const el of document.querySelectorAll(o.slow)) {
       const r = el.getBoundingClientRect();
       const t = box ? r.top - box.top : r.top;
-      if (t < mid && t + r.height > mid * 0.6) return base * 0.5;
+      if (t < mid && t + r.height > mid * 0.6) return base * 0.6;
     }
     return base;
   }
@@ -199,7 +199,7 @@ export function initAutoScroll(c, o = {}) {
     render();
     if (state !== 'playing') return;
     if (o.step.atEnd()) return finish();
-    timer = setTimeout(tick, o.step.dwell?.() ?? 6500);
+    timer = setTimeout(tick, o.step.dwell?.() ?? 5000);
   }
 
   function play() {

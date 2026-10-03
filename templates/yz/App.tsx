@@ -39,7 +39,7 @@ function useAutoScroll(active: boolean) {
         progress: () => (box.scrollHeight > box.clientHeight ? box.scrollTop / (box.scrollHeight - box.clientHeight) : 0),
         restart: () => box.scrollTo({ top: 0, behavior: 'smooth' }),
         // Taklif matni bo'limida uzoqroq turadi
-        dwell: () => (Math.round(box.scrollTop / box.clientHeight) === 1 ? 8000 : 5500),
+        dwell: () => (Math.round(box.scrollTop / box.clientHeight) === 1 ? 6500 : 4200),
       },
     });
     const t = setTimeout(() => auto.ready(), 600);
