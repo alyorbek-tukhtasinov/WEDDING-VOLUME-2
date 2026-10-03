@@ -10,6 +10,7 @@ import { html, raw } from '../../src/lib/dom.js';
 import { LANGS, siteLangs, pickLang, rememberLang, localize, cyr } from '../../src/lib/i18n.js';
 import brand from '@brand-config';
 import { isNikoh, phrases } from '../../src/lib/events.js';
+import { initAutoScroll } from '../../src/lib/autoscroll.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -795,10 +796,15 @@ export async function mountVolume3(config, { preview = false } = {}) {
   }
   const music = initMusic(musicUrlOf(c), L);
   if ($('#music-toggle')) $('#music-toggle').hidden = false;
+  const ascroll = initAutoScroll(config, {
+    slow: '.gdn-hero + .gdn-sec, #details',
+    theme: { bg: 'var(--g-mid)', ink: 'var(--g-light)' },
+  });
   // Til almashtirilganda kirish oynasi qayta ko'rsatilmaydi
   if (session.get('v3:opened')) {
     opened();
     window.scrollTo(0, y);
+    ascroll.ready();
     return;
   }
   document.documentElement.classList.add('is-locked');
@@ -808,6 +814,9 @@ export async function mountVolume3(config, { preview = false } = {}) {
     music.play();
     session.set('v3:opened', '1');
     gate.classList.add('is-leaving');
-    scope.later(opened, 800);
+    scope.later(() => {
+      opened();
+      ascroll.ready();
+    }, 800);
   }, { once: true });
 }

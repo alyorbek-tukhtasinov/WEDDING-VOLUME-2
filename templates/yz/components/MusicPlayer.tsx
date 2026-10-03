@@ -12,6 +12,7 @@ export const MusicPlayer: React.FC = () => {
     <>
       {/* Music toggle button */}
       <motion.button
+        id="music-toggle"
         onClick={toggle}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}

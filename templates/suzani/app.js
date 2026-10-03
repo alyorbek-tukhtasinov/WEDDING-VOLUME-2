@@ -11,6 +11,7 @@ import { PALETTE, medallion, rosette, pomegranate, tulip, heart, rings, DOVE, sp
 import { installDefs, renderMotif, track, setReduced, resetTracks } from './stitch.js';
 import { burstSeeds, celebrate, drizzle, swingTassels, tasselsHtml, setReducedFx } from './fx.js';
 import { phrases } from '../../src/lib/events.js';
+import { initAutoScroll } from '../../src/lib/autoscroll.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -690,6 +691,7 @@ export async function mountSuzani(c, { preview = false } = {}) {
 
   const gate = $('#gate');
   const music = preview ? { play() {} } : initMusic(musicUrlOf(c));
+  const ascroll = preview ? { ready() {} } : initAutoScroll(c, { slow: '.section.invite, .section.when' });
   const startAll = () => {
     auto.forEach((a) => a.start());
     // Bosh qismdagi yamoqlar birin-ketin "tikib qo'yiladi"
@@ -720,6 +722,7 @@ export async function mountSuzani(c, { preview = false } = {}) {
       document.documentElement.classList.remove('is-locked');
       document.body.classList.add('is-open');
       $('#music-toggle').hidden = false;
+      ascroll.ready();
     }, reduced ? 100 : 1500);
   });
 }

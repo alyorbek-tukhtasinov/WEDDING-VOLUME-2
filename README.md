@@ -303,6 +303,14 @@ Panel ro‘yxatida: muddat (1 hafta ichida, 1 oy ichida, 1 oydan keyin, o‘tib 
 to‘lov (to‘langan / to‘lanmagan). Kartadagi "⏳ To‘lanmagan / ✅ To‘langan" tugmasi bir bosishda almashadi
 (`POST /api/panel/paid`, daromad yozuvida `paid`); "Daromad" sahifasida ham ustun bor.
 
+### Avto-aylantirish
+
+`config.autoScroll`: `off` (yoki yo‘q — eski saytlar) | `button` | `auto` — panelda "Avto-aylantirish".
+Mehmon ⌄⌄ tugmasini bossa, sayt musiqa bilan asta o‘zi pastga suriladi (`src/lib/autoscroll.js`, barcha shablonlar):
+taklif matni va sanada sekinlashadi, javob formasida to‘xtaydi, ekranga tegilsa to‘xtaydi, oxirida ↑ "Boshiga
+qaytish". Kitobda varaqlar o‘zi ochiladi, yz’da bo‘limlar birin-ketin almashadi. `auto` — ochilgach 2–3 soniyada
+o‘zi boshlanadi (reel yozish uchun). Yangi saytlar `button` bilan yaratiladi.
+
 ### Saytni vaqtincha to‘xtatish (to‘lov kutilmoqda)
 
 Kartadagi "⏸ To‘xtatish" — mijozga ko‘rsatib bo‘lingach, to‘lovgacha havolani yopish (`POST /api/panel/pause`,

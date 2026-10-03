@@ -1,5 +1,6 @@
 {
   "template": "bulut",
+  "autoScroll": "button",
   "couple": {
     "groom": "Sardor",
     "bride": "Malika"

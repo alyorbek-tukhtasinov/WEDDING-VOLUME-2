@@ -12,6 +12,7 @@ import { STR, LANGS, siteLangs, localize, phaseName, dirName, brandText, textsFo
 import { introHtml, initIntro } from '../../src/lib/intro.js';
 import { fixScriptGlyphs, scriptSafe } from '../../src/lib/i18n.js';
 import { createSky } from './sky/scene.js';
+import { initAutoScroll } from '../../src/lib/autoscroll.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -602,6 +603,7 @@ export async function mountOsmon(c0, { preview = false, lang = null, resume = fa
   const scroller = initScroll(() => sky);
   const wishes = c.rsvp?.enabled ? initWishes(c, d, () => sky, preview, baseNames) : null;
 
+  const auto = preview ? { ready() {} } : initAutoScroll(c0, { slow: '[data-view="verse"], [data-view="invite"], [data-view="countdown"]', theme: { bg: 'rgba(12,16,40,.6)', bgOn: 'rgba(12,16,40,.78)', ink: '#f3e7c4' } });
   const gate = $('#gate');
   if (shown) {
     gate.remove();
@@ -611,6 +613,7 @@ export async function mountOsmon(c0, { preview = false, lang = null, resume = fa
     document.body.classList.add('is-open');
     $$('.fab').forEach((b) => (b.hidden = false));
     window.scrollTo(0, y);
+    auto.ready();
   } else {
     const openBtn = $('#gate-open');
     requestAnimationFrame(() => gate.classList.add('is-ready'));
@@ -629,6 +632,7 @@ export async function mountOsmon(c0, { preview = false, lang = null, resume = fa
         document.body.classList.add('is-open');
         $$('.fab').forEach((b) => (b.hidden = false));
         scroller.refresh();
+        auto.ready();
       }, reduced ? 200 : 1400);
     };
     const intro = initIntro(open);

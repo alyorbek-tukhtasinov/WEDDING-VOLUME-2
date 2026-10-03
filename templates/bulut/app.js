@@ -14,6 +14,7 @@ import { createSkywriter } from './skywrite.js';
 import { balloonSvg, BALLOON_SETS, parachuteSvg, PAPER_PLANE, BIRD, barcodeSvg } from './art.js';
 import { celebrate, setReducedFx } from '../suzani/fx.js';
 import { phrases } from '../../src/lib/events.js';
+import { initAutoScroll } from '../../src/lib/autoscroll.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -635,6 +636,7 @@ export async function mountBulut(c, { preview = false } = {}) {
   }
 
   const music = initMusic(musicUrlOf(c));
+  const ascroll = initAutoScroll(c, { slow: '.section.invite, .section.when' });
   document.documentElement.classList.add('is-locked');
   requestAnimationFrame(() => gate.classList.add('is-ready'));
   const btn = $('#gate-open');
@@ -651,6 +653,7 @@ export async function mountBulut(c, { preview = false } = {}) {
       const fab = $('#music-toggle');
       if (fab) fab.hidden = false;
       writeNames();
+      ascroll.ready();
     }, reduced ? 100 : 1500);
   }, { once: true });
 }

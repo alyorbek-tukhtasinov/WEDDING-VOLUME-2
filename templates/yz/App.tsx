@@ -15,10 +15,45 @@ import { DetailsSection } from './components/DetailsSection';
 import { CountdownSection } from './components/CountdownSection';
 import { MapSection } from './components/MapSection';
 import { GiftSection } from './components/GiftSection';
+import config from '@wedding-config';
+import { initAutoScroll } from '../../src/lib/autoscroll.js';
+
+// Avto-aylantirish: bo'limlar to'liq ekranli (scroll-snap) — silliq oqim o'rniga bo'limma-bo'lim o'tadi
+function useAutoScroll(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const box = document.getElementById('wedding-scroll');
+    if (!box) return;
+    const end = () => box.scrollTop >= box.scrollHeight - box.clientHeight - 2;
+    const auto = initAutoScroll(config, {
+      scroller: box,
+      theme: { bg: 'rgba(10,4,8,0.75)', bgOn: 'rgba(10,4,8,0.88)', ink: '#C9A96E' },
+      step: {
+        next: () =>
+          new Promise<void>((done) => {
+            box.scrollBy({ top: box.clientHeight, behavior: 'smooth' });
+            setTimeout(done, 900);
+          }),
+        atEnd: end,
+        atStop: () => false,
+        progress: () => (box.scrollHeight > box.clientHeight ? box.scrollTop / (box.scrollHeight - box.clientHeight) : 0),
+        restart: () => box.scrollTo({ top: 0, behavior: 'smooth' }),
+        // Taklif matni bo'limida uzoqroq turadi
+        dwell: () => (Math.round(box.scrollTop / box.clientHeight) === 1 ? 8000 : 5500),
+      },
+    });
+    const t = setTimeout(() => auto.ready(), 600);
+    return () => {
+      clearTimeout(t);
+      auto.destroy();
+    };
+  }, [active]);
+}
 
 // preview — boshqaruv panelidagi jonli ko'rinish: konvertsiz, darhol ochiq holda
 export default function App({ preview = false }: { preview?: boolean }) {
   const [hasOpened, setHasOpened] = useState(preview);
+  useAutoScroll(hasOpened && !preview);
 
   return (
     <LanguageProvider>

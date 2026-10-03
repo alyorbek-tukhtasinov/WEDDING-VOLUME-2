@@ -9,6 +9,13 @@ import { MUSIC_LIBRARY, findTrack } from '../src/lib/music.js';
 import { validateConfig, isValidDate, TIME_RE, MONTHS } from '../src/lib/config.js';
 import { latinToCyrillic } from '../src/lib/translit.js';
 import { LANGS, STR as OSMON_STR } from '../templates/osmon/i18n.js';
+import { autoScrollMode } from '../src/lib/autoscroll.js';
+
+const AUTOSCROLL = [
+  { id: 'off', title: 'O‘chiq — tugma yo‘q' },
+  { id: 'button', title: 'Tugma — mehmon o‘zi bosadi' },
+  { id: 'auto', title: 'O‘zi boshlansin — ochilgach 2–3 soniyada (reel uchun qulay)' },
+];
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -206,7 +213,8 @@ async function addUpload(prefix, file, maxSide) {
 /*  Boshlang'ich config'lar                                             */
 /* ------------------------------------------------------------------ */
 function defaultConfig(template, eventId = 'nikoh') {
-  return withEvent(baseConfig(template), eventId);
+  // Yangi saytlarda avto-aylantirish tugmasi bor (eski saytlarda — yo'q, ya'ni "off")
+  return { ...withEvent(baseConfig(template), eventId), autoScroll: 'button' };
 }
 
 /** Marosim turining boshlang'ich qiymatlari: vaqt, davomiylik, dastur, dress-kod, taklif matnlari. */
@@ -840,6 +848,12 @@ function secMain() {
               <option value="pink" ${(c.palette || (c.template === 'volume4' ? 'pink' : 'green')) === 'pink' ? 'selected' : ''}>Pushti</option>
             </select></label>`
         : ''}
+      <label class="f" data-field="autoScroll"><span>Avto-aylantirish</span>
+        <select data-path="autoScroll">
+          ${AUTOSCROLL.map((o) => html`<option value="${o.id}" ${autoScrollMode(c) === o.id ? 'selected' : ''}>${o.title}</option>`)}
+        </select>
+        <small class="hint">${c.template === 'kitob' ? 'Kitobda varaqlar o‘zi ochiladi' : c.template === 'yz' ? 'Bo‘limlar birin-ketin o‘zi almashadi' : 'Sayt musiqa bilan asta o‘zi pastga suriladi; javob formasida to‘xtaydi'}</small>
+      </label>
       ${c.template !== 'yz' ? field('Taklif qiluvchilar (oila nomi)', 'hosts', { placeholder: 'To‘rayevlar va Qurbonovlar oilasi', hint: 'Bo‘sh qoldirilsa ko‘rsatilmaydi' }) : ''}
       ${ed.isNew
         ? html`
@@ -1773,6 +1787,7 @@ async function openExisting(slug, { copy = false } = {}) {
     // Rasmlar boshqa mijoz papkasida — nusxada ular qaytadan yuklanadi
     const c = clone(config);
     delete c.paused; // nusxa — yangi sayt, to'xtatilgan holati o'tmaydi
+    c.autoScroll ||= 'button';
     c.couple = { groom: '', bride: '', initials: '' };
     delete c.backgroundImage;
     c.gallery = [];

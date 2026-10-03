@@ -13,6 +13,7 @@ import { createBook, unlockSound } from './book.js';
 import { celebrate, drizzle, setReducedFx } from '../suzani/fx.js';
 import { sceneCouple, sceneCalendar, sceneMusic, sceneVenue, sceneDress, sceneLetter, sceneCake } from './art.js';
 import { phrases } from '../../src/lib/events.js';
+import { initAutoScroll } from '../../src/lib/autoscroll.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -614,6 +615,8 @@ export async function mountKitob(c, { preview = false } = {}) {
   const tabs = $('#nav-tabs');
   let opened = preview;
   let turnedOnce = false;
+  let visIds = [];
+  let ascroll = null;
 
   const endpaper = () => {
     const e = document.createElement('div');
@@ -624,6 +627,8 @@ export async function mountKitob(c, { preview = false } = {}) {
 
   function updateNav(info) {
     const vis = info.pages.map((p) => pageEls.indexOf(p));
+    visIds = vis.map((i) => pages[i]?.id);
+    ascroll?.update();
     const first = vis[0] ?? 0;
     const titles = vis.filter((i) => i > 0).map((i) => pages[i].title);
     $('#nav-title').textContent = titles.length ? titles.join(' · ') : 'Muqova';
@@ -732,6 +737,20 @@ export async function mountKitob(c, { preview = false } = {}) {
   });
 
   const music = preview ? { play() {} } : initMusic(musicUrlOf(c));
+  // Avto-aylantirish kitobda — varaqlarni o'zi ochib boradi
+  if (!preview) {
+    ascroll = initAutoScroll(c, {
+      above: '#nav',
+      step: {
+        next: () => book.next(),
+        atEnd: () => book.cur >= book.max,
+        atStop: () => visIds.includes('rsvp'),
+        progress: () => (book.max ? book.cur / book.max : 0),
+        restart: () => book.go(1),
+        dwell: () => 6500,
+      },
+    });
+  }
 
   function onOpened() {
     opened = true;
@@ -740,6 +759,7 @@ export async function mountKitob(c, { preview = false } = {}) {
     const fab = $('#music-toggle');
     if (fab) fab.hidden = false;
     drizzle(40);
+    ascroll?.ready();
     // Hali varaqlamagan bo'lsa — varaq chetini ko'tarib ishora qilamiz
     let hints = 0;
     const hint = () => {

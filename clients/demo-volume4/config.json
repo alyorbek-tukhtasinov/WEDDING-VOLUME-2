@@ -1,5 +1,6 @@
 {
   "template": "volume4",
+  "autoScroll": "button",
   "languages": [
     "uz",
     "ru"

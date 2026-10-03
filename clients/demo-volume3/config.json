@@ -1,5 +1,6 @@
 {
   "template": "volume3",
+  "autoScroll": "button",
   "languages": ["uz", "ru"],
   "couple": {
     "groom": "Javohir",

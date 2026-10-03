@@ -1,5 +1,6 @@
 {
   "template": "kitob",
+  "autoScroll": "button",
   "couple": {
     "groom": "Jasur",
     "bride": "Madina"

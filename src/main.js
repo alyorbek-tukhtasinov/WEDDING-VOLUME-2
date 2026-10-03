@@ -5,6 +5,7 @@ import { deriveConfig, applyOverrides } from './lib/config.js';
 import { LANGS, siteLangs, pickLang, rememberLang, localize, fixScriptGlyphs } from './lib/i18n.js';
 import { T, setLang } from './strings.js';
 import { renderPage } from './render.js';
+import { initAutoScroll } from './lib/autoscroll.js';
 import {
   initEnvelope,
   initCountdown,
@@ -75,6 +76,7 @@ function mount(lang, resume = false) {
   initRsvp(c, derived, { onSaved: loadWishes, baseNames });
   loadWishes();
   const music = initMusic();
+  const auto = initAutoScroll(base, { slow: '#invite, #date' });
 
   if (resume) {
     document.querySelectorAll('[data-reveal]').forEach((el) => el.classList.add('is-visible'));
@@ -82,6 +84,7 @@ function mount(lang, resume = false) {
     document.documentElement.classList.remove('is-locked');
     initPetals(c.effects?.petals !== false);
     window.scrollTo(0, y);
+    auto.ready();
     return;
   }
   initReveal();
@@ -102,6 +105,8 @@ function mount(lang, resume = false) {
         document.addEventListener('pointerdown', startMusic, { once: true });
       }
       if (!document.getElementById('envelope')) document.querySelector('.hero')?.classList.add('is-in');
+      // Konvert ochilib bo'lgach (features.js: 1.5 s)
+      setTimeout(() => auto.ready(), gesture ? 1700 : 300);
     },
   });
 }
