@@ -7,7 +7,7 @@
   },
   "event": {
     "date": "2026-10-24",
-    "time": "19:00",
+    "time": "18:00",
     "timezone": "+05:00",
     "durationHours": 5
   },
@@ -27,19 +27,19 @@
   },
   "program": [
     {
-      "time": "19:00",
+      "time": "18:00",
       "title": "Mehmonlarni kutib olish"
     },
     {
-      "time": "19:30",
+      "time": "18:30",
       "title": "Kelin-kuyovning kirib kelishi"
     },
     {
-      "time": "20:00",
+      "time": "19:00",
       "title": "Tantanali ziyofat"
     },
     {
-      "time": "22:30",
+      "time": "21:30",
       "title": "To‘y tortini kesish"
     }
   ],
