@@ -1413,7 +1413,7 @@ function secMusicRsvp() {
   const current = c.musicTrack === 'none' ? 'none' : c.musicTrack ? `track:${c.musicTrack}` : c.music ? 'file' : 'none';
   return section(
     'music',
-    'Musiqa va mehmon javoblari',
+    'Musiqa',
     html`
       <div class="actions-row">
         <label class="f" style="flex:1">
@@ -1426,12 +1426,28 @@ function secMusicRsvp() {
         </label>
         <button class="btn btn--small" type="button" data-action="music-play" style="align-self:end">▶ Tinglash</button>
       </div>
-      <div class="toggle-row">${check('Mehmonlar javob yubora olsin', 'rsvp.enabled', true)} ${c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4'].includes(c.template) ? check('Tilaklarni saytda ko‘rsatish', 'rsvp.showWishes', true) : ''}</div>
+    `,
+  );
+}
+
+/* --- Tashrifni tasdiqlash va tilaklar --- */
+// O'chirilsa (rsvp.enabled: false) saytda javob formasi ham, tilaklar ham umuman chiqmaydi
+function secRsvp() {
+  const c = state.ed.config;
+  const on = c.rsvp?.enabled !== false;
+  const wishes = c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4'].includes(c.template);
+  return section(
+    'rsvp',
+    'Tashrifni tasdiqlash va tilaklar',
+    html`
+      <p class="hint">O‘chirilsa, saytdan “Tashrifingizni tasdiqlang” formasi va tilaklar bo‘limi butunlay olib tashlanadi.</p>
+      ${wishes ? html`<div><div class="toggle-row">${check('Tilaklarni saytda ko‘rsatish', 'rsvp.showWishes', true)}</div></div>` : ''}
       <div class="grid2">
         ${field('Javob qabul qilish muddati', 'rsvp.deadline', { type: 'date', hint: 'Odatda to‘ydan 1 kun oldin' })}
         ${field('Bir javobda ko‘pi bilan necha kishi', 'rsvp.maxGuests', { type: 'number', attrs: 'min="1" max="20"' })}
       </div>
     `,
+    { toggle: { on, label: 'Saytda tashrifni tasdiqlash va tilaklar bo‘limini ko‘rsatish' } },
   );
 }
 
@@ -1821,12 +1837,12 @@ function showEditor() {
   const bulut = c.template === 'bulut';
   const volume3 = c.template === 'volume3' || c.template === 'volume4';
   const sections = yz
-    ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secYzRu(), secYzTexts(), secSeo()]
+    ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secRsvp(), secYzRu(), secYzTexts(), secSeo()]
     : osmon
-      ? [secMain(), secOsmonLangs(), secTexts(), secIslamic(), secIntroVideo(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secSeo()]
+      ? [secMain(), secOsmonLangs(), secTexts(), secIslamic(), secIntroVideo(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secRsvp(), secSeo()]
       : suzani || kitob || bulut || volume3
-        ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secEffects(), secSeo()]
-        : [secMain(), secOsmonLangs(), secTexts(), secIntroVideo(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secEffects(), secSeo()];
+        ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secRsvp(), secEffects(), secSeo()]
+        : [secMain(), secOsmonLangs(), secTexts(), secIntroVideo(), secVenue(), secProgram(), secDress(), secContacts(), secGallery(), secBackground(), secGiftNote(), secMusicRsvp(), secRsvp(), secEffects(), secSeo()];
 
   root.innerHTML = html`
     ${topbar(html`<span class="badge badge--${c.template || 'volume2'}">${tpl?.title}</span>`)}
@@ -2027,6 +2043,7 @@ function setToggle(id, on) {
     if (!on) c.gallery = [];
     rerender('#gallery-thumbs', galleryHtml);
   }
+  if (id === 'rsvp') c.rsvp = { ...(c.rsvp || {}), enabled: on };
   if (id === 'background' && !on) {
     delete c.backgroundImage;
     delete c.backgroundOverlay;
