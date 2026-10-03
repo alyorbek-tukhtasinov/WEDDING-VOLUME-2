@@ -13,6 +13,7 @@ export const MUSIC_LIBRARY = [
   { id: 'musiqa-9', title: "Aytekin Ataş — Çalıkuşu Jenerik", file: '/music/musiqa-9.m4a' },
   { id: 'musiqa-10', title: "Ziyoda - Kelibdi", file: '/music/musiqa-10.mp3' },
   { id: 'musiqa-11', title: "Izzat Shukurov — Vafodorim", file: '/music/musiqa-11.m4a' },
+  { id: 'musiqa-12', title: "Ed Sheeran — Perfect", file: '/music/musiqa-12.mp3' },
 ];
 
 export const findTrack = (id) => MUSIC_LIBRARY.find((t) => t.id === id) || null;
