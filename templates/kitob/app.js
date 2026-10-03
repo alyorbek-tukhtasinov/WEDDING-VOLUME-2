@@ -747,7 +747,7 @@ export async function mountKitob(c, { preview = false } = {}) {
         atStop: () => visIds.includes('rsvp'),
         progress: () => (book.max ? book.cur / book.max : 0),
         restart: () => book.go(1),
-        dwell: () => 5000,
+        dwell: () => 4000,
       },
     });
   }

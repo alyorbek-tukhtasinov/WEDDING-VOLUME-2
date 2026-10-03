@@ -162,7 +162,7 @@ export function initAutoScroll(c, o = {}) {
 
   /* ---------------------------- flow ---------------------------- */
   function speed() {
-    const base = Math.min(90, Math.max(48, viewH() * 0.085));
+    const base = Math.min(115, Math.max(62, viewH() * 0.11));
     if (!o.slow) return base;
     const mid = viewH() * 0.5;
     const box = isWin ? null : scroller.getBoundingClientRect();
@@ -220,7 +220,7 @@ export function initAutoScroll(c, o = {}) {
     render();
     if (state !== 'playing') return;
     if (o.step.atEnd()) return finish();
-    timer = setTimeout(tick, o.step.dwell?.() ?? 5000);
+    timer = setTimeout(tick, o.step.dwell?.() ?? 4000);
   }
 
   function play() {
