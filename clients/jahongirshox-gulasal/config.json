@@ -1,0 +1,75 @@
+{
+  "template": "volume2",
+  "couple": {
+    "groom": "Jahongirshox",
+    "bride": "Gulasal",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-24",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Ikki qalbni bir taqdirga bog‘lagan Yaratganga hamdlar bo‘lsin! Farzandlarimiz Jahongirshox va Gulasalning nikoh to‘yi — hayotimizdagi eng nurli kunlardan biri. Shu quvonchli kunda sizni davramizda ko‘rish va duolaringizni olish biz uchun katta baxt.",
+    "closing": "Tashrifingiz — to‘yimizning eng go‘zal bezagi!"
+  },
+  "venue": {
+    "name": "\"Sultan Suleyman\" to'yxonasi ",
+    "address": "Xiva shahri Qosmobod shaharchasi",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.405338%2C60.339344",
+    "yandexMaps": "https://yandex.uz/maps/?pt=60.339344,41.405338&z=17&l=map",
+    "image": ""
+  },
+  "program": [
+    {
+      "time": "18:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "18:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "19:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "21:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "",
+    "colors": []
+  },
+  "gallery": [],
+  "musicTrack": "musiqa-12",
+  "rsvp": {
+    "enabled": false,
+    "deadline": "2026-10-23",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "theme": {},
+  "effects": {
+    "envelope": true,
+    "petals": true,
+    "typing": true
+  },
+  "eventType": "nikoh",
+  "backgroundImage": "fon-muspmbzvbk2.jpg",
+  "backgroundOverlay": 0.84,
+  "autoScroll": "auto",
+  "autoScrollSpeed": 1.5
+}
