@@ -1196,3 +1196,10 @@ a {
   border-color: #2f8f5b;
   color: #fff;
 }
+
+/* Telegram bot orqali yaratilgan sayt */
+.badge--bot {
+  background: #e3effd;
+  color: #1f4f8a;
+  font-weight: 600;
+}

@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, listClients, loadClient } from './client.js';
 import { pausedPage } from './paused-page.js';
+import { buildOne } from './build-one.js';
+import { listSites, builtDir, STATUS, DATA_DIR } from '../server/data.js';
 
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
@@ -92,6 +94,26 @@ for (const dir of ['images', 'music']) {
   }
 }
 if (saved) console.log(`  umumiy fayllar birlashtirildi: ${(saved / 1048576).toFixed(0)} MB tejaldi`);
+
+// Bot orqali yaratilgan (to'langan) saytlar: DATA_DIR/built/<nom> ga symlink — har deploy'da qayta
+// yig'ilmaydi (bot o'zgarishda faqat o'sha saytni yig'adi). Bitta bot sayti xato bersa — boshqalariga ta'sir qilmaydi.
+let linked = 0;
+for (const site of listSites().filter((s) => s.meta.status === STATUS.paid)) {
+  const { slug } = site;
+  if (clients.includes(slug)) {
+    console.warn(`  ! "${slug}" repo'da ham bor — bot sayti o'tkazib yuborildi`);
+    continue;
+  }
+  try {
+    if (!fs.existsSync(path.join(builtDir(slug), 'index.html'))) buildOne(slug, { domain });
+    fs.rmSync(path.join(out, slug), { recursive: true, force: true });
+    fs.symlinkSync(builtDir(slug), path.join(out, slug));
+    linked++;
+  } catch (err) {
+    console.warn(`  ! bot sayti "${slug}": ${err.message}`);
+  }
+}
+if (linked) console.log(`  bot saytlari ulandi: ${linked} ta (${DATA_DIR()})`);
 
 if (paused.length) console.log(`  to'xtatilgan (to'lov kutilmoqda): ${paused.join(', ')}`);
 console.log(`✔ ${clients.length - 1} ta taklifnoma va boshqaruv paneli yig'ildi → ${out} (${((Date.now() - started) / 1000).toFixed(1)} s)`);

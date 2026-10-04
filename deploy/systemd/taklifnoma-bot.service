@@ -1,0 +1,27 @@
+[Unit]
+Description=Taklifnoma Telegram bot (mijozlar o'z taklifnomasini yaratadi)
+After=network-online.target taklifnoma.service
+Wants=network-online.target
+
+[Service]
+User=taklifnoma
+Group=taklifnoma
+EnvironmentFile=/etc/taklifnoma/env
+Environment=NODE_ENV=production DATA_DIR=/opt/taklifnoma/data SITES_DIR=/opt/taklifnoma/current/sites
+Environment=DEPLOY_TRIGGER=/opt/taklifnoma/trigger/deploy HOME=/opt/taklifnoma
+WorkingDirectory=/opt/taklifnoma/current
+ExecStart=__NODE__ /opt/taklifnoma/current/server/bot.js
+# BOT_TOKEN yozilmagan bo'lsa bot jim chiqadi (qayta-qayta urinmaydi)
+Restart=on-failure
+RestartSec=5
+# Sayt yig'ish (vite) shu xizmat ichida — xotira chegarasi API'dan kattaroq
+MemoryMax=900M
+Nice=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/taklifnoma/data /opt/taklifnoma/releases /opt/taklifnoma/trigger
+
+[Install]
+WantedBy=multi-user.target

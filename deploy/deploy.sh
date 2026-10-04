@@ -54,6 +54,8 @@ switch_to() {
   ln -sfn "$1" "$APP/current.new"
   mv -Tf "$APP/current.new" "$APP/current"
   systemctl restart taklifnoma 9>&-
+  # Telegram bot ham yangi versiyaga o'tadi (o'rnatilgan va yoqilgan bo'lsa)
+  systemctl try-restart taklifnoma-bot 9>&- || true
 }
 
 cd "$APP"

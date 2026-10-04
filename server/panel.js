@@ -7,6 +7,7 @@
 //   POST /api/panel/password           — { slug } → mijozning /admin paroli (bir marta ko'rsatiladi)
 //   GET  /api/panel/slugs              — band sayt nomlari va sababi (yangi sayt uchun)
 //   POST /api/panel/paid               — { slug, paid } → ro'yxatdagi "To'langan" belgisi (daromad yozuvida)
+//   POST /api/panel/approve            — { slug } → bot saytining to'lovini tasdiqlash (sayt yig'iladi, mijozga xabar)
 //   POST /api/panel/musicdelete        — { id } → to'plamdan qo'shiqni o'chirish (ishlatilayotgan bo'lsa — rad etiladi)
 //   POST /api/panel/pause              — { slug, paused } → saytni vaqtincha to'xtatish / qayta yoqish
 //                                         (to'xtatilgan sayt "To'langan" belgilansa — o'zi yoqiladi)
@@ -24,6 +25,7 @@ import { safeEqual, hashPassword } from '../api/_lib/http.js';
 import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance, slugsWithData, getSettings } from '../api/_lib/store.js';
 import { SLUG_RE } from '../api/_lib/slug.js';
 import { validateConfig } from '../src/lib/config.js';
+import { listSites as listDataSites, readSite as readDataSite, writeSite as writeDataSite, removeSite as removeDataSite, enqueue, STATUS as BOT_STATUS, siteDir as dataSiteDir, mediaFiles as dataMediaFiles } from './data.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -194,7 +196,67 @@ async function listClients() {
       rsvp: await rsvpSummary(slug),
     });
   }
+  // Telegram bot orqali mijozlar yaratgan saytlar (serverdagi ma'lumotlar papkasida)
+  const repo = new Set(out.map((x) => x.slug));
+  for (const s of listDataSites()) {
+    if (repo.has(s.slug)) continue;
+    const c = s.config;
+    out.push({
+      slug: s.slug,
+      template: c.template || 'volume2',
+      eventType: typeof c.eventType === 'string' ? c.eventType : 'nikoh',
+      demo: false,
+      paused: c.paused === true,
+      groom: c.couple?.showGroom === false ? '' : c.couple?.groom || '',
+      bride: c.couple?.bride || '',
+      date: c.event?.date || '',
+      time: c.event?.time || '',
+      venue: c.venue?.name || '',
+      rsvp: s.meta.status === BOT_STATUS.paid ? await rsvpSummary(s.slug) : null,
+      bot: { status: s.meta.status, owner: s.meta.owner || {}, price: s.meta.price || 0, createdAt: s.meta.createdAt || '' },
+    });
+  }
   return out;
+}
+
+/** Bot sayti (repo'da yo'q, serverdagi ma'lumotlar papkasida)? */
+const botSite = (slug) => (fs.existsSync(clientDir(slug)) ? null : readDataSite(slug));
+
+/** Bot saytini panel orqali saqlash: GitHub'ga emas, ma'lumotlar papkasiga; to'langan bo'lsa — qayta yig'iladi. */
+function saveBot(site, body, incoming) {
+  const { slug } = site;
+  const mediaDir = path.join(dataSiteDir(slug), 'media');
+  const current = dataMediaFiles(slug);
+  const del = (body.deleteMedia || []).filter((n) => typeof n === 'string' && current.includes(n) && !incoming.has(n));
+  const finalMedia = [...new Set([...current.filter((n) => !del.includes(n)), ...incoming.keys()])];
+  const errors = validateConfig(body.config, finalMedia);
+  if (errors.length) throw new UserError('validation', "Ma'lumotlarda xato bor", errors);
+  fs.mkdirSync(mediaDir, { recursive: true });
+  for (const n of del) fs.unlinkSync(path.join(mediaDir, n));
+  for (const [n, buf] of incoming) fs.writeFileSync(path.join(mediaDir, n), buf);
+  writeDataSite(slug, { config: body.config });
+  if (site.meta.status === BOT_STATUS.paid) enqueue({ type: 'build', slug, reason: 'panel' });
+  return { bot: true, status: site.meta.status };
+}
+
+/** Panel orqali to'lovni tasdiqlash (Telegram'dagi ✅ tugmasi bilan bir xil). */
+async function approveBot(body) {
+  const slug = String(body?.slug || '');
+  checkSlug(slug);
+  const s = readDataSite(slug);
+  if (!s) throw new UserError('not_found', `"${slug}" topilmadi`);
+  if (s.meta.status === BOT_STATUS.paid) return { slug, status: s.meta.status };
+  writeDataSite(slug, { meta: { ...s.meta, status: BOT_STATUS.paid, paidAt: new Date().toISOString(), approvedBy: 'panel' } });
+  if (storeConfigured()) {
+    await withFinanceStore(async () => {
+      const cur = (await getFinance())?.items || {};
+      const items = { ...cur, [slug]: { ...(cur[slug] || {}), amount: s.meta.price || 0, paid: true, note: cur[slug]?.note || 'Telegram bot' } };
+      await setFinance({ items, updatedAt: new Date().toISOString() });
+    }).catch((err) => console.error('Daromad yozilmadi:', err.message));
+  }
+  if (s.meta.owner?.id) enqueue({ type: 'notify', chatId: s.meta.owner.id, text: '✅ To‘lovingiz tasdiqlandi! Saytingiz tayyorlanmoqda — 1–2 daqiqada havolani yuboramiz 🎉' });
+  enqueue({ type: 'build', slug, reason: 'paid', notify: true });
+  return { slug, status: BOT_STATUS.paid };
 }
 
 // Fayl turi nomiga emas, mazmuniga qarab tekshiriladi
@@ -251,7 +313,7 @@ function checkSlug(slug) {
  * o'chirilgan sayt (git tarixi, daromad yozuvi), bazada boshqa (masalan, Vercel'dagi eski) loyihaning
  * javoblari/paroli bor nom, tizim nomlari. Bitta domen ostida ikki loyiha bo'lib qolmasligi uchun.
  */
-async function takenSlugs() {
+export async function takenSlugs() {
   const taken = {};
   const add = (slug, why) => {
     if (SLUG_RE.test(slug) && !taken[slug]) taken[slug] = why;
@@ -259,6 +321,10 @@ async function takenSlugs() {
   for (const s of RESERVED) add(s, 'tizim nomi');
   const dir = path.join(WORK(), 'clients');
   for (const s of fs.existsSync(dir) ? fs.readdirSync(dir) : []) add(s, 'mavjud sayt');
+  // Repo nusxasi hali yo'q bo'lsa (bot birinchi so'rov) — ishlab turgan versiyadagi mijozlar
+  const live = path.join(ROOT, 'clients');
+  for (const s of fs.existsSync(live) ? fs.readdirSync(live) : []) add(s, 'mavjud sayt');
+  for (const s of listDataSites()) add(s.slug, 'mavjud sayt (bot)');
   try {
     const out = await git(['log', '--diff-filter=D', '--name-only', '--pretty=format:', '--', 'clients/']);
     for (const line of out.split('\n')) {
@@ -297,6 +363,11 @@ async function save(body) {
     if (!buf.length || buf.length > MAX_FILE) throw new UserError('bad_media', `${name}: fayl bo'sh yoki 12 MB dan katta`);
     if (sniff(buf) !== EXT_KIND[ext]) throw new UserError('bad_media', `${name}: fayl turi kengaytmasiga mos emas`);
     incoming.set(name, buf);
+  }
+
+  if (!isNew) {
+    const bs = botSite(slug);
+    if (bs) return saveBot(bs, body, incoming);
   }
 
   return serial(async () => {
@@ -475,6 +546,10 @@ async function removeClient(body) {
   const { slug, confirm } = body || {};
   checkSlug(slug);
   if (confirm !== slug) throw new UserError('confirm', 'Tasdiqlash uchun sayt nomini aynan yozing');
+  if (botSite(slug)) {
+    removeDataSite(slug);
+    return { slug, bot: true };
+  }
   return serial(async () => {
     await syncWork(true);
     if (!fs.existsSync(clientDir(slug))) throw new UserError('not_found', `"${slug}" topilmadi`);
@@ -502,6 +577,16 @@ async function removeClient(body) {
 // changed: false — sayt allaqachon shu holatda edi (commit/deploy qilinmaydi).
 async function setPausedFlag(slug, paused, why = '') {
   checkSlug(slug);
+  const bs = botSite(slug);
+  if (bs) {
+    if ((bs.config.paused === true) === paused) return { slug, paused, changed: false };
+    const config = { ...bs.config };
+    if (paused) config.paused = true;
+    else delete config.paused;
+    writeDataSite(slug, { config });
+    if (bs.meta.status === BOT_STATUS.paid) enqueue({ type: 'build', slug, reason: paused ? 'pause' : 'resume' });
+    return { slug, paused, changed: true, bot: true };
+  }
   return serial(async () => {
     await syncWork(true);
     const r = await readConfig(slug);
@@ -630,6 +715,9 @@ const setPaid = (body) =>
   withFinanceStore(async () => {
     const slug = String(body?.slug || '');
     if (!SLUG_RE.test(slug) || slug.length > 60) throw new UserError('bad_slug', `Noto'g'ri sayt nomi: ${slug}`);
+    // Bot sayti "To'langan" belgilansa — to'lov tasdiqlanadi (sayt yig'iladi, mijozga havola boradi)
+    const bs = body?.paid === true && SLUG_RE.test(slug) ? botSite(slug) : null;
+    if (bs && bs.meta.status !== BOT_STATUS.paid) await approveBot({ slug });
     const cur = (await getFinance())?.items || {};
     const items = cleanFinance({ ...cur, [slug]: { ...(cur[slug] || {}), paid: body?.paid === true } });
     const data = { items, updatedAt: new Date().toISOString() };
@@ -671,7 +759,11 @@ export async function panelHandler(req, res, name) {
       checkSlug(slug);
       await syncWork();
       const r = await readConfig(slug);
-      if (!r) throw new UserError('not_found', `"${slug}" topilmadi`);
+      if (!r) {
+        const bs = readDataSite(slug);
+        if (bs) return send(res, 200, { ok: true, slug, source: 'bot', config: bs.config, media: dataMediaFiles(slug), bot: { status: bs.meta.status, owner: bs.meta.owner || {} } });
+        throw new UserError('not_found', `"${slug}" topilmadi`);
+      }
       return send(res, 200, { ok: true, slug, ...r, media: mediaFiles(slug) });
     }
     if (req.method === 'GET' && name === 'status') return send(res, 200, { ok: true, ...status() });
@@ -680,6 +772,7 @@ export async function panelHandler(req, res, name) {
     if (req.method === 'GET' && name === 'finance') return send(res, 200, { ok: true, ...(await loadFinance()) });
     if (req.method === 'POST' && name === 'finance') return send(res, 200, { ok: true, ...(await saveFinance(await readJson(req))) });
     if (req.method === 'POST' && name === 'paid') return send(res, 200, { ok: true, ...(await setPaid(await readJson(req))) });
+    if (req.method === 'POST' && name === 'approve') return send(res, 200, { ok: true, ...(await approveBot(await readJson(req))) });
     if (req.method === 'POST' && name === 'pause') return send(res, 200, { ok: true, ...(await setPause(await readJson(req))) });
     if (req.method === 'POST' && name === 'delete') return send(res, 200, { ok: true, ...(await removeClient(await readJson(req))) });
     if (req.method === 'POST' && name === 'musicdelete') return send(res, 200, { ok: true, ...(await removeMusic(await readJson(req))) });

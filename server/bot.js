@@ -1,0 +1,548 @@
+// Telegram bot (@taklifim): mijoz o'z taklifnomasini Mini App'da yaratadi, karta orqali to'laydi, chek yuboradi;
+// admin bir tugma bilan tasdiqlaydi → sayt yig'iladi va mijozga havola yuboriladi.
+//
+// Alohida xizmat: taklifnoma-bot.service (node server/bot.js). Telegram'ga o'zi ulanadi (long polling) —
+// webhook/nginx sozlamasi kerak emas. API bilan DATA_DIR orqali gaplashadi (server/data.js navbati).
+//
+// Muhit o'zgaruvchilari (/etc/taklifnoma/env): BOT_TOKEN, ADMIN_TG_IDS, PAY_CARD, PAY_CARD_HOLDER, PRICE,
+// SUPPORT_CONTACT, (ixtiyoriy) PAY_NOTE, BOT_APP_URL, DRAFT_DAYS.
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { tg, BOT_TOKEN, adminIds, isAdmin, appUrl, siteUrlOf, siteDomain, PRICE, fmtSum } from './telegram.js';
+import { DATA_DIR, ensureDirs, listSites, readSite, writeSite, updateMeta, removeSite, takeQueue, sitesOf, STATUS, enqueue } from './data.js';
+import { requestContext } from '../api/_lib/context.js';
+import { storeConfigured, storeReady, getFinance, setFinance, listEntries } from '../api/_lib/store.js';
+import { findEvent } from '../src/lib/events.js';
+import { MONTHS } from '../src/lib/config.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const env = (k, d = '') => (process.env[k] || d).trim();
+const SITES_DIR = () => path.resolve(env('SITES_DIR', path.join(ROOT, 'sites')));
+const STATE_FILE = () => path.join(DATA_DIR(), 'bot-state.json');
+const DRAFT_DAYS = () => Number(env('DRAFT_DAYS', '10')) || 10;
+const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
+
+/* ------------------------------------ Matnlar ------------------------------------ */
+const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+const prettyDate = (iso) => {
+  const [y, m, d] = String(iso || '').split('-').map(Number);
+  return y ? `${d}-${MONTHS[m - 1]} ${y}` : '';
+};
+const namesOf = (c) => (c.couple?.showGroom === false || !c.couple?.groom ? c.couple?.bride || '' : `${c.couple.groom} & ${c.couple.bride}`);
+const STATUS_TEXT = {
+  draft: '📝 Tayyorlanmoqda',
+  awaiting: '💳 To‘lov kutilmoqda',
+  receipt: '🧾 Chek tekshirilmoqda',
+  paid: '✅ Faol',
+  rejected: '⚠️ Chek tasdiqlanmadi',
+};
+
+const BTN = {
+  create: '✨ Taklifnoma yaratish',
+  mine: '📂 Mening taklifnomalarim',
+  demos: '👀 Namunalar',
+  help: '💬 Yordam',
+};
+const mainKeyboard = () => ({
+  keyboard: [[appUrl() ? { text: BTN.create, web_app: { url: appUrl() } } : { text: BTN.create }], [{ text: BTN.mine }, { text: BTN.demos }], [{ text: BTN.help }]],
+  resize_keyboard: true,
+  is_persistent: true,
+});
+const appButton = (text, query = '') => ({ text, web_app: { url: `${appUrl()}${query}` } });
+
+const DEMOS = [
+  ['volume3', '🌿 Yashil bog‘', 'demo-volume3'],
+  ['volume4', '🌸 Pushti bog‘', 'demo-volume4'],
+  ['osmon', '🌌 To‘y kechasining osmoni', 'demo-osmon'],
+  ['volume2', '🕊 Klassik (oq-oltin)', 'demo'],
+  ['suzani', '🪡 Suzani', 'demo-suzani'],
+  ['bulut', '✈️ Bulutlar ustida', 'demo-bulut'],
+  ['kitob', '📖 3D sehrli kitob', 'demo-kitob'],
+  ['yz', '🎬 Kino uslubida', 'demo-yz'],
+];
+
+/* ------------------------------------ Holat ------------------------------------ */
+function loadState() {
+  try {
+    return JSON.parse(fs.readFileSync(STATE_FILE(), 'utf8'));
+  } catch {
+    return { offset: 0, lastCleanup: 0 };
+  }
+}
+function saveState(st) {
+  fs.writeFileSync(`${STATE_FILE()}.tmp`, JSON.stringify(st));
+  fs.renameSync(`${STATE_FILE()}.tmp`, STATE_FILE());
+}
+
+async function send(chatId, text, extra = {}) {
+  try {
+    return await tg('sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra });
+  } catch (err) {
+    log(`! xabar yuborilmadi (${chatId}): ${err.message}`);
+    return null;
+  }
+}
+const toAdmins = (text, extra) => Promise.all(adminIds().map((id) => send(id, text, extra)));
+
+/* ------------------------------------ Bo'limlar ------------------------------------ */
+async function start(msg) {
+  const name = esc(msg.from?.first_name || '');
+  await send(
+    msg.chat.id,
+    `Assalomu alaykum${name ? `, ${name}` : ''}! 🌸\n\n` +
+      `Bu yerda <b>to‘y taklifnomangizni o‘zingiz 5 daqiqada</b> yaratasiz — chiroyli sayt ko‘rinishida, musiqa, sana, xarita va mehmonlar javobi bilan.\n\n` +
+      `1️⃣ <b>«${BTN.create}»</b> tugmasini bosing\n` +
+      `2️⃣ Dizayn, ismlar, sana va to‘yxonani kiriting — natijani darhol ko‘rasiz\n` +
+      `3️⃣ Yoqsa, to‘lov qilib chekni yuborasiz — sayt havolasi shu yerga keladi\n\n` +
+      `💰 Narxi: <b>${fmtSum(PRICE())}</b>\n\n` +
+      `Avval ${BTN.demos.toLowerCase()} bilan tanishib chiqishingiz mumkin 👇`,
+    { reply_markup: mainKeyboard() },
+  );
+}
+
+async function demos(msg) {
+  const d = siteDomain();
+  await send(msg.chat.id, '👀 <b>Namunalar</b> — ochib ko‘ring, yoqqanini tanlaysiz:', {
+    reply_markup: {
+      inline_keyboard: [
+        ...DEMOS.map(([, title, slug]) => [{ text: title, url: d ? `https://${slug}.${d}` : 'https://t.me' }]),
+        ...(appUrl() ? [[appButton(BTN.create)]] : []),
+      ],
+    },
+  });
+}
+
+async function help(msg) {
+  const contact = env('SUPPORT_CONTACT');
+  await send(
+    msg.chat.id,
+    `💬 <b>Yordam</b>\n\n` +
+      `• Taklifnoma yaratish: «${BTN.create}» tugmasi\n` +
+      `• Tayyor taklifnomani o‘zgartirish: «${BTN.mine}» → «✏️ Tahrirlash» — o‘zgarishlar 1 daqiqada saytda bo‘ladi\n` +
+      `• Mehmonlar javoblari: «${BTN.mine}» → «📊 Javoblar»\n\n` +
+      (contact ? `Savol bo‘lsa, yozing: ${esc(contact)}` : 'Savol bo‘lsa, shu yerga yozing — javob beramiz.'),
+    { reply_markup: mainKeyboard() },
+  );
+}
+
+function siteButtons(s) {
+  const rows = [];
+  if (s.meta.status === STATUS.paid) {
+    rows.push([{ text: '🌐 Ochish', url: siteUrlOf(s.slug) }, ...(appUrl() ? [appButton('✏️ Tahrirlash', `?slug=${s.slug}`)] : [])]);
+    rows.push([{ text: '📊 Javoblar', callback_data: `rsvp:${s.slug}` }]);
+  } else {
+    if (appUrl()) rows.push([appButton('✏️ Davom ettirish', `?slug=${s.slug}`)]);
+    if (s.meta.status !== STATUS.receipt) rows.push([{ text: '💳 To‘lov qilish', callback_data: `pay:${s.slug}` }]);
+  }
+  return { inline_keyboard: rows };
+}
+
+async function mine(msg) {
+  const list = sitesOf(msg.from.id).sort((a, b) => (a.meta.createdAt < b.meta.createdAt ? 1 : -1));
+  if (!list.length) {
+    return send(msg.chat.id, 'Sizda hali taklifnoma yo‘q. Keling, birinchisini yaratamiz! 👇', {
+      reply_markup: appUrl() ? { inline_keyboard: [[appButton(BTN.create)]] } : mainKeyboard(),
+    });
+  }
+  for (const s of list) {
+    const ev = findEvent(s.config.eventType);
+    await send(
+      msg.chat.id,
+      `${ev.icon} <b>${esc(namesOf(s.config))}</b>\n${esc(ev.title)} · ${prettyDate(s.config.event?.date)}${s.config.event?.time ? `, ${s.config.event.time}` : ''}\n` +
+        `Holat: ${STATUS_TEXT[s.meta.status] || s.meta.status}${s.config.paused ? ' (to‘xtatilgan)' : ''}` +
+        (s.meta.status === STATUS.paid ? `\n🔗 ${siteUrlOf(s.slug)}` : ''),
+      { reply_markup: siteButtons(s) },
+    );
+  }
+}
+
+/* ------------------------------------ To'lov ------------------------------------ */
+async function payInstructions(chatId, slug) {
+  const s = readSite(slug);
+  if (!s) return;
+  if (s.meta.status === STATUS.paid) return send(chatId, `Bu taklifnoma allaqachon faol ✅\n🔗 ${siteUrlOf(slug)}`);
+  if (s.meta.status !== STATUS.receipt) updateMeta(slug, (m) => ({ ...m, status: STATUS.awaiting, awaitingAt: new Date().toISOString() }));
+  const card = env('PAY_CARD');
+  const holder = env('PAY_CARD_HOLDER');
+  const note = env('PAY_NOTE');
+  await send(
+    chatId,
+    `💳 <b>To‘lov</b> — ${esc(namesOf(s.config))}\n\n` +
+      `Summa: <b>${fmtSum(s.meta.price || PRICE())}</b>\n` +
+      (card ? `Karta: <code>${esc(card)}</code>\n` : '') +
+      (holder ? `Egasi: ${esc(holder)}\n` : '') +
+      (note ? `\n${esc(note)}\n` : '') +
+      `\nTo‘lov qilganingizdan keyin <b>chek rasmini (skrinshot) shu chatga yuboring</b> 📸\n` +
+      `Tasdiqlangach, saytingiz havolasi darhol shu yerga keladi.`,
+    { reply_markup: mainKeyboard() },
+  );
+}
+
+async function onReceipt(msg) {
+  const userId = msg.from.id;
+  const waiting = sitesOf(userId)
+    .filter((s) => [STATUS.awaiting, STATUS.rejected, STATUS.receipt].includes(s.meta.status))
+    .sort((a, b) => ((a.meta.awaitingAt || a.meta.updatedAt) < (b.meta.awaitingAt || b.meta.updatedAt) ? 1 : -1));
+  if (!waiting.length) {
+    return send(msg.chat.id, 'Hozir to‘lov kutilayotgan taklifnoma yo‘q. Avval taklifnomani yarating va «💳 To‘lov qilish»ni bosing 🙂', { reply_markup: mainKeyboard() });
+  }
+  const s = waiting[0];
+  const photo = msg.photo?.at(-1)?.file_id;
+  const doc = msg.document?.file_id;
+  const receipt = { fileId: photo || doc, kind: photo ? 'photo' : 'document', at: new Date().toISOString(), messageId: msg.message_id };
+  updateMeta(s.slug, (m) => ({ ...m, status: STATUS.receipt, receipt }));
+  await send(msg.chat.id, '🧾 Chek qabul qilindi! Tekshirib, tez orada tasdiqlaymiz. Odatda bu bir necha daqiqa oladi ⏳', { reply_markup: mainKeyboard() });
+
+  const ev = findEvent(s.config.eventType);
+  const owner = s.meta.owner || {};
+  const caption =
+    `🧾 <b>Yangi to‘lov cheki</b>\n\n` +
+    `${ev.icon} ${esc(namesOf(s.config))} — ${esc(ev.title)}\n` +
+    `📅 ${prettyDate(s.config.event?.date)} · ${esc(s.config.venue?.name || '')}\n` +
+    `💰 ${fmtSum(s.meta.price || PRICE())}\n` +
+    `👤 ${esc(owner.name || '')}${owner.username ? ` (@${esc(owner.username)})` : ''} · ID <code>${owner.id}</code>\n` +
+    `🔗 ${s.slug}.${siteDomain()}`;
+  const keyboard = { inline_keyboard: [[{ text: '✅ Tasdiqlash', callback_data: `ok:${s.slug}` }, { text: '❌ Rad etish', callback_data: `no:${s.slug}` }]] };
+  for (const id of adminIds()) {
+    try {
+      if (receipt.kind === 'photo') await tg('sendPhoto', { chat_id: id, photo: receipt.fileId, caption, parse_mode: 'HTML', reply_markup: keyboard });
+      else await tg('sendDocument', { chat_id: id, document: receipt.fileId, caption, parse_mode: 'HTML', reply_markup: keyboard });
+    } catch (err) {
+      log(`! adminga chek yuborilmadi (${id}): ${err.message}`);
+    }
+  }
+}
+
+async function recordFinance(slug, amount) {
+  if (!storeConfigured()) return;
+  try {
+    await requestContext.run({ slug: 'boshqaruv', adminPassword: '' }, async () => {
+      const cur = (await getFinance())?.items || {};
+      const items = { ...cur, [slug]: { ...(cur[slug] || {}), amount, paid: true, note: cur[slug]?.note || 'Telegram bot' } };
+      await setFinance({ items, updatedAt: new Date().toISOString() });
+    });
+  } catch (err) {
+    log(`! daromad yozilmadi: ${err.message}`);
+  }
+}
+
+async function onAdminDecision(cb, ok, slug) {
+  const s = readSite(slug);
+  const who = esc(cb.from.first_name || 'admin');
+  const mark = async (line) => {
+    const caption = `${cb.message?.caption || cb.message?.text || ''}\n\n${line}`;
+    try {
+      if (cb.message?.caption != null) await tg('editMessageCaption', { chat_id: cb.message.chat.id, message_id: cb.message.message_id, caption, parse_mode: 'HTML' });
+      else await tg('editMessageText', { chat_id: cb.message.chat.id, message_id: cb.message.message_id, text: caption, parse_mode: 'HTML' });
+    } catch {
+      /* xabar o'zgarmagan bo'lishi mumkin */
+    }
+  };
+  if (!s) {
+    await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Sayt topilmadi (o‘chirilgan bo‘lishi mumkin)', show_alert: true });
+    return;
+  }
+  if (ok) {
+    if (s.meta.status === STATUS.paid) {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Allaqachon tasdiqlangan' });
+      return;
+    }
+    updateMeta(slug, (m) => ({ ...m, status: STATUS.paid, paidAt: new Date().toISOString(), approvedBy: cb.from.id }));
+    await recordFinance(slug, s.meta.price || PRICE());
+    enqueue({ type: 'build', slug, reason: 'paid', notify: true });
+    await mark(`✅ Tasdiqlandi — ${who}`);
+    await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Tasdiqlandi — sayt yig‘ilmoqda' });
+    await send(s.meta.owner.id, '✅ To‘lovingiz tasdiqlandi! Saytingiz tayyorlanmoqda — 1–2 daqiqada havolani yuboramiz 🎉');
+  } else {
+    updateMeta(slug, (m) => ({ ...m, status: STATUS.rejected, rejectedAt: new Date().toISOString() }));
+    await mark(`❌ Rad etildi — ${who}`);
+    await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Rad etildi' });
+    const contact = env('SUPPORT_CONTACT');
+    await send(
+      s.meta.owner.id,
+      '⚠️ Afsuski, chekni tasdiqlay olmadik. Iltimos, to‘lov summasi va kartani tekshirib, <b>to‘g‘ri chekni qayta yuboring</b>.' +
+        (contact ? `\nSavol bo‘lsa: ${esc(contact)}` : ''),
+    );
+  }
+}
+
+/* ------------------------------------ Javoblar (RSVP) ------------------------------------ */
+async function rsvpSummary(chatId, slug, userId) {
+  const s = readSite(slug);
+  if (!s || (String(s.meta.owner?.id) !== String(userId) && !isAdmin(userId))) return send(chatId, 'Sayt topilmadi');
+  if (!storeConfigured()) return send(chatId, 'Javoblar bazasi ulanmagan.');
+  const entries = await requestContext.run({ slug, adminPassword: '' }, async () => (storeReady() ? listEntries() : [])).catch(() => []);
+  const yes = entries.filter((e) => e.attending === 'yes');
+  const no = entries.filter((e) => e.attending === 'no');
+  const guests = yes.reduce((n, e) => n + (e.guests || 1), 0);
+  const wishes = entries.filter((e) => e.message?.trim()).slice(-8).reverse();
+  await send(
+    chatId,
+    `📊 <b>${esc(namesOf(s.config))}</b> — mehmonlar javoblari\n\n` +
+      `✅ Keladi: <b>${yes.length}</b> ta javob (${guests} kishi)\n` +
+      `❌ Kela olmaydi: <b>${no.length}</b>\n` +
+      (yes.length ? `\n<b>Keladiganlar:</b>\n${yes.slice(-30).map((e) => `• ${esc(e.name)}${e.guests > 1 ? ` (+${e.guests - 1})` : ''}`).join('\n')}\n` : '') +
+      (wishes.length ? `\n💌 <b>Oxirgi tilaklar:</b>\n${wishes.map((e) => `— <i>${esc(e.message.slice(0, 200))}</i> (${esc(e.name)})`).join('\n')}` : ''),
+  );
+}
+
+/* ------------------------------------ Yig'ish navbati ------------------------------------ */
+function runBuild(slug) {
+  return new Promise((resolve) => {
+    const p = spawn(process.execPath, [path.join(ROOT, 'scripts', 'build-one.js'), slug], {
+      cwd: ROOT,
+      env: { ...process.env, SITE_DOMAIN: siteDomain(), NODE_OPTIONS: '--max-old-space-size=512' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let out = '';
+    p.stdout.on('data', (d) => (out += d));
+    p.stderr.on('data', (d) => (out += d));
+    const timer = setTimeout(() => p.kill('SIGKILL'), 240e3);
+    p.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ ok: code === 0, out: out.trim().slice(-1500) });
+    });
+  });
+}
+
+/** Ishlab turgan versiyadagi sites/<nom> → yig'ilgan bot sayti (yangi sayt darhol ochilishi uchun). */
+function linkLive(slug) {
+  const link = path.join(SITES_DIR(), slug);
+  try {
+    if (fs.existsSync(path.join(link, 'index.html'))) return;
+    fs.rmSync(link, { recursive: true, force: true });
+    fs.symlinkSync(path.join(DATA_DIR(), 'built', slug), link);
+    // HTTPS sertifikati yangi manzilga ham olinsin (deploy taymeri web.sh ni darhol ishga tushiradi)
+    const trigger = env('DEPLOY_TRIGGER');
+    if (trigger) fs.writeFileSync(trigger, `${Date.now()}\n`);
+  } catch (err) {
+    log(`! sites/${slug} ulanmadi: ${err.message}`);
+  }
+}
+
+/** Sayt HTTPS'da ochilguncha kutish (sertifikat 1–3 daqiqa) — ko'pi bilan ~5 daqiqa. */
+async function waitLive(url) {
+  if (env('BOT_SKIP_WAIT') === '1') return true; // sinovlar uchun
+  for (let i = 0; i < 20; i++) {
+    try {
+      const r = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
+      if (r.ok) return true;
+    } catch {
+      /* hali tayyor emas */
+    }
+    await new Promise((r) => setTimeout(r, 15e3));
+  }
+  return false;
+}
+
+let busy = false;
+const pending = [];
+async function processQueue() {
+  pending.push(...takeQueue());
+  if (busy) return;
+  busy = true;
+  try {
+    while (pending.length) {
+      const evt = pending.shift();
+      try {
+        if (evt.type === 'pay') await payInstructions(evt.chatId, evt.slug);
+        else if (evt.type === 'build') await handleBuild(evt);
+        else if (evt.type === 'notify' && evt.chatId) await send(evt.chatId, evt.text);
+      } catch (err) {
+        log(`! navbat (${evt.type} ${evt.slug || ''}): ${err.message}`);
+      }
+    }
+  } finally {
+    busy = false;
+  }
+}
+
+async function handleBuild(evt) {
+  // Bir sayt uchun ketma-ket kelgan yig'ish so'rovlari bittaga qisqaradi
+  for (let i = pending.length - 1; i >= 0; i--) {
+    if (pending[i].type === 'build' && pending[i].slug === evt.slug) {
+      evt.notify ||= pending[i].notify;
+      pending.splice(i, 1);
+    }
+  }
+  const s = readSite(evt.slug);
+  if (!s || s.meta.status !== STATUS.paid) return;
+  const t0 = Date.now();
+  const r = await runBuild(evt.slug);
+  if (!r.ok) {
+    log(`✖ ${evt.slug} yig'ilmadi: ${r.out}`);
+    await toAdmins(`⚠️ <b>${esc(evt.slug)}</b> yig‘ilmadi:\n<code>${esc(r.out.slice(-800))}</code>`);
+    if (evt.notify) await send(s.meta.owner.id, 'Saytni tayyorlashda kichik muammo chiqdi — admin tekshiryapti, tez orada havolani yuboramiz 🙏');
+    return;
+  }
+  log(`✔ ${evt.slug} yig'ildi (${((Date.now() - t0) / 1000).toFixed(1)} s, ${evt.reason || ''})`);
+  linkLive(evt.slug);
+  if (evt.notify) {
+    const url = siteUrlOf(evt.slug);
+    // Sertifikat kutilayotganda boshqa xabarlar to'xtab qolmasin
+    waitLive(url).then(() =>
+      send(
+        s.meta.owner.id,
+        `🎉 <b>Taklifnomangiz tayyor!</b>\n\n🔗 ${url}\n\nHavolani mehmonlaringizga Telegram yoki WhatsApp orqali yuboring.\n` +
+          `O‘zgartirish kerak bo‘lsa — «✏️ Tahrirlash» tugmasi. Mehmonlar javoblari — «📊 Javoblar».`,
+        { reply_markup: siteButtons(readSite(evt.slug) || s) },
+      ),
+    );
+    await toAdmins(`🎉 ${esc(evt.slug)} faollashtirildi: ${url}`);
+  }
+}
+
+/* ------------------------------------ Tozalash ------------------------------------ */
+function cleanup(st) {
+  if (Date.now() - (st.lastCleanup || 0) < 3600e3) return;
+  st.lastCleanup = Date.now();
+  const limit = Date.now() - DRAFT_DAYS() * 86400e3;
+  for (const s of listSites()) {
+    if ([STATUS.paid, STATUS.receipt].includes(s.meta.status)) continue;
+    if (new Date(s.meta.updatedAt || s.meta.createdAt).getTime() < limit) {
+      removeSite(s.slug);
+      log(`tozalandi: ${s.slug} (${DRAFT_DAYS()} kundan beri to'lanmagan qoralama)`);
+    }
+  }
+}
+
+/* ------------------------------------ Admin ------------------------------------ */
+async function adminStats(msg) {
+  const all = listSites();
+  const by = (st) => all.filter((s) => s.meta.status === st);
+  const receipts = by(STATUS.receipt);
+  await send(
+    msg.chat.id,
+    `🛠 <b>Bot saytlari</b>\n\n` +
+      `✅ Faol: ${by(STATUS.paid).length}\n🧾 Chek tekshiruvda: ${receipts.length}\n💳 To‘lov kutilmoqda: ${by(STATUS.awaiting).length}\n` +
+      `📝 Qoralama: ${by(STATUS.draft).length}\n⚠️ Rad etilgan: ${by(STATUS.rejected).length}\n\n` +
+      `Barcha imkoniyatlar — boshqaruv panelida: https://boshqaruv.${siteDomain()}`,
+    receipts.length
+      ? { reply_markup: { inline_keyboard: receipts.slice(0, 10).map((s) => [{ text: `✅ ${namesOf(s.config)}`, callback_data: `ok:${s.slug}` }, { text: '❌', callback_data: `no:${s.slug}` }]) } }
+      : {},
+  );
+}
+
+/* ------------------------------------ Yangilanishlar ------------------------------------ */
+async function onUpdate(u) {
+  if (u.callback_query) {
+    const cb = u.callback_query;
+    const [kind, slug] = String(cb.data || '').split(':');
+    if ((kind === 'ok' || kind === 'no') && isAdmin(cb.from.id)) return onAdminDecision(cb, kind === 'ok', slug);
+    if (kind === 'pay') {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+      const s = readSite(slug);
+      if (s && String(s.meta.owner?.id) === String(cb.from.id)) return payInstructions(cb.from.id, slug);
+      return;
+    }
+    if (kind === 'rsvp') {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+      return rsvpSummary(cb.from.id, slug, cb.from.id);
+    }
+    return tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+  }
+  const msg = u.message;
+  if (!msg || msg.chat?.type !== 'private') return;
+  const text = (msg.text || '').trim();
+  if (msg.photo || msg.document) return onReceipt(msg);
+  // Mini App'dan to'lovga o'tish (Telegram.WebApp.sendData) — zaxira yo'l
+  if (msg.web_app_data?.data) {
+    try {
+      const d = JSON.parse(msg.web_app_data.data);
+      if (d.pay) return payInstructions(msg.chat.id, d.pay);
+    } catch {
+      /* noma'lum */
+    }
+    return;
+  }
+  if (text === '/start' || text.startsWith('/start ')) return start(msg);
+  if (text === BTN.mine || text === '/mine') return mine(msg);
+  if (text === BTN.demos || text === '/demos') return demos(msg);
+  if (text === BTN.help || text === '/help') return help(msg);
+  if (text === '/admin' && isAdmin(msg.from.id)) return adminStats(msg);
+  if (text === BTN.create && !appUrl()) return send(msg.chat.id, 'Mini App manzili sozlanmagan (BOT_APP_URL).');
+  // Boshqa matn — adminlarga yuboriladi (mijoz savoli)
+  if (text && !isAdmin(msg.from.id)) {
+    await toAdmins(`💬 <b>${esc(msg.from.first_name || '')}</b>${msg.from.username ? ` (@${esc(msg.from.username)})` : ''} · <code>${msg.from.id}</code>:\n${esc(text.slice(0, 1500))}`);
+    return send(msg.chat.id, 'Xabaringiz adminga yetkazildi — tez orada javob beramiz 🙂', { reply_markup: mainKeyboard() });
+  }
+  // Admin javobi: xabarga "reply" qilib yozsa — mijozga yetkaziladi
+  if (text && isAdmin(msg.from.id) && msg.reply_to_message) {
+    // Telegram "reply"da HTML'siz matn keladi: "… · 555:" (savol) yoki "ID 555" (chek)
+    const m = /ID (?:<code>)?(\d+)|· (?:<code>)?(\d+)(?:<\/code>)?:/.exec(msg.reply_to_message.text || msg.reply_to_message.caption || '');
+    const target = m?.[1] || m?.[2];
+    if (target) {
+      await send(target, `💬 <b>Admin:</b> ${esc(text)}`);
+      return send(msg.chat.id, '✓ Yuborildi');
+    }
+  }
+}
+
+/* ------------------------------------ Asosiy sikl ------------------------------------ */
+async function main() {
+  if (!BOT_TOKEN()) {
+    console.error('BOT_TOKEN berilmagan — /etc/taklifnoma/env ga yozing va: sudo systemctl restart taklifnoma-bot');
+    process.exit(0);
+  }
+  ensureDirs();
+  // Yangilanish (deploy) paytida to'xtab qolgan yig'ishlar — qaytadan
+  for (const s of listSites()) {
+    if (s.meta.status === STATUS.paid && !fs.existsSync(path.join(DATA_DIR(), 'built', s.slug, 'index.html'))) enqueue({ type: 'build', slug: s.slug, reason: 'restart' });
+  }
+  const st = loadState();
+  const me = await tg('getMe');
+  log(`Bot: @${me.username} · ma'lumotlar: ${DATA_DIR()} · Mini App: ${appUrl() || '(yo‘q)'} · adminlar: ${adminIds().join(', ') || '(yo‘q!)'}`);
+  await tg('deleteWebhook', {}).catch(() => {});
+  await tg('setMyCommands', {
+    commands: [
+      { command: 'start', description: 'Bosh menyu' },
+      { command: 'mine', description: 'Mening taklifnomalarim' },
+      { command: 'demos', description: 'Namunalar' },
+      { command: 'help', description: 'Yordam' },
+    ],
+  }).catch(() => {});
+  if (appUrl()) await tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Taklifnoma', web_app: { url: appUrl() } } }).catch((e) => log('! menu tugmasi:', e.message));
+
+  // Navbat: API yozgan hodisalar (har 2 soniyada)
+  setInterval(() => processQueue().catch((e) => log('! navbat:', e.message)), 2000);
+
+  let stop = false;
+  const quit = () => {
+    stop = true;
+    setTimeout(() => process.exit(0), 1500);
+  };
+  process.on('SIGTERM', quit);
+  process.on('SIGINT', quit);
+
+  let backoff = 1000;
+  while (!stop) {
+    try {
+      const updates = await tg('getUpdates', { offset: st.offset, timeout: 50, allowed_updates: ['message', 'callback_query'] }, { timeoutMs: 65e3 });
+      backoff = 1000;
+      for (const u of updates) {
+        st.offset = u.update_id + 1;
+        await onUpdate(u).catch((e) => log('! xabar:', e.message));
+      }
+      if (updates.length) saveState(st);
+      cleanup(st);
+    } catch (err) {
+      if (stop) break;
+      log(`! getUpdates: ${err.message}`);
+      await new Promise((r) => setTimeout(r, err.retryAfter ? err.retryAfter * 1000 : backoff));
+      backoff = Math.min(backoff * 2, 30e3);
+    }
+  }
+}
+
+const isMain = () => {
+  try {
+    return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+};
+if (process.argv[1] && isMain()) main();
+
+export { onUpdate, processQueue };

@@ -18,6 +18,7 @@ import wishes from '../api/wishes.js';
 import settings from '../api/settings.js';
 import admin from '../api/admin.js';
 import { panelHandler, PANEL_SLUG } from './panel.js';
+import { appHandler } from './app-api.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITES_DIR = path.resolve(process.env.SITES_DIR || path.join(ROOT, 'sites'));
@@ -43,6 +44,14 @@ export const server = http.createServer((req, res) => {
 
   // Boshqaruv paneli (boshqaruv.<domen>) — faqat /api/panel/*
   if (slug === PANEL_SLUG) {
+    // Telegram Mini App (mijozlar) — o'z kirish tekshiruvi bilan (Telegram imzosi)
+    const app = /^\/api\/panel\/app\/([a-z]+)\/?$/.exec(pathname);
+    if (app) {
+      return appHandler(req, res, app[1]).catch((err) => {
+        console.error('Mini App:', err);
+        if (!res.headersSent) fail(res, 500, 'server_error');
+      });
+    }
     const m = /^\/api\/panel\/([a-z]+)\/?$/.exec(pathname);
     if (!m || !siteExists(PANEL_SLUG)) return fail(res, 404, 'not_found');
     return panelHandler(req, res, m[1]).catch((err) => {

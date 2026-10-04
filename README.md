@@ -212,6 +212,45 @@ Yangi to'y yaratish va tahrirlash kod yozmasdan, brauzerda. Faqat egasining paro
 Panel `config.json` yozadi; qo'lda yozilgan `config.js` mijozlar panelda birinchi saqlanganda
 `config.json` ga o'tadi. Ikkalasi ham ishlaydi.
 
+## Telegram bot — mijoz taklifnomasini o‘zi yaratadi
+
+Mijoz botda **«✨ Taklifnoma yaratish»** tugmasini bosadi → Telegram ichida forma (Mini App, `boshqaruv.<domen>/app`)
+ochiladi: dizayn → marosim turi → ismlar → sana → to‘yxona → musiqa → taklif matni → jonli ko‘rinish →
+**«To‘lovga o‘tish»**. Bot karta raqamini yuboradi, mijoz chekni (rasm yoki fayl) botga tashlaydi, admin(lar)ga chek
+**[✅ Tasdiqlash] [❌ Rad etish]** tugmalari bilan keladi. Tasdiqlansa — sayt bir necha soniyada yig‘iladi va mijozga
+havola boradi. Keyin mijoz botda «📂 Mening taklifnomalarim» → «✏️ Tahrirlash» / «📊 Javoblar».
+
+Qanday ishlaydi:
+
+- Bot saytlari **GitHub’da emas**, serverda: `/opt/taklifnoma/data` (`server/data.js`). Har o‘zgarishda faqat o‘sha
+  sayt yig‘iladi (`scripts/build-one.js`, ~1–3 s); umumiy rasm/musiqa diskda bir nusxada (sayt boshiga ~1–2 MB).
+  Deploy (`build-all.js`) ularni qayta yig‘maydi — faqat ulaydi.
+- `server/app-api.js` — Mini App API (`/api/panel/app/*`), kirish Telegram imzosi bilan; mijoz faqat o‘z saytlarini
+  ko‘radi, sozlamalar ruxsat etilgan maydonlar bo‘yicha qabul qilinadi; bir vaqtda ko‘pi bilan 3 ta qoralama.
+- `server/bot.js` — bot (`taklifnoma-bot` xizmati, long polling — webhook/nginx kerak emas). Mijoz yozgan boshqa
+  xabarlar adminga boradi; admin o‘sha xabarga **reply** qilsa — javob mijozga yetadi. `/admin` — statistika.
+- Boshqaruv panelida bot saytlari **🤖** belgisi bilan: tahrirlash, to‘xtatish, o‘chirish va **«✅ To‘lovni tasdiqlash»**.
+- To‘lanmagan qoralamalar `DRAFT_DAYS` (10) kundan keyin o‘chadi.
+
+### Botni ishga tushirish (bir marta)
+
+1. Telegram’da @BotFather → `/newbot` → token oling. @userinfobot’dan o‘z Telegram ID’ingizni oling.
+2. Serverda: `sudo nano /etc/taklifnoma/env` — `deploy/env.example` dagi bot qatorlarini qo‘shing va to‘ldiring
+   (`BOT_TOKEN`, `ADMIN_TG_IDS`, `PAY_CARD`, `PAY_CARD_HOLDER`, `PRICE`, ixtiyoriy `SUPPORT_CONTACT`).
+3. O‘rnatish skriptini **qayta** ishga tushiring (yangi xizmat, ma’lumotlar papkasi va nginx sozlamasi uchun;
+   mavjud saytlarga tegmaydi):
+   ```bash
+   rm -rf /tmp/taklifnoma && git clone https://github.com/alyorbek-tukhtasinov/WEDDING-VOLUME-2.git /tmp/taklifnoma
+   sudo bash /tmp/taklifnoma/deploy/install.sh documen.uz <server-ip> <email>
+   ```
+4. Tekshirish: `systemctl status taklifnoma-bot`, `journalctl -u taklifnoma-bot -n 30`. Botga `/start` yozing.
+
+**Zaxira:** `/opt/taklifnoma/data` faqat serverda — muntazam nusxa oling (masalan, kuniga bir marta
+`tar czf /root/taklifnoma-data-$(date +%F).tgz -C /opt/taklifnoma data`).
+
+**HTTPS:** hozir barcha subdomenlar bitta Let’s Encrypt sertifikatida — u 100 ta nomgacha. Saytlar soni 100 ga
+yaqinlashganda wildcard sertifikatga (`*.documen.uz`, DNS orqali tasdiqlash) o‘tish kerak.
+
 ## "To‘y kechasining osmoni" shabloni (osmon)
 
 Sahifa ortida — to‘y kechasi to‘yxona ustidagi haqiqiy osmon: ~5000 yulduz, Somon yo‘li,

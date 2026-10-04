@@ -11,6 +11,7 @@ import { latinToCyrillic } from '../src/lib/translit.js';
 import { LANGS, STR as OSMON_STR } from '../templates/osmon/i18n.js';
 import { autoScrollMode } from '../src/lib/autoscroll.js';
 import { prepareAudio, toBase64 } from './audio-convert.js';
+import { defaultConfig } from '../src/lib/starter.js';
 
 const AUTOSCROLL_SPEED = [
   { v: 0.75, title: 'Tezlik: sekinroq' },
@@ -224,110 +225,8 @@ async function addUpload(prefix, file, maxSide) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Boshlang'ich config'lar                                             */
+/*  Boshlang'ich config'lar — src/lib/starter.js (Telegram bot Mini App ham ishlatadi)  */
 /* ------------------------------------------------------------------ */
-function defaultConfig(template, eventId = 'nikoh') {
-  // Yangi saytlar ochilganda o'zi aylana boshlaydi (eski saytlarda — yo'q, ya'ni "off")
-  return { ...withEvent(baseConfig(template), eventId), autoScroll: 'auto' };
-}
-
-/** Marosim turining boshlang'ich qiymatlari: vaqt, davomiylik, dastur, dress-kod, taklif matnlari. */
-function withEvent(c, eventId) {
-  const e = findEvent(eventId);
-  c.eventType = e.id;
-  c.event = { ...c.event, time: e.time, durationHours: e.durationHours };
-  if (c.template === 'yz') return c;
-  c.texts = { ...c.texts, ...eventTexts(e.id, '', '') };
-  if (Array.isArray(c.program)) c.program = buildProgram(e.program, e.time);
-  const dress = findDressPreset(e.dress);
-  if (c.dressCode && dress) c.dressCode = { text: dress.text, colors: [...dress.colors] };
-  return c;
-}
-
-function baseConfig(template) {
-  const date = addDays(todayIso(), 45);
-  if (template === 'yz') {
-    return {
-      template: 'yz',
-      couple: { groom: '', bride: '', initials: '' },
-      event: { date, time: '16:00', timezone: '+05:00', durationHours: 5 },
-      venue: { name: '', address: '', googleMaps: '', yandexMaps: '', mapEmbed: '' },
-      photos: {},
-      musicTrack: 'musiqa-4',
-      rsvp: { enabled: true, deadline: addDays(date, -1), maxGuests: 5 },
-      ru: {},
-      texts: { uz: {}, ru: {} },
-      seo: { title: '', description: '', ogImage: '' },
-    };
-  }
-  const kechki = DRESS_PRESETS.find((p) => p.id === 'kechki');
-  if (['suzani', 'kitob', 'bulut', 'volume3', 'volume4'].includes(template)) {
-    return {
-      template,
-      couple: { groom: '', bride: '', initials: '' },
-      event: { date, time: '18:00', timezone: '+05:00', durationHours: 5 },
-      hosts: '',
-      texts: {
-        heroCaption: 'Nikoh to‘yiga taklifnoma',
-        greeting: 'Hurmatli mehmonimiz!',
-        invitation: autoInvitation({}),
-        closing: 'Tashrifingiz biz uchun katta sharaf!',
-      },
-      venue: { name: '', address: '', googleMaps: '', yandexMaps: '' },
-      program: buildProgram('kechki', '18:00'),
-      dressCode: { text: kechki.text, colors: [...kechki.colors] },
-      musicTrack: 'musiqa-5',
-      rsvp: { enabled: true, deadline: addDays(date, -1), maxGuests: 5, showWishes: true },
-      contacts: [],
-      seo: { title: '', description: '', ogImage: '' },
-      effects: { countdown: true },
-    };
-  }
-  if (template === 'osmon') {
-    return {
-      template: 'osmon',
-      couple: { groom: '', bride: '', initials: '' },
-      event: { date, time: '19:00', timezone: '+05:00', durationHours: 5 },
-      hosts: '',
-      texts: {
-        heroCaption: 'Nikoh to‘yiga taklifnoma',
-        greeting: 'Hurmatli mehmonimiz!',
-        invitation: autoInvitation({}),
-        closing: 'Tashrifingiz biz uchun katta sharaf!',
-      },
-      venue: { name: '', address: '', googleMaps: '', yandexMaps: '' },
-      sky: { city: '', lat: '', lng: '' },
-      program: buildProgram('kechki', '19:00'),
-      dressCode: { text: kechki.text, colors: [...kechki.colors] },
-      musicTrack: 'musiqa-3',
-      rsvp: { enabled: true, deadline: addDays(date, -1), maxGuests: 5, showWishes: true },
-      contacts: [],
-      seo: { title: '', description: '', ogImage: '' },
-    };
-  }
-  return {
-    template: 'volume2',
-    couple: { groom: '', bride: '', initials: '' },
-    event: { date, time: '18:00', timezone: '+05:00', durationHours: 5 },
-    hosts: '',
-    texts: {
-      heroCaption: 'Nikoh to‘yiga taklifnoma',
-      greeting: 'Hurmatli mehmonimiz!',
-      invitation: autoInvitation({}),
-      closing: 'Tashrifingiz biz uchun katta sharaf!',
-    },
-    venue: { name: '', address: '', googleMaps: '', yandexMaps: '', image: '' },
-    program: buildProgram('kechki', '18:00'),
-    dressCode: { text: kechki.text, colors: [...kechki.colors] },
-    gallery: [],
-    musicTrack: 'musiqa-1',
-    rsvp: { enabled: true, deadline: addDays(date, -1), maxGuests: 5, showWishes: true },
-    contacts: [],
-    seo: { title: '', description: '', ogImage: '' },
-    theme: {},
-    effects: { envelope: true, petals: true, typing: true },
-  };
-}
 
 // Jonli ko'rinish uchun: bo'sh maydonlar vaqtincha namuna qiymat bilan to'ldiriladi
 /**
@@ -479,6 +378,7 @@ function saveFilter(f) {
   }
 }
 const isPaid = (slug) => !!state.finance?.[slug]?.paid;
+const BOT_STATUS = { draft: 'Qoralama', awaiting: 'To‘lov kutilmoqda', receipt: 'Chek yuborildi', paid: 'Bot', rejected: 'Chek rad etilgan' };
 
 function matchFilter(c, f, today) {
   if (f.q && !`${c.slug} ${c.groom} ${c.bride} ${c.venue}`.toLowerCase().includes(f.q)) return false;
@@ -511,6 +411,7 @@ function clientCard(c, today) {
       <div class="actions-row">
         <span class="badge badge--${c.template}">${tpl?.title || c.template}</span>
         <span class="badge badge--event" title="${ev.title}">${ev.icon} ${ev.title}</span>
+        ${c.bot ? html`<span class="badge badge--bot" title="Mijoz Telegram bot orqali o‘zi yaratgan">🤖 ${BOT_STATUS[c.bot.status] || c.bot.status}</span>` : ''}
         ${c.paused ? html`<span class="badge badge--paused" title="Havola ochilsa: “Saytning ishlashi uchun to‘lov amalga oshirilishi kutilmoqda”">⏸ To‘xtatilgan</span>` : ''}
         ${c.demo ? html`<span class="badge badge--demo">Demo</span>` : ''}
         ${soon && !c.demo ? html`<span class="badge badge--soon">Yaqinda</span>` : ''}
@@ -519,7 +420,8 @@ function clientCard(c, today) {
           ? html`<button class="paid-toggle ${paid ? 'is-paid' : ''}" type="button" data-paid="${c.slug}" aria-pressed="${paid}" title="Bosing — belgini almashtirish">${paid ? '✅ To‘langan' : '⏳ To‘lanmagan'}</button>`
           : ''}
       </div>
-      <p class="card__names">${c.groom} & ${c.bride}</p>
+      <p class="card__names">${c.groom ? `${c.groom} & ${c.bride}` : c.bride}</p>
+      ${c.bot ? html`<p class="card__meta">👤 ${c.bot.owner?.username ? html`<a href="https://t.me/${c.bot.owner.username}" target="_blank" rel="noopener">${c.bot.owner.name || '@' + c.bot.owner.username}</a>` : c.bot.owner?.name || 'Telegram'} · ID ${c.bot.owner?.id || '—'}</p>` : ''}
       <p class="card__meta">${prettyDate(c.date)}${c.time ? `, soat ${c.time}` : ''} · ${c.venue}</p>
       <p class="card__meta">${c.rsvp ? `Javoblar: ${c.rsvp.total} · keladi: ${c.rsvp.attending} (${c.rsvp.guests} kishi)` : 'Javoblar: baza ulanmagan'}</p>
       <div class="card__actions">
@@ -529,6 +431,7 @@ function clientCard(c, today) {
         ${c.paused
           ? html`<button class="btn btn--small btn--resume" type="button" data-pause="${c.slug}" data-next="0" title="Sayt qayta ochiladi">▶️ Yoqish</button>`
           : html`<button class="btn btn--small btn--ghost" type="button" data-pause="${c.slug}" data-next="1" title="To‘lov qilinguncha havola ochilmaydi">⏸ To‘xtatish</button>`}
+        ${c.bot && c.bot.status !== 'paid' ? html`<button class="btn btn--small btn--resume" type="button" data-approve="${c.slug}" title="Chek Telegram'da — shu yerdan ham tasdiqlash mumkin">✅ To‘lovni tasdiqlash</button>` : ''}
         <button class="btn btn--small btn--ghost btn--danger" type="button" data-delete="${c.slug}">O‘chirish</button>
       </div>
     </article>
@@ -645,6 +548,26 @@ function renderList() {
               ? 'To‘langan deb belgilandi, lekin sayt yoqilmadi — “▶️ Yoqish”ni bosing'
               : next ? 'To‘langan deb belgilandi' : 'To‘lanmagan deb belgilandi',
         );
+      } catch (err) {
+        if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
+      } finally {
+        b.disabled = false;
+      }
+    }),
+  );
+  $$('[data-approve]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const slug = b.dataset.approve;
+      if (!confirm(`“${slug}” to‘lovi tasdiqlansinmi?\n\nSayt yig‘iladi va mijozga Telegram orqali havola yuboriladi.`)) return;
+      b.disabled = true;
+      try {
+        const r = await api('approve', { method: 'POST', body: { slug } });
+        if (!r.ok) return toast(r.message || 'Tasdiqlab bo‘lmadi');
+        const c = state.clients.find((x) => x.slug === slug);
+        if (c?.bot) c.bot.status = 'paid';
+        if (state.finance) state.finance[slug] = { ...(state.finance[slug] || {}), paid: true };
+        renderList();
+        toast('Tasdiqlandi — sayt 1–2 daqiqada ochiladi, mijozga havola boradi');
       } catch (err) {
         if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
       } finally {
@@ -2571,6 +2494,11 @@ async function save() {
     if (r.unchanged) {
       progress.className = 'progress progress--ok';
       progress.textContent = 'O‘zgarish yo‘q — sayt avvalgidek';
+      return;
+    }
+    if (r.bot) {
+      progress.className = 'progress progress--ok';
+      progress.textContent = r.status === 'paid' ? '✓ Saqlandi — bot sayti ~1 daqiqada yangilanadi' : '✓ Saqlandi (qoralama — to‘lovdan keyin ochiladi)';
       return;
     }
     await waitDeploy(r.sha, wasNew);
