@@ -413,6 +413,7 @@ function clientCard(c, today) {
         <span class="badge badge--event" title="${ev.title}">${ev.icon} ${ev.title}</span>
         ${c.bot ? html`<span class="badge badge--bot" title="Mijoz Telegram bot orqali o‘zi yaratgan">🤖 ${BOT_STATUS[c.bot.status] || c.bot.status}</span>` : ''}
         ${c.paused ? html`<span class="badge badge--paused" title="Havola ochilsa: “Saytning ishlashi uchun to‘lov amalga oshirilishi kutilmoqda”">⏸ To‘xtatilgan</span>` : ''}
+        ${c.watermark ? html`<span class="badge badge--watermark" title="Saytda “NAMUNA” belgisi chiqmoqda — to‘lovdan keyin tahrirlab olib tashlang">Namuna belgisi</span>` : ''}
         ${c.demo ? html`<span class="badge badge--demo">Demo</span>` : ''}
         ${soon && !c.demo ? html`<span class="badge badge--soon">Yaqinda</span>` : ''}
         ${past && !c.demo ? html`<span class="badge">O‘tgan</span>` : ''}
@@ -828,6 +829,10 @@ function secMain() {
     'main',
     'Asosiy ma’lumotlar',
     html`
+      <div class="watermark-row ${c.watermark ? 'is-on' : ''}" id="watermark-row">
+        ${check('“NAMUNA” belgisini qo‘shish', 'watermark')}
+        <small class="hint">Saytda “NAMUNA” yozuvi va pastda “Ushbu belgi to‘lov amalga oshirilgach avtomatik olib tashlanadi!” izohi chiqadi. To‘lovdan keyin galochkani olib tashlab saqlang</small>
+      </div>
       <div class="grid2">
         ${soloC(c)
           ? html`<label class="f f--muted" data-field="couple.groom"><span>Kuyov ismi</span><input value="" placeholder="Saytda ko‘rsatilmaydi" disabled /></label>`
@@ -2181,6 +2186,7 @@ function bindEditor() {
       if (path === 'eventType') return onEventChange(prevEvent || 'nikoh', v);
       if (path === 'invitedBy') return onVoiceChange(v === 'couple' ? 'parents' : 'couple', v);
       if (path === 'couple.showGroom') return onShowGroomChange(v);
+      if (path === 'watermark') $('#watermark-row')?.classList.toggle('is-on', v);
       if (path === 'backgroundOverlay') $('#veil-val').textContent = `${Math.round(v * 100)}%`;
       if (path.startsWith('sky.') || path.startsWith('venue.')) updateSkyStatus();
       if (path === 'couple.groom' || path === 'couple.bride') {
@@ -2420,6 +2426,7 @@ function cleanConfig(c0) {
   }
   // demo: false faqat nomi "demo" bilan boshlanadigan saytda kerak (aks holda standart holat — yozilmaydi)
   if (c.demo === false && !/^demo(-|$)/.test(state.ed?.slug || '')) delete c.demo;
+  if (c.watermark !== true) delete c.watermark;
   if (c.rsvp?.maxGuests !== undefined) c.rsvp.maxGuests = Number(c.rsvp.maxGuests) || 5;
   return c;
 }
