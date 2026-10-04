@@ -9,3 +9,4 @@ Thumbs.db
 *.log
 sites/
 .data/
+.build-cache.json

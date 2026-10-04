@@ -2,7 +2,9 @@
 // Foydalanish: node scripts/build-all.js --out sites [--domain documen.uz]
 //   --domain (yoki SITE_DOMAIN) — og:image/og:url uchun to'liq manzil: https://<nom>.<domen>
 // Bitta mijoz ham yig'ilmasa — butun jarayon xato bilan tugaydi (yarim-yig'ilgan versiya chiqmaydi).
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
+import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, listClients, loadClient } from './client.js';
@@ -29,6 +31,86 @@ fs.mkdirSync(out, { recursive: true });
 const started = Date.now();
 const paused = [];
 
+// Kesh: o'zgarmagan sayt qayta yig'ilmaydi — oldingi versiyadagi papka hardlink bilan olinadi
+// (nusxa emas, joy ham olmaydi). Sayt o'zgargan hisoblanadi, agar clients/<nom> yoki umumiy kod
+// (src, templates, public, vite sozlamasi, paketlar, domen) o'zgargan bo'lsa.
+//   --cache <oldingi sites papkasi>  (deploy.sh beradi). Kalitlar: <papka>/../.build-cache.json
+// deploy.sh eski nusxasi --cache bermaydi: /opt/taklifnoma/releases/<v>.tmp/sites → /opt/taklifnoma/current/sites
+const autoCache = path.basename(path.dirname(path.dirname(out))) === 'releases' ? path.join(path.dirname(path.dirname(path.dirname(out))), 'current', 'sites') : '';
+const cacheDir = arg('cache') ? path.resolve(arg('cache')) : autoCache && fs.existsSync(autoCache) ? autoCache : '';
+const manifestOf = (sitesDir) => path.join(path.dirname(sitesDir), '.build-cache.json');
+let prevManifest = {};
+try {
+  if (cacheDir) prevManifest = JSON.parse(fs.readFileSync(manifestOf(cacheDir), 'utf8'));
+} catch {
+  prevManifest = {};
+}
+
+function hashTree(hash, dir, skip = new Set()) {
+  if (!fs.existsSync(dir)) return;
+  for (const name of fs.readdirSync(dir).sort()) {
+    if (skip.has(name) || name === '.DS_Store' || name === 'Thumbs.db') continue;
+    const p = path.join(dir, name);
+    const st = fs.statSync(p);
+    if (st.isDirectory()) hashTree(hash, p);
+    else if (st.isFile()) hash.update(`${path.relative(ROOT, p)}\0${st.size}\0`).update(fs.readFileSync(p));
+  }
+}
+// Sayt yig'ilishiga ta'sir qilmaydigan papkalar (server, testlar, deploy, panel) kalitga kirmaydi
+const NOT_SITE = new Set(['node_modules', 'clients', 'sites', 'dist', 'server', 'tests', 'e2e', 'deploy', 'panel', 'api', '.git', '.data', '.build-cache.json', 'README.md']);
+const codeHash = (() => {
+  const h = crypto.createHash('sha256');
+  h.update(`${process.version}\0${domain}\0`);
+  for (const [k, v] of Object.entries(process.env).sort()) if (k.startsWith('VITE_')) h.update(`${k}=${v}\0`);
+  hashTree(h, ROOT, NOT_SITE);
+  return h.digest('hex');
+})();
+const keyOf = (slug) => {
+  const h = crypto.createHash('sha256').update(codeHash);
+  hashTree(h, path.join(ROOT, 'clients', slug));
+  return h.digest('hex');
+};
+const manifest = {};
+const reused = [];
+const fresh = [];
+
+function reuse(slug) {
+  const key = manifest[slug];
+  const src = cacheDir && path.join(cacheDir, slug);
+  if (!src || prevManifest[slug] !== key) return false;
+  if (!fs.existsSync(path.join(src, 'index.html')) || fs.lstatSync(src).isSymbolicLink()) return false;
+  const target = path.join(out, slug);
+  fs.rmSync(target, { recursive: true, force: true });
+  const r = spawnSync('cp', ['-al', src, target], { stdio: 'inherit' });
+  if (r.status !== 0) {
+    fs.rmSync(target, { recursive: true, force: true });
+    return false;
+  }
+  return true;
+}
+
+function viteBuild(slug) {
+  const env = { ...process.env, WEDDING: slug, SITE_URL: domain ? `https://${slug}.${domain}` : '' };
+  // Vercel o'zgaruvchilari tasodifan qolgan bo'lsa, nom/manzil aniqlashga aralashmasin
+  for (const k of Object.keys(env)) if (k.startsWith('VERCEL')) delete env[k];
+  const target = path.join(out, slug);
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [vite, 'build', '--outDir', target, '--emptyOutDir', '--logLevel', 'warn'], {
+      cwd: ROOT,
+      env,
+      stdio: 'inherit',
+    });
+    running.add(child);
+    child.on('close', (code) => {
+      running.delete(child);
+      resolve(code === 0 && fs.existsSync(path.join(target, 'index.html')));
+    });
+    child.on('error', () => resolve(false));
+  });
+}
+const running = new Set();
+
+const toBuild = [];
 for (const slug of clients) {
   // To'xtatilgan sayt (panel: "To'xtatish"): taklifnoma yig'ilmaydi — faqat "to'lov kutilmoqda" sahifasi.
   // Ism, rasm, musiqa diskda umuman bo'lmaydi; .paused belgisi bo'yicha server API'ni ham yopadi.
@@ -42,21 +124,26 @@ for (const slug of clients) {
     paused.push(slug);
     continue;
   }
-  const env = { ...process.env, WEDDING: slug, SITE_URL: domain ? `https://${slug}.${domain}` : '' };
-  // Vercel o'zgaruvchilari tasodifan qolgan bo'lsa, nom/manzil aniqlashga aralashmasin
-  for (const k of Object.keys(env)) if (k.startsWith('VERCEL')) delete env[k];
+  manifest[slug] = keyOf(slug);
+  if (reuse(slug)) reused.push(slug);
+  else toBuild.push(slug);
+}
 
-  const target = path.join(out, slug);
-  const r = spawnSync(process.execPath, [vite, 'build', '--outDir', target, '--emptyOutDir', '--logLevel', 'warn'], {
-    cwd: ROOT,
-    env,
-    stdio: 'inherit',
-  });
-  if (r.status !== 0 || !fs.existsSync(path.join(target, 'index.html'))) {
-    console.error(`\n✖ "${slug}" yig'ilmadi — hech narsa almashtirilmaydi.`);
-    process.exit(1);
+// Bir vaqtda bir nechta sayt (standart: 2 ta; BUILD_JOBS bilan o'zgartiriladi)
+const jobs = Math.max(1, Math.min(Number(process.env.BUILD_JOBS) || Math.min(2, os.cpus().length), 8));
+let next = 0;
+async function worker() {
+  while (next < toBuild.length) {
+    const slug = toBuild[next++];
+    if (!(await viteBuild(slug))) {
+      console.error(`\n✖ "${slug}" yig'ilmadi — hech narsa almashtirilmaydi.`);
+      for (const c of running) c.kill();
+      process.exit(1);
+    }
+    fresh.push(slug);
   }
 }
+await Promise.all(Array.from({ length: Math.min(jobs, toBuild.length) }, worker));
 
 // Boshqaruv paneli (boshqaruv.<domen>) — mijozlar bilan birga yig'iladi
 {
@@ -71,21 +158,29 @@ for (const slug of clients) {
     process.exit(1);
   }
   clients.push('boshqaruv');
+  fresh.push('boshqaruv');
 }
 
 // Umumiy fayllar (musiqa, dizayn rasmlari) har saytda bir xil — diskda bir marta turishi uchun hardlink
+// Faqat yangi yig'ilganlar tekshiriladi: keshdan olinganlar oldingi deploy'da birlashtirilgan
 let saved = 0;
-const [first, ...rest] = clients.filter((s) => !paused.includes(s));
+const live = clients.filter((s) => !paused.includes(s));
+const first = reused.find((s) => live.includes(s)) || fresh[0];
+const rest = fresh.filter((s) => s !== first);
 for (const dir of ['images', 'music']) {
   const base = path.join(out, first, dir);
   if (!fs.existsSync(base)) continue;
   for (const file of fs.readdirSync(base, { recursive: true })) {
     const src = path.join(base, file);
     if (!fs.statSync(src).isFile()) continue;
-    const data = fs.readFileSync(src);
+    const st = fs.statSync(src);
+    let data = null;
     for (const slug of rest) {
       const dst = path.join(out, slug, dir, file);
-      if (!fs.existsSync(dst) || fs.statSync(dst).ino === fs.statSync(src).ino) continue;
+      if (!fs.existsSync(dst)) continue;
+      const ds = fs.statSync(dst);
+      if (ds.ino === st.ino || ds.size !== st.size) continue;
+      data ??= fs.readFileSync(src);
       if (!data.equals(fs.readFileSync(dst))) continue;
       fs.unlinkSync(dst);
       fs.linkSync(src, dst);
@@ -115,5 +210,8 @@ for (const site of listSites().filter((s) => s.meta.status === STATUS.paid)) {
 }
 if (linked) console.log(`  bot saytlari ulandi: ${linked} ta (${DATA_DIR()})`);
 
+// Keyingi deploy uchun kalitlar (sites papkasining yonida — saytlar ichida emas)
+fs.writeFileSync(manifestOf(out), JSON.stringify(manifest));
+if (reused.length) console.log(`  o'zgarmagan, qayta yig'ilmadi: ${reused.length} ta`);
 if (paused.length) console.log(`  to'xtatilgan (to'lov kutilmoqda): ${paused.join(', ')}`);
 console.log(`✔ ${clients.length - 1} ta taklifnoma va boshqaruv paneli yig'ildi → ${out} (${((Date.now() - started) / 1000).toFixed(1)} s)`);

@@ -118,8 +118,11 @@ else
 fi
 
 log "saytlar yig'ilmoqda..."
+# O'zgarmagan saytlar oldingi versiyadan olinadi (--cache) — faqat o'zgarganlari qayta yig'iladi
+CACHE_ARG=""
+[ -n "$PREV_REL" ] && [ -d "$PREV_REL/sites" ] && CACHE_ARG="--cache '$PREV_REL/sites'"
 as_app env NODE_OPTIONS=--max-old-space-size=512 SITE_DOMAIN="$SITE_DOMAIN" \
-  sh -c "cd '$TMP' && node scripts/build-all.js --out sites" 2>&1 | tee -a "$BUILD_LOG" || fail "saytlar yig'ilmadi"
+  sh -c "cd '$TMP' && node scripts/build-all.js --out sites $CACHE_ARG" 2>&1 | tee -a "$BUILD_LOG" || fail "saytlar yig'ilmadi"
 
 trap - ERR
 as_app mv "$TMP" "$REL"
