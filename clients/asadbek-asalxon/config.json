@@ -73,5 +73,6 @@
     "typing": true
   },
   "eventType": "nikoh",
-  "autoScroll": "auto"
+  "autoScroll": "auto",
+  "watermark": true
 }
