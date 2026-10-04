@@ -400,7 +400,7 @@ async function save(body) {
     if (!(await git(['status', '--porcelain', '--', `clients/${slug}`]))) {
       return { sha: await git(['rev-parse', 'HEAD']), unchanged: true };
     }
-    const names = `${config.couple?.groom || ''} & ${config.couple?.bride || ''}`;
+    const names = config.couple?.showGroom === false ? config.couple?.bride || '' : `${config.couple?.groom || ''} & ${config.couple?.bride || ''}`;
     await git([
       '-c', 'user.name=Taklifnoma panel',
       '-c', 'user.email=panel@taklifnoma.local',
