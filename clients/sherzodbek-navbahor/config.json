@@ -21,11 +21,13 @@
   "venue": {
     "name": "\"Sherbudin\" tantanalar saroyi",
     "address": "Buxoro shahri",
-    "googleMaps": "",
-    "yandexMaps": ""
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=39.767431%2C64.457561",
+    "yandexMaps": "https://yandex.uz/maps/?pt=64.457561,39.767431&z=17&l=map"
   },
   "sky": {
-    "city": "Buxoro"
+    "city": "Buxoro",
+    "lat": 39.767431,
+    "lng": 64.457561
   },
   "program": [
     {
