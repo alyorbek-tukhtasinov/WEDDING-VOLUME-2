@@ -7,7 +7,7 @@ Wants=network-online.target
 User=taklifnoma
 Group=taklifnoma
 EnvironmentFile=/etc/taklifnoma/env
-Environment=NODE_ENV=production DATA_DIR=/opt/taklifnoma/data SITES_DIR=/opt/taklifnoma/current/sites
+Environment=NODE_ENV=production DATA_DIR=/opt/taklifnoma/data SITES_DIR=/opt/taklifnoma/current/sites SITE_DOMAIN=__DOMAIN__
 Environment=DEPLOY_TRIGGER=/opt/taklifnoma/trigger/deploy HOME=/opt/taklifnoma
 # Instagram video: Chromium (install.sh o'rnatadi)
 Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/taklifnoma/browsers

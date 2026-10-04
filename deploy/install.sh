@@ -90,7 +90,7 @@ fi
 
 # --- systemd
 for u in taklifnoma.service taklifnoma-bot.service taklifnoma-deploy.service taklifnoma-deploy.timer taklifnoma-deploy.path; do
-  sed "s|__NODE__|$NODE|g; s|__NODEDIR__|$(dirname "$NODE")|g" "$SRC/systemd/$u" > "/etc/systemd/system/$u"
+  sed "s|__NODE__|$NODE|g; s|__NODEDIR__|$(dirname "$NODE")|g; s|__DOMAIN__|$SITE_DOMAIN|g" "$SRC/systemd/$u" > "/etc/systemd/system/$u"
 done
 systemctl daemon-reload
 systemctl enable taklifnoma.service taklifnoma-bot.service >/dev/null

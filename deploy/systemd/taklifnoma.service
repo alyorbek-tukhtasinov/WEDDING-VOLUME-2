@@ -11,7 +11,7 @@ Environment=NODE_ENV=production PORT=3190 SITES_DIR=/opt/taklifnoma/current/site
 # Boshqaruv paneli: saqlash uchun git nusxa, deploy trigger va holat fayli
 Environment=PANEL_WORK_DIR=/opt/taklifnoma/panel-work DEPLOY_TRIGGER=/opt/taklifnoma/trigger/deploy DEPLOY_STATUS=/opt/taklifnoma/status.json
 # Telegram bot saytlari (Mini App shu yerga yozadi)
-Environment=DATA_DIR=/opt/taklifnoma/data
+Environment=DATA_DIR=/opt/taklifnoma/data SITE_DOMAIN=__DOMAIN__
 Environment=HOME=/opt/taklifnoma
 WorkingDirectory=/opt/taklifnoma/current
 ExecStart=__NODE__ /opt/taklifnoma/current/server/index.js
