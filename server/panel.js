@@ -186,6 +186,7 @@ async function listClients() {
       eventType: typeof c.eventType === 'string' ? c.eventType : 'nikoh',
       demo: isDemo(slug, c),
       paused: c.paused === true,
+      watermark: c.watermark === true,
       groom: c.couple?.groom || '',
       bride: c.couple?.bride || '',
       date: c.event?.date || '',

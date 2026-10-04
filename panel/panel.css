@@ -1196,3 +1196,27 @@ a {
   border-color: #2f8f5b;
   color: #fff;
 }
+
+/* "NAMUNA" belgisi (to'lovgacha) */
+.badge--watermark {
+  background: #fde8e4;
+  color: #9a2f1c;
+}
+.watermark-row {
+  margin-bottom: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--line, #e5ddd0);
+  border-radius: 10px;
+}
+.watermark-row .check {
+  font-weight: 600;
+}
+.watermark-row .hint {
+  display: block;
+  margin-top: 0.25rem;
+}
+.watermark-row.is-on {
+  border-style: solid;
+  border-color: #e3a497;
+  background: #fff4f1;
+}

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadClient, htmlEscape, siteUrl } from './scripts/client.js';
+import { watermarkHtml } from './src/lib/watermark.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 
@@ -76,7 +77,7 @@ function weddingPlugin(client, template) {
     },
 
     // Meta teglar HTML ichiga statik yoziladi — Telegram/Instagram JS ishlatmaydi.
-    transformIndexHtml(html) {
+    transformIndexHtml(html, ctx) {
       const base = siteUrl();
       const abs = (p) => (base ? base + p : p);
       // yz shablonida alohida rasm tanlanmagan bo'lsa — bosh sahifadagi surat
@@ -103,7 +104,9 @@ function weddingPlugin(client, template) {
           if (!(key in values)) return m;
           return key === 'THEME_STYLE' ? values[key] : htmlEscape(values[key]);
         })
-        .replace(/\s*<meta property="og:url" content="">/, '');
+        .replace(/\s*<meta property="og:url" content="">/, '')
+        // "NAMUNA" belgisi (to'lovgacha) — faqat taklifnoma sahifasida, /admin da emas
+        .replace(/<\/body>/, (m) => (config.watermark === true && !/admin\.html$/.test(ctx?.path || '') ? `${watermarkHtml()}\n  ${m}` : m));
     },
 
     // Dev rejimida /media/* va /api/* ni xizmat qilish

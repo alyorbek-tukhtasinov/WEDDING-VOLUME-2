@@ -326,6 +326,14 @@ oshirilishi kutilmoqda" sahifasi yig‘iladi (`scripts/paused-page.js`): ism, ra
 `/api/*` ham yopiq (`.paused` belgisi). "▶️ Yoqish" yoki "To‘langan" belgilash (kartada yoki "Daromad"da)
 saytni qayta yoqadi — mehmon javoblari joyida qoladi. Ro‘yxatda "Holat" filtri bor.
 
+### “NAMUNA” belgisi (to‘lovgacha)
+
+Tahrirda "Asosiy ma’lumotlar"ning eng boshidagi **“NAMUNA” belgisini qo‘shish** galochkasi (config'da
+`"watermark": true`). Sayt ishlaydi, lekin butun yuzasi bo‘ylab qiya “NAMUNA” yozuvlari va pastda "Ushbu belgi
+to‘lov amalga oshirilgach avtomatik olib tashlanadi!" izohi chiqadi (`src/lib/watermark.js`, barcha shablonlar;
+build'da HTML'ga qo‘shiladi, `/admin`da yo‘q). Belgi bosishlarga xalaqit bermaydi. Jonli ko‘rinishda ham
+ko‘rinadi, ro‘yxatdagi kartada "Namuna belgisi" yorlig‘i turadi. To‘lovdan keyin galochkani olib tashlab saqlang.
+
 ### "3D sehrli kitob" shabloni (kitob)
 
 Taklifnoma — charm muqovali kitob (`templates/kitob/`). Muqova bosilganda musiqa yoqiladi va
