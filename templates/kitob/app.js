@@ -119,7 +119,7 @@ function renderPages(c, d) {
       <div class="cover__frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <p class="cover__eyebrow">${t.heroCaption || phrases(c)('heroCaption', 'Nikoh to‘yiga taklifnoma')}</p>
       <div class="cover__mono" aria-hidden="true"><span>${d.initials}</span></div>
-      <h1 class="cover__names"><span>${d.groom}</span><em>&amp;</em><span>${d.bride}</span></h1>
+      <h1 class="cover__names">${d.groom ? html`<span>${d.groom}</span><em>&amp;</em>` : ''}<span>${d.bride}</span></h1>
       <p class="cover__date">${pad(d.day)} · ${pad(d.month)} · ${d.year}</p>
       <button class="cover__btn no-drag" id="open-book" type="button">📖 Kitobni ochish</button>
       <p class="cover__hint">${raw(ICON.music)} ovoz bilan oching</p>
@@ -266,7 +266,7 @@ function renderPages(c, d) {
         ${scene(sceneCake())}
         <div class="pg__body">
           <p class="final__lead">${t.closing || 'Tashrifingiz biz uchun katta sharaf!'}</p>
-          <p class="final__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
+          <p class="final__names">${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</p>
           ${c.hosts ? html`<p class="final__hosts">${c.hosts}</p>` : ''}
           <button class="btn btn--gold no-drag" id="congrats" type="button">🎉 Tabriklash</button>
           ${contacts.length ? html`<div class="contacts">${contacts.map((ct) => html`<a class="btn no-drag" href="tel:${ct.phone.replace(/[^\d+]/g, '')}">${raw(ICON.phone)}<span>${ct.name}: ${ct.phone}</span></a>`)}</div>` : ''}

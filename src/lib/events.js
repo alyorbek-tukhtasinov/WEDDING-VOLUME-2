@@ -75,8 +75,11 @@ export const EVENTS = [
     uz: {
       heroCaption: 'Qiz uzatish to‘yiga taklifnoma',
       greeting: 'Aziz mehmonimiz!',
+      // g bo'sh — kuyov ismi ko'rsatilmaydi (couple.showGroom: false)
       invitation: (g, b) =>
-        `Qizimiz ${b}ni oq yo‘lga kuzatar ekanmiz, qalbimiz ham quvonch, ham hayajonga to‘la. ${g} bilan boshlanayotgan yangi hayotlari uchun duolaringizni olib, shu kunda yonimizda bo‘lishingizni chin dildan so‘raymiz.`,
+        g
+          ? `Qizimiz ${b}ni oq yo‘lga kuzatar ekanmiz, qalbimiz ham quvonch, ham hayajonga to‘la. ${g} bilan boshlanayotgan yangi hayotlari uchun duolaringizni olib, shu kunda yonimizda bo‘lishingizni chin dildan so‘raymiz.`
+          : `Qizimiz ${b}ni oq yo‘lga kuzatar ekanmiz, qalbimiz ham quvonch, ham hayajonga to‘la. Uning yangi hayoti uchun duolaringizni olib, shu kunda yonimizda bo‘lishingizni chin dildan so‘raymiz.`,
       closing: 'Duolaringiz — qizimizga eng qimmatli sep!',
       badge: 'Qiz uzatish',
       noun: 'to‘y',
@@ -92,7 +95,7 @@ export const EVENTS = [
       heroCaption: 'Приглашение на проводы невесты',
       greeting: 'Дорогие гости!',
       invitation: (g, b) =>
-        `Мы провожаем нашу дочь ${b} в новую жизнь рядом с ${g}. В этот трогательный день нам очень важно, чтобы рядом были родные и близкие — с добрыми словами и благословением.`,
+        `Мы провожаем нашу дочь ${b} в новую жизнь${g ? ` рядом с ${g}` : ''}. В этот трогательный день нам очень важно, чтобы рядом были родные и близкие — с добрыми словами и благословением.`,
       closing: 'Ваше благословение — лучшее приданое для нашей дочери!',
       badge: 'Проводы невесты',
       noun: 'праздник',
@@ -253,13 +256,17 @@ const COUPLE = {
   'qiz-uzatish': {
     uz: {
       invitation: (g, b) =>
-        `Hayotimizda yangi sahifa ochilmoqda. Biz — ${g} va ${b} — birgalikdagi yo‘limizning ilk qadamini qo‘yayotgan shu hayajonli kunda duolaringiz bilan yonimizda bo‘lishingizni chin dildan so‘raymiz.`,
+        g
+          ? `Hayotimizda yangi sahifa ochilmoqda. Biz — ${g} va ${b} — birgalikdagi yo‘limizning ilk qadamini qo‘yayotgan shu hayajonli kunda duolaringiz bilan yonimizda bo‘lishingizni chin dildan so‘raymiz.`
+          : `Hayotimda yangi sahifa ochilmoqda. Men — ${b} — ota-onam xonadonidan yangi hayotga qadam qo‘yayotgan shu hayajonli kunda duolaringiz bilan yonimda bo‘lishingizni chin dildan so‘rayman.`,
       closing: 'Duolaringiz — yangi hayotimizga eng qimmatli tuhfa!',
       came: 'Muborak kun keldi — yonimizda bo‘lganingiz uchun rahmat!',
     },
     ru: {
       invitation: (g, b) =>
-        `Мы, ${g} и ${b}, делаем первый шаг в новую жизнь. Будем счастливы, если в этот трогательный день вы будете рядом — с добрыми словами и благословением.`,
+        g
+          ? `Мы, ${g} и ${b}, делаем первый шаг в новую жизнь. Будем счастливы, если в этот трогательный день вы будете рядом — с добрыми словами и благословением.`
+          : `Я, ${b}, делаю первый шаг в новую жизнь. Буду счастлива, если в этот трогательный день вы будете рядом — с добрыми словами и благословением.`,
       closing: 'Ваше благословение — лучший подарок нашей новой семье!',
     },
   },
@@ -323,7 +330,8 @@ export function eventTexts(eventId, groom, bride, lang = 'uz', voice = 'parents'
   return {
     heroCaption: t.heroCaption,
     greeting: t.greeting,
-    invitation: t.invitation(groom?.trim() || 'Kuyov', bride?.trim() || 'Kelin'),
+    // groom === false — kuyov ismi ko'rsatilmaydi (qiz uzatish)
+    invitation: t.invitation(groom === false ? '' : groom?.trim() || 'Kuyov', bride?.trim() || 'Kelin'),
     closing: t.closing,
   };
 }

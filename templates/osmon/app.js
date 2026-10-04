@@ -205,7 +205,7 @@ function renderPage(c, d, place, when) {
           <p class="invite__text words">${words(t.invitation || T.invitation(d.groom, d.bride))}</p>
           ${t.namesCaption ? html`${ornament}<p class="eyebrow invite__caption">${t.namesCaption}</p>` : ''}
           <div class="invite__names">
-            <span>${d.groom}</span><em>&amp;</em><span>${d.bride}</span>
+            ${d.groom ? html`<span>${d.groom}</span><em>&amp;</em>` : ''}<span>${d.bride}</span>
           </div>
           ${t.namesNote ? html`<p class="invite__note" data-type>${t.namesNote}</p>` : ''}
           <p class="invite__meta">${weekday}, ${dateLine} · ${T.at(c.event.time)}</p>
@@ -306,7 +306,7 @@ function renderPage(c, d, place, when) {
           <hr class="rule" />
           ${quote(dua, { big: true })}
           ${dua.note?.trim() ? html`<hr class="rule" /><p class="lead dua__note" data-type>${dua.note}</p>` : ''}
-          <p class="dua__sign"><span>${d.groom}</span><em>♡</em><span>${d.bride}</span></p>
+          <p class="dua__sign">${d.groom ? html`<span>${d.groom}</span><em>♡</em>` : ''}<span>${d.bride}</span></p>
         </div>
       </section>` : ''}
 

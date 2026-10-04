@@ -68,3 +68,26 @@ test('taklif kimning nomidan: kelin-kuyov tilida "farzandlarimiz" yo‘q, yozilm
   assert.equal(applyEvent(T, {}, 'uz', { invitation: (p) => p.invitation }), T);
   assert.deepEqual(validateConfig({ ...JSON.parse(fs.readFileSync('clients/demo-osmon/config.json', 'utf8')), invitedBy: 'kimdir' }).length, 1);
 });
+
+test('qiz uzatish: kuyov ismi ko‘rsatilmasa — faqat kelin ismi, matn moslashadi', () => {
+  const base = JSON.parse(fs.readFileSync('clients/demo-osmon/config.json', 'utf8'));
+  const solo = { ...base, eventType: 'qiz-uzatish', couple: { groom: '', bride: 'Gulasal', showGroom: false } };
+  assert.deepEqual(validateConfig(solo), []);
+  const d = deriveConfig(solo);
+  assert.equal(d.groom, '');
+  assert.equal(d.names, 'Gulasal');
+  assert.equal(d.initials, 'G');
+  assert.ok(!d.description.includes(' va '));
+  // Faqat qiz uzatishda ruxsat; boshqa marosimda kuyov ismi shart
+  assert.equal(validateConfig({ ...solo, eventType: 'nikoh' }).length >= 1, true);
+  assert.equal(validateConfig({ ...base, couple: { groom: '', bride: 'B' } }).length, 1);
+  for (const lang of ['uz', 'ru']) {
+    for (const voice of ['parents', 'couple']) {
+      const t = eventTexts('qiz-uzatish', false, 'Gulasal', lang, voice).invitation;
+      assert.ok(t.includes('Gulasal'), t);
+      assert.doesNotMatch(t, /Kuyov|undefined|  |рядом с \./, t);
+    }
+  }
+  // Eski saytlar: kuyov ismi odatdagidek
+  assert.equal(deriveConfig(base).names, `${base.couple.groom} & ${base.couple.bride}`);
+});

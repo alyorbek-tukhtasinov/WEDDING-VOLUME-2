@@ -97,7 +97,7 @@ function renderPage(c, d) {
         ${[1, 2, 3, 4].map((i) => html`<div class="gate__corner gate__corner--${i}" aria-hidden="true"></div>`)}
         <div class="gate__inner">
           <p class="eyebrow">${t.heroCaption || ph('heroCaption', 'Nikoh to‘yiga taklifnoma')}</p>
-          <p class="gate__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
+          <p class="gate__names">${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</p>
           <p class="gate__date">${dateLine}</p>
           <button class="btn btn--gold gate__btn" id="gate-open" type="button">🪡 Suzanini ochish</button>
           <p class="gate__hint">${raw(ICON.music)} ovoz bilan oching</p>
@@ -225,7 +225,7 @@ function renderPage(c, d) {
       <section class="final">
         <div class="final__doves" id="final-heart" aria-hidden="true"></div>
         <p class="final__lead">${t.closing || 'Tashrifingiz biz uchun katta sharaf!'}</p>
-        <p class="final__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
+        <p class="final__names">${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</p>
         ${c.hosts ? html`<p class="final__hosts">${c.hosts}</p>` : ''}
         <button class="btn btn--gold final__btn" id="congrats" type="button">🎉 Tabriklash</button>
         ${contacts.length ? html`<div class="contacts">${contacts.map((ct) => html`<a class="btn" href="tel:${ct.phone.replace(/[^\d+]/g, '')}">${raw(ICON.phone)}<span>${ct.name}: ${ct.phone}</span></a>`)}</div>` : ''}
@@ -247,6 +247,11 @@ function fitNames(groom, bride) {
     const w = cv.measureText(name).width / 100;
     return Math.min(max, 158 / Math.max(w, 0.1));
   };
+  // Faqat kelin ismi (qiz uzatish, kuyov ismi ko'rsatilmaydi) — medalyon markazida bitta ism
+  if (!groom) {
+    const s1 = size(bride, 56);
+    return [{ text: bride, x: 0, y: s1 * 0.3, size: s1, fill: 'gold', color: PALETTE.goldDark }];
+  }
   const s = Math.min(size(groom, 50), size(bride, 50));
   return [
     { text: groom, x: 0, y: -18, size: s, fill: 'gold', color: PALETTE.goldDark },

@@ -58,7 +58,11 @@ export function validateConfig(c, mediaFiles = null) {
   need(c.paused == null || typeof c.paused === 'boolean', 'paused faqat true yoki false bo\'lishi mumkin');
   need(c.palette == null || ['green', 'pink'].includes(c.palette), `palette noma'lum: "${c.palette}" (green, pink)`);
   need(c.eventType == null || EVENT_IDS.includes(c.eventType), `eventType noma'lum: "${c.eventType}" (${EVENT_IDS.join(', ')})`);
-  need(c.couple?.groom?.trim(), 'couple.groom (kuyov ismi) kiritilmagan');
+  // Qiz uzatishda kuyov ismi ko'rsatilmasligi mumkin (couple.showGroom: false) — unda ism shart emas
+  const solo = c.couple?.showGroom === false;
+  need(c.couple?.showGroom == null || typeof c.couple.showGroom === 'boolean', 'couple.showGroom faqat true yoki false bo\'lishi mumkin');
+  need(!solo || c.eventType === 'qiz-uzatish', 'Kuyov ismini yashirish faqat qiz uzatish to‘yida mumkin');
+  need(solo || c.couple?.groom?.trim(), 'couple.groom (kuyov ismi) kiritilmagan');
   need(c.couple?.bride?.trim(), 'couple.bride (kelin ismi) kiritilmagan');
   need(isValidDate(c.event?.date), `event.date noto'g'ri: "${c.event?.date}" (format: YYYY-MM-DD)`);
   need(TIME_RE.test(c.event?.time || ''), `event.time noto'g'ri: "${c.event?.time}" (format: HH:MM)`);
@@ -245,9 +249,11 @@ export function deriveConfig(c) {
   // Hafta kuni UTC bo'yicha hisoblanadi — foydalanuvchi vaqt zonasi ta'sir qilmaydi.
   const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 
-  const groom = c.couple.groom.trim();
+  // Kuyov ismi yashirilgan (qiz uzatish): hamma joyda faqat kelin ismi
+  const solo = c.couple.showGroom === false;
+  const groom = solo ? '' : (c.couple.groom || '').trim();
   const bride = c.couple.bride.trim();
-  const names = `${groom} & ${bride}`;
+  const names = solo ? bride : `${groom} & ${bride}`;
   const dateText = `${y}-yil ${d}-${MONTHS[m - 1]}`;
   const title = c.seo?.title?.trim() || `${names} — Taklifnoma`;
   // Nikoh to'yidan boshqa marosimlar uchun tavsif o'sha marosim nomi bilan (eski saytlarda matn o'zgarmaydi)
@@ -255,7 +261,7 @@ export function deriveConfig(c) {
   const description =
     c.seo?.description?.trim() ||
     (ev
-      ? `${ev.uz.heroCaption}: ${groom} va ${bride}. ${dateText}, soat ${c.event.time} da ${c.venue.name.trim()}da sizni kutamiz.`
+      ? `${ev.uz.heroCaption}: ${solo ? bride : `${groom} va ${bride}`}. ${dateText}, soat ${c.event.time} da ${c.venue.name.trim()}da sizni kutamiz.`
       : `${groom} va ${bride}ning to‘y taklifnomasi. ${dateText}, soat ${c.event.time} da ${c.venue.name.trim()}da sizni kutamiz.`);
 
   const rsvpOpen = !!c.rsvp?.enabled;
@@ -269,7 +275,8 @@ export function deriveConfig(c) {
     groom,
     bride,
     names,
-    initials: c.couple.initials?.trim() || `${initialsOf(groom)}&${initialsOf(bride)}`,
+    solo,
+    initials: c.couple.initials?.trim() || (solo ? initialsOf(bride) : `${initialsOf(groom)}&${initialsOf(bride)}`),
     start,
     end,
     year: y,

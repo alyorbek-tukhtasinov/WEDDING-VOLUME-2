@@ -95,14 +95,17 @@ function build(c: any): Wedding {
   // Shablon uchun standart musiqa — config'da hech narsa tanlanmagan bo'lsa
   const withMusic = c.musicUrl === undefined && !c.musicTrack && !c.music ? { ...c, musicTrack: DEFAULT_MUSIC_TRACK } : c;
 
+  const solo = c.couple.showGroom === false;
+  const groomName = (c.couple.groom || '').trim();
   const rsvpEnabled = c.rsvp?.enabled !== false;
   const deadline = c.rsvp?.deadline;
 
   return {
-    groom: c.couple.groom.trim(),
+    // Kuyov ismi ko'rsatilmaydi (qiz uzatish, couple.showGroom: false) — groom bo'sh
+    groom: solo ? '' : groomName,
     bride: c.couple.bride.trim(),
-    groomRu: str(ru.groom) || latinToCyrillic(c.couple.groom.trim()),
-    initials: str(c.couple.initials) || `${c.couple.groom.trim().charAt(0).toUpperCase()}&${c.couple.bride.trim().charAt(0).toUpperCase()}`,
+    groomRu: solo ? '' : str(ru.groom) || latinToCyrillic(groomName),
+    initials: str(c.couple.initials) || (solo ? c.couple.bride.trim().charAt(0).toUpperCase() : `${groomName.charAt(0).toUpperCase()}&${c.couple.bride.trim().charAt(0).toUpperCase()}`),
     brideRu: str(ru.bride) || latinToCyrillic(c.couple.bride.trim()),
     start,
     end: new Date(start.getTime() + hours * 3600e3),
@@ -155,18 +158,19 @@ export function downloadICS() {
   const w = wedding();
   const fmt = (dt: Date) => dt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   const esc = (s: string) => s.replace(/[\\;,]/g, (ch) => `\\${ch}`).replace(/\n/g, '\\n');
+  const pair = w.groom ? `${w.groom} & ${w.bride}` : w.bride;
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    `PRODID:-//${esc(w.groom)} & ${esc(w.bride)}//Taklifnoma//UZ`,
+    `PRODID:-//${esc(pair)}//Taklifnoma//UZ`,
     'BEGIN:VEVENT',
     `UID:${w.start.getTime()}-${encodeURIComponent(w.groom + w.bride)}@taklifnoma`,
     `DTSTAMP:${fmt(new Date())}`,
     `DTSTART:${fmt(w.start)}`,
     `DTEND:${fmt(w.end)}`,
-    `SUMMARY:${esc(phrases({ eventType: w.eventType })('calTitle', `${w.groom} & ${w.bride} — To‘y marosimi`, `${w.groom} & ${w.bride}`))}`,
+    `SUMMARY:${esc(phrases({ eventType: w.eventType })('calTitle', `${pair} — To‘y marosimi`, pair))}`,
     `LOCATION:${esc(`${w.venueName}, ${w.address}`)}`,
-    `DESCRIPTION:${esc(`${w.groom} va ${w.bride}ning to‘y marosimiga taklif etamiz.`)}`,
+    `DESCRIPTION:${esc(`${w.groom ? `${w.groom} va ${w.bride}` : w.bride}ning to‘y marosimiga taklif etamiz.`)}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');

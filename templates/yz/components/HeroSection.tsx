@@ -217,7 +217,9 @@ export const HeroSection: React.FC = () => {
         </motion.div>
 
         {/* Groom name, with a slow-breathing gold halo behind it */}
-        <div style={{ position: 'relative' }}>
+        {t.heroGroom && (
+          <>
+          <div style={{ position: 'relative' }}>
           {!prefersReducedMotion && (
             <motion.div
               aria-hidden="true"
@@ -280,6 +282,8 @@ export const HeroSection: React.FC = () => {
             &
           </span>
         </motion.div>
+          </>
+        )}
 
         {/* Bride name, with a slow-breathing gold halo behind it */}
         <div style={{ position: 'relative' }}>

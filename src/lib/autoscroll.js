@@ -188,13 +188,15 @@ export function initAutoScroll(c, o = {}) {
   function frame(now) {
     if (state !== 'playing') return;
     try {
-      step(now);
+      step();
     } catch (err) {
       console.error('autoscroll:', err);
       stop();
     }
   }
-  function step(now) {
+  function step() {
+    // rAF vaqt belgisi o'rniga performance.now(): video yozishda (virtual vaqt) ham tezlik to'g'ri chiqadi
+    const now = performance.now();
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     // Mehmon (yoki boshqa narsa) sahifani surgan bo'lsa — to'xtaymiz

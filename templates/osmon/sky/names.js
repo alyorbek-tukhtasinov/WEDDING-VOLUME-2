@@ -39,7 +39,11 @@ export function buildNameConstellation(groom, bride, font = 'Great Vibes', row =
     return w > W * 0.9 ? Math.floor((size * W * 0.9) / w) : size;
   };
   let lines;
-  if (row) {
+  if (!groom) {
+    // Faqat kelin ismi (qiz uzatish, kuyov ismi ko'rsatilmaydi)
+    const size = fit(bride, row ? 260 : 240);
+    lines = [{ text: bride, x: W / 2, y: row ? 300 : 400, size }];
+  } else if (row) {
     let size = 230;
     const widths = (sz) => {
       ctx.font = `${sz}px "${font}"`;

@@ -122,9 +122,14 @@ function toSlug(...parts) {
 }
 
 const voiceOfC = (c) => (c.invitedBy === 'couple' ? 'couple' : 'parents');
+// Qiz uzatishda kuyov ismi ko'rsatilmasligi mumkin (couple.showGroom: false)
+const soloC = (c) => c.couple?.showGroom === false;
+const groomArg = (c) => (soloC(c) ? false : c.couple?.groom);
 function autoInvitation(c) {
-  return eventTexts(c.eventType, c.couple?.groom, c.couple?.bride, 'uz', voiceOfC(c)).invitation;
+  return eventTexts(c.eventType, groomArg(c), c.couple?.bride, 'uz', voiceOfC(c)).invitation;
 }
+/** Sayt manzili ismlardan: kuyov ismi yashirilgan bo'lsa — "kelin-qiz-uzatish". */
+const slugBase = (c) => (soloC(c) ? toSlug(c.couple?.bride, 'qiz-uzatish') : toSlug(c.couple?.groom, c.couple?.bride));
 
 // Avvalgi (marosim turlari qo'shilishidan oldingi) avtomatik matnlar — ular ham "qo'lda yozilmagan" hisoblanadi
 const LEGACY_TEXTS = {
@@ -325,8 +330,21 @@ function baseConfig(template) {
 }
 
 // Jonli ko'rinish uchun: bo'sh maydonlar vaqtincha namuna qiymat bilan to'ldiriladi
+/**
+ * Qiz uzatishda kuyov ismi kiritilmagan bo'lsa — "kuyov ismi ko'rsatilmaydi" rejimi o'zi yoqiladi
+ * va avtomatik taklif matni kuyov ismisiz variantga almashadi. touched — matn qo'lda yozilganmi.
+ */
+function autoSolo(c, touched) {
+  if (c.eventType !== 'qiz-uzatish' || soloC(c) || c.couple?.groom?.trim()) return false;
+  const before = autoInvitation(c);
+  c.couple = { ...c.couple, showGroom: false };
+  if (c.template !== 'yz' && c.texts && (!touched || !c.texts.invitation || c.texts.invitation === before)) c.texts.invitation = autoInvitation(c);
+  return true;
+}
+
 function previewConfig(c) {
   const p = clone(c);
+  autoSolo(p, state.ed?.invitationTouched);
   p.couple = { ...p.couple, groom: p.couple?.groom?.trim() || 'Kuyov', bride: p.couple?.bride?.trim() || 'Kelin' };
   p.event = { ...p.event };
   if (!isValidDate(p.event.date)) p.event.date = addDays(todayIso(), 45);
@@ -734,6 +752,28 @@ function showEventPicker(template) {
 }
 
 /**
+ * Qiz uzatishda "Kuyov ismini ko'rsatish" almashtirilsa: avtomatik taklif matni (qo'lda yozilmagan bo'lsa)
+ * kuyov ismi bilan / ismsiz variantga almashadi; manzil (yangi saytda) ham moslanadi.
+ */
+function onShowGroomChange(show) {
+  const ed = state.ed;
+  const c = ed.config;
+  if (show) delete c.couple.showGroom;
+  else c.couple.showGroom = false;
+  if (c.template !== 'yz' && c.texts) {
+    const b = c.couple?.bride;
+    const withG = eventTexts(c.eventType, c.couple?.groom, b, 'uz', voiceOfC(c)).invitation;
+    const without = eventTexts(c.eventType, false, b, 'uz', voiceOfC(c)).invitation;
+    const cur = c.texts.invitation;
+    if (!cur || !ed.invitationTouched || cur === withG || cur === without) c.texts.invitation = show ? withG : without;
+  }
+  markDirty();
+  updateSlugFromNames();
+  showEditor();
+  toast(show ? 'Kuyov ismi saytda ko‘rsatiladi' : 'Saytda faqat kelin ismi chiqadi');
+}
+
+/**
  * "Taklif kimning nomidan" almashtirilsa: qo'lda o'zgartirilmagan taklif matnlari yangi ovozga moslanadi
  * (qo'lda yozilgan bo'lsa — tasdiqlansa). yz shablonida matnni shablonning o'zi tanlaydi.
  */
@@ -741,7 +781,7 @@ function onVoiceChange(prev, next) {
   const ed = state.ed;
   const c = ed.config;
   if (c.template !== 'yz' && c.texts) {
-    const g = c.couple?.groom;
+    const g = groomArg(c);
     const b = c.couple?.bride;
     const old = eventTexts(c.eventType, g, b, 'uz', prev);
     const neu = eventTexts(c.eventType, g, b, 'uz', next);
@@ -770,11 +810,14 @@ function onEventChange(prevId, nextId) {
   const c = ed.config;
   const P = findEvent(prevId);
   const N = findEvent(nextId);
-  const g = c.couple?.groom;
+  // Kuyov ismini yashirish faqat qiz uzatishda — boshqa marosimga o'tilsa, ism yana ko'rsatiladi
+  const gOld = groomArg(c);
+  if (nextId !== 'qiz-uzatish' && soloC(c)) delete c.couple.showGroom;
+  const g = groomArg(c);
   const b = c.couple?.bride;
   const notes = [];
   if (c.template !== 'yz' && c.texts) {
-    const old = eventTexts(P.id, g, b, 'uz', voiceOfC(c));
+    const old = eventTexts(P.id, gOld, b, 'uz', voiceOfC(c));
     const keys = ['heroCaption', 'greeting', 'invitation', 'closing'];
     const auto = keys.every((k) => !c.texts[k] || c.texts[k] === old[k] || LEGACY_TEXTS[k]?.includes(c.texts[k]) || (k === 'invitation' && c.texts[k] === legacyInvitation(c)));
     if (auto || confirm('Taklif matnlari qo‘lda o‘zgartirilgan. Ularni yangi marosimga mos matnlar bilan almashtiraymi?')) {
@@ -863,9 +906,15 @@ function secMain() {
     'Asosiy ma’lumotlar',
     html`
       <div class="grid2">
-        ${field('Kuyov ismi', 'couple.groom', { placeholder: 'Sanjar' })}
+        ${soloC(c)
+          ? html`<label class="f f--muted" data-field="couple.groom"><span>Kuyov ismi</span><input value="" placeholder="Saytda ko‘rsatilmaydi" disabled /></label>`
+          : field('Kuyov ismi', 'couple.groom', { placeholder: 'Sanjar' })}
         ${field('Kelin ismi', 'couple.bride', { placeholder: 'Dilnoza' })}
       </div>
+      ${c.eventType === 'qiz-uzatish'
+        ? html`<div class="toggle-row">${check('Kuyov ismini saytda ko‘rsatish', 'couple.showGroom', true)}</div>
+            <small class="hint" style="display:block;margin-top:-.4rem">Olib tashlansa, saytda faqat kelin ismi chiqadi va taklif matni shunga moslanadi</small>`
+        : ''}
       <div class="grid3">
         ${field('Sana', 'event.date', { type: 'date' })}
         ${field('Vaqt', 'event.time', { type: 'time' })}
@@ -2016,7 +2065,7 @@ function slugHintText(slug) {
   const why = slugTakenWhy(slug);
   if (why) return `Bu nom band (${why}) — boshqasini yozing`;
   if (!slug) return 'Ismlardan avtomatik tuziladi';
-  const base = toSlug(ed.config.couple?.groom, ed.config.couple?.bride);
+  const base = slugBase(ed.config);
   const note = !ed.slugTouched && base && base !== slug && slugTakenWhy(base) ? ` — "${base}" band (${slugTakenWhy(base)}), shuning uchun tafsilot qo‘shildi` : '';
   return `${siteUrl(slug)}${note}`;
 }
@@ -2024,7 +2073,7 @@ function slugHintText(slug) {
 function updateSlugFromNames() {
   const ed = state.ed;
   if (!ed.isNew || ed.slugTouched) return;
-  ed.slug = uniqueSlug(toSlug(ed.config.couple.groom, ed.config.couple.bride), ed.config);
+  ed.slug = uniqueSlug(slugBase(ed.config), ed.config);
   const input = $('#slug');
   if (input) input.value = ed.slug;
   updateSlugHint();
@@ -2208,6 +2257,7 @@ function bindEditor() {
       set(c, path, v);
       if (path === 'eventType') return onEventChange(prevEvent || 'nikoh', v);
       if (path === 'invitedBy') return onVoiceChange(v === 'couple' ? 'parents' : 'couple', v);
+      if (path === 'couple.showGroom') return onShowGroomChange(v);
       if (path === 'backgroundOverlay') $('#veil-val').textContent = `${Math.round(v * 100)}%`;
       if (path.startsWith('sky.') || path.startsWith('venue.')) updateSkyStatus();
       if (path === 'couple.groom' || path === 'couple.bride') {
@@ -2454,6 +2504,10 @@ function cleanConfig(c0) {
 async function save() {
   const ed = state.ed;
   if (ed.saving) return;
+  if (autoSolo(ed.config, ed.invitationTouched)) {
+    showEditor();
+    toast('Kuyov ismi kiritilmagan — saytda faqat kelin ismi chiqadi');
+  }
   const c = cleanConfig(ed.config);
   const errorsEl = $('#errors');
   const progress = $('#progress');

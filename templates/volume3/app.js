@@ -369,7 +369,7 @@ function dates(d, lang) {
 const divider = (cls = '') => html`<div class="gdn-divider ${cls}" aria-hidden="true"><span></span><b>❦</b><span></span></div>`;
 const names = (d, size) => html`
   <div class="gdn-names gdn-names--${size}">
-    <span>${d.groom}</span><i>&amp;</i><span>${d.bride}</span>
+    ${d.groom ? html`<span>${d.groom}</span><i>&amp;</i>` : ''}<span>${d.bride}</span>
   </div>`;
 const card = (inner, cls = '') => html`<div class="gdn-card reveal ${cls}">${inner}</div>`;
 
@@ -438,7 +438,7 @@ function renderPage(c, d, L, lang, langs) {
               : html`<div class="gdn-text">${L.dearText.map((x) => html`<p>${x}</p>`)}</div>`}
             ${divider('gdn-my8')}
             <p class="gdn-label gdn-accent gdn-xs gdn-mb3">${L.withRespect}</p>
-            <p class="gdn-couple">${d.groom} <i>&amp;</i> ${d.bride}</p>
+            <p class="gdn-couple">${d.groom ? html`${d.groom} <i>&amp;</i> ` : ''}${d.bride}</p>
             ${c.hosts ? html`<p class="gdn-small gdn-mt3">${c.hosts}</p>` : ''}
           `, 'gdn-card--xl')}
         </section>` : ''}
@@ -559,7 +559,7 @@ function renderPage(c, d, L, lang, langs) {
           </div>` : ''}
           <div class="gdn-card reveal gdn-sign">
             ${divider('gdn-mb5')}
-            <p class="gdn-couple gdn-couple--sm">${d.groom} <i>&amp;</i> ${d.bride}</p>
+            <p class="gdn-couple gdn-couple--sm">${d.groom ? html`${d.groom} <i>&amp;</i> ` : ''}${d.bride}</p>
             <p class="gdn-label gdn-accent gdn-xs">${L.withLove}</p>
             <p class="gdn-floral">— Floral —</p>
           </div>

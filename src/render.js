@@ -15,7 +15,7 @@ function envelope(c, d) {
       <div class="envelope__half envelope__half--right" aria-hidden="true"></div>
       <div class="envelope__top">
         <p class="envelope__to">${T.envelopeTo}</p>
-        <p class="envelope__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
+        <p class="envelope__names">${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</p>
       </div>
       <button class="envelope__seal" type="button" id="envelope-open" aria-label="${T.envelopeOpen}">
         <span class="envelope__initials">${d.initials}</span>
@@ -33,8 +33,8 @@ function hero(c, d) {
       <div class="hero__content">
         <p class="hero__caption" data-type>${c.texts?.heroCaption || T.heroCaption}</p>
         <h1 class="hero__names">
-          <span>${d.groom}</span>
-          <span class="hero__amp">&amp;</span>
+          ${d.groom ? html`<span>${d.groom}</span>
+          <span class="hero__amp">&amp;</span>` : ''}
           <span>${d.bride}</span>
         </h1>
         <p class="hero__date">${pad(d.day)} <i>·</i> ${pad(d.month)} <i>·</i> ${d.year}</p>
@@ -378,7 +378,7 @@ function footer(c, d, brand) {
     <footer class="footer">
       <img class="footer__flower" src="${img('peony.webp')}" alt="" loading="lazy" />
       <p class="footer__closing" data-reveal>${c.texts?.closing || T.closing}</p>
-      <p class="footer__names" data-reveal>${d.groom} <span>&amp;</span> ${d.bride}</p>
+      <p class="footer__names" data-reveal>${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</p>
       ${brand?.enabled
         ? html`<a class="brand" href="${brand.url}" target="_blank" rel="noopener">
             ${brand.logo
@@ -435,7 +435,7 @@ function prelude(c, d) {
         <span class="prelude__mono">${d.initials}</span>
         <span class="prelude__play">${T.preludeBtn}</span>
       </button>
-      <p class="prelude__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
+      <p class="prelude__names">${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</p>
       <p class="prelude__date">${pad(d.day)} · ${pad(d.month)} · ${d.year}</p>
       <p class="prelude__hint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></svg>${T.preludeHint}</p>
     </div>

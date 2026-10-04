@@ -122,9 +122,13 @@ function renderPage(c, d) {
         <div class="pass__main">
           <div class="pass__head"><span>${raw(ICON.plane)} Taklifnoma Airlines</span><span>Boarding pass</span></div>
           <div class="pass__route">
-            <div><b>${code3(d.groom)}</b><small>${d.groom}</small></div>
+            ${d.groom
+              ? html`<div><b>${code3(d.groom)}</b><small>${d.groom}</small></div>
             <div class="pass__fly" aria-hidden="true"><i></i>${raw(ICON.plane)}<i></i></div>
-            <div><b>${code3(d.bride)}</b><small>${d.bride}</small></div>
+            <div><b>${code3(d.bride)}</b><small>${d.bride}</small></div>`
+              : html`<div><b>${code3(d.bride)}</b><small>${d.bride}</small></div>
+            <div class="pass__fly" aria-hidden="true"><i></i>${raw(ICON.plane)}<i></i></div>
+            <div><b>NEW</b><small>Yangi hayot</small></div>`}
           </div>
           <dl class="pass__grid">
             <div class="pass__wide"><dt>Yo‘lovchi</dt><dd>${guest || 'Aziz mehmonimiz'}</dd></div>
@@ -257,7 +261,7 @@ function renderPage(c, d) {
 
       <section class="final reveal">
         <p class="final__lead">${t.closing || 'Tashrifingiz biz uchun katta sharaf!'}</p>
-        <p class="final__names">${d.groom} <span>&amp;</span> ${d.bride}</p>
+        <p class="final__names">${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</p>
         ${c.hosts ? html`<p class="final__hosts">${c.hosts}</p>` : ''}
         <p class="final__fly">Baxtli parvoz! ✈️</p>
         <button class="btn btn--coral" id="congrats" type="button">🎉 Tabriklash</button>
@@ -603,7 +607,7 @@ export async function mountBulut(c, { preview = false } = {}) {
   scope.on(window, 'scroll', () => sky.setScroll(window.scrollY), { passive: true });
 
   const writer = createSkywriter($('#skywrite'), {
-    lines: [{ text: d.groom }, { heart: true, scale: 0.62 }, { text: d.bride }],
+    lines: d.groom ? [{ text: d.groom }, { heart: true, scale: 0.62 }, { text: d.bride }] : [{ heart: true, scale: 0.62 }, { text: d.bride }],
     font: 'Great Vibes',
     reduced,
   });
