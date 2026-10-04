@@ -429,6 +429,7 @@ function clientCard(c, today) {
         <a class="btn btn--small btn--primary" href="#/tahrir/${c.slug}">Tahrirlash</a>
         <a class="btn btn--small" href="#/nusxa/${c.slug}">Nusxa olish</a>
         <a class="btn btn--small btn--ghost" href="${siteUrl(c.slug)}" target="_blank" rel="noopener">Saytni ochish ↗</a>
+        ${!c.paused && (!c.bot || c.bot.status === 'paid') ? html`<button class="btn btn--small btn--ghost" type="button" data-video="${c.slug}" title="Instagram uchun video — tayyor bo‘lgach Telegram’ga keladi">🎬 Video</button>` : ''}
         ${c.paused
           ? html`<button class="btn btn--small btn--resume" type="button" data-pause="${c.slug}" data-next="0" title="Sayt qayta ochiladi">▶️ Yoqish</button>`
           : html`<button class="btn btn--small btn--ghost" type="button" data-pause="${c.slug}" data-next="1" title="To‘lov qilinguncha havola ochilmaydi">⏸ To‘xtatish</button>`}
@@ -549,6 +550,21 @@ function renderList() {
               ? 'To‘langan deb belgilandi, lekin sayt yoqilmadi — “▶️ Yoqish”ni bosing'
               : next ? 'To‘langan deb belgilandi' : 'To‘lanmagan deb belgilandi',
         );
+      } catch (err) {
+        if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
+      } finally {
+        b.disabled = false;
+      }
+    }),
+  );
+  $$('[data-video]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const slug = b.dataset.video;
+      if (!confirm(`“${slug}” uchun Instagram video tayyorlansinmi?\n\nSayt boshidan oxirigacha musiqa bilan yoziladi (10–20 daqiqa). Tayyor video Telegram botda sizga keladi.`)) return;
+      b.disabled = true;
+      try {
+        const r = await api('video', { method: 'POST', body: { slug } });
+        toast(r.ok ? '🎬 Video navbatga qo‘shildi — tayyor bo‘lgach Telegram’ga keladi' : r.message || 'Bo‘lmadi');
       } catch (err) {
         if (err.message !== 'unauthorized') toast('Internet aloqasini tekshirib, qayta urinib ko‘ring');
       } finally {

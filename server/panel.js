@@ -7,6 +7,7 @@
 //   POST /api/panel/password           — { slug } → mijozning /admin paroli (bir marta ko'rsatiladi)
 //   GET  /api/panel/slugs              — band sayt nomlari va sababi (yangi sayt uchun)
 //   POST /api/panel/paid               — { slug, paid } → ro'yxatdagi "To'langan" belgisi (daromad yozuvida)
+//   POST /api/panel/video              — { slug } → Instagram video (bot tayyorlaydi, adminlarga Telegram'da keladi)
 //   POST /api/panel/approve            — { slug } → bot saytining to'lovini tasdiqlash (sayt yig'iladi, mijozga xabar)
 //   POST /api/panel/musicdelete        — { id } → to'plamdan qo'shiqni o'chirish (ishlatilayotgan bo'lsa — rad etiladi)
 //   POST /api/panel/pause              — { slug, paused } → saytni vaqtincha to'xtatish / qayta yoqish
@@ -238,6 +239,15 @@ function saveBot(site, body, incoming) {
   writeDataSite(slug, { config: body.config });
   if (site.meta.status === BOT_STATUS.paid) enqueue({ type: 'build', slug, reason: 'panel' });
   return { bot: true, status: site.meta.status };
+}
+
+/** Admin so'rovi: istalgan sayt videosi (Instagram uchun) — bot tayyorlab, adminlarga Telegram'da yuboradi. */
+function requestVideo(body) {
+  const slug = String(body?.slug || '');
+  checkSlug(slug);
+  if (!process.env.BOT_TOKEN || !process.env.ADMIN_TG_IDS) throw new UserError('no_bot', 'Telegram bot sozlanmagan (BOT_TOKEN, ADMIN_TG_IDS) — video Telegram orqali yuboriladi');
+  enqueue({ type: 'video', slug, admin: true });
+  return { slug, queued: true };
 }
 
 /** Panel orqali to'lovni tasdiqlash (Telegram'dagi ✅ tugmasi bilan bir xil). */
@@ -773,6 +783,7 @@ export async function panelHandler(req, res, name) {
     if (req.method === 'GET' && name === 'finance') return send(res, 200, { ok: true, ...(await loadFinance()) });
     if (req.method === 'POST' && name === 'finance') return send(res, 200, { ok: true, ...(await saveFinance(await readJson(req))) });
     if (req.method === 'POST' && name === 'paid') return send(res, 200, { ok: true, ...(await setPaid(await readJson(req))) });
+    if (req.method === 'POST' && name === 'video') return send(res, 200, { ok: true, ...requestVideo(await readJson(req)) });
     if (req.method === 'POST' && name === 'approve') return send(res, 200, { ok: true, ...(await approveBot(await readJson(req))) });
     if (req.method === 'POST' && name === 'pause') return send(res, 200, { ok: true, ...(await setPause(await readJson(req))) });
     if (req.method === 'POST' && name === 'delete') return send(res, 200, { ok: true, ...(await removeClient(await readJson(req))) });

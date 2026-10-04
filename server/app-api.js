@@ -6,6 +6,7 @@
 //   POST /api/panel/app/save          — { slug?, config } → yangi qoralama yoki tahrir (to'langan bo'lsa — qayta yig'iladi)
 //   POST /api/panel/app/pay           — { slug } → bot to'lov ma'lumotlarini yuboradi, chek kutiladi
 //   POST /api/panel/app/remove        — { slug } → to'lanmagan qoralamani o'chirish
+//   POST /api/panel/app/video         — { slug } → Instagram uchun video (to'langan saytga; tayyor bo'lsa — qayta yuboradi)
 //   POST /api/panel/app/upload        — { slug, field, data: base64 } → rasm (src/lib/photo-slots.js dagi joylarga)
 //   POST /api/panel/app/unmedia       — { slug, field, name } → rasmni olib tashlash
 //   GET  /api/panel/app/media?slug=&name= — qoralama rasmini ko'rish (faqat egasi; sayt hali ochiq emas)
@@ -17,7 +18,7 @@ import { EVENT_IDS, eventTexts } from '../src/lib/events.js';
 import { MUSIC_LIBRARY, findTrack } from '../src/lib/music.js';
 import { suggestProgramPreset, buildProgram } from '../src/lib/presets.js';
 import { defaultConfig, addDays } from '../src/lib/starter.js';
-import { verifyInitData, BOT_TOKEN, PRICE, siteUrlOf, siteDomain } from './telegram.js';
+import { verifyInitData, BOT_TOKEN, PRICE, VIDEO_PRICE, siteUrlOf, siteDomain } from './telegram.js';
 import { readSite, writeSite, sitesOf, removeSite, enqueue, STATUS, mediaFiles, isSlug } from './data.js';
 import { takenSlugs } from './panel.js';
 import { findSlot, getField, setField, usedMedia } from '../src/lib/photo-slots.js';
@@ -180,6 +181,7 @@ const summary = (s) => ({
   status: s.meta.status,
   paused: s.config.paused === true,
   url: s.meta.status === STATUS.paid ? siteUrlOf(s.slug) : '',
+  video: s.meta.video?.status || '',
 });
 
 function ownSite(user, slug) {
@@ -240,9 +242,31 @@ function pay(user, body) {
   const meta = { ...s.meta };
   if (meta.status !== STATUS.receipt) meta.status = STATUS.awaiting;
   meta.price ||= PRICE();
+  // Instagram uchun video — sayt bilan birga buyurtma (narxga qo'shiladi, sayt tasdiqlangach tayyorlanadi)
+  if (body?.video === true && !['paid', 'rendering', 'done'].includes(meta.video?.status)) {
+    meta.video = { status: 'with-site', price: VIDEO_PRICE(), orderedAt: new Date().toISOString() };
+  } else if (body?.video === false && meta.video?.status === 'with-site') {
+    delete meta.video;
+  }
   writeSite(s.slug, { meta });
   enqueue({ type: 'pay', slug: s.slug, chatId: user.id });
   return { status: meta.status };
+}
+
+/** To'langan saytga video buyurtma: to'lov ko'rsatmasi botda; tayyor bo'lsa — qayta yuboriladi. */
+function orderVideo(user, body) {
+  const s = ownSite(user, body?.slug);
+  if (s.meta.status !== STATUS.paid) throw new UserError('not_paid', 'Video sayt to‘lovi tasdiqlangandan keyin tayyorlanadi');
+  if (s.config.paused) throw new UserError('paused', 'Sayt to‘xtatilgan — video tayyorlab bo‘lmaydi');
+  const v = s.meta.video;
+  if (v?.status === 'done') {
+    enqueue({ type: 'videosend', slug: s.slug, chatId: user.id });
+    return { video: 'done' };
+  }
+  if (['paid', 'rendering', 'receipt'].includes(v?.status)) return { video: v.status };
+  writeSite(s.slug, { meta: { ...s.meta, video: { status: 'awaiting', price: VIDEO_PRICE(), orderedAt: new Date().toISOString() } } });
+  enqueue({ type: 'videopay', slug: s.slug, chatId: user.id });
+  return { video: 'awaiting' };
 }
 
 /* ------------------------------- Rasmlar ------------------------------- */
@@ -335,6 +359,7 @@ export async function appHandler(req, res, name) {
         user: { id: user.id, name: user.first_name || '' },
         sites: sitesOf(user.id).map(summary).sort((a, b) => (a.date < b.date ? 1 : -1)),
         price: PRICE(),
+        videoPrice: VIDEO_PRICE(),
         domain: siteDomain(),
         templates: APP_TEMPLATES,
         music: MUSIC_LIBRARY.map((t) => ({ id: t.id, title: t.title, file: t.file })),
@@ -343,10 +368,11 @@ export async function appHandler(req, res, name) {
     }
     if (req.method === 'GET' && name === 'site') {
       const s = ownSite(user, url.searchParams.get('slug') || '');
-      return send(res, 200, { ok: true, slug: s.slug, config: s.config, status: s.meta.status, url: s.meta.status === STATUS.paid ? siteUrlOf(s.slug) : '' });
+      return send(res, 200, { ok: true, slug: s.slug, config: s.config, status: s.meta.status, url: s.meta.status === STATUS.paid ? siteUrlOf(s.slug) : '', video: s.meta.video?.status || '' });
     }
     if (req.method === 'POST' && name === 'save') return send(res, 200, { ok: true, ...(await save(user, await readJson(req))) });
     if (req.method === 'POST' && name === 'pay') return send(res, 200, { ok: true, ...pay(user, await readJson(req)) });
+    if (req.method === 'POST' && name === 'video') return send(res, 200, { ok: true, ...orderVideo(user, await readJson(req)) });
     if (req.method === 'POST' && name === 'upload') return send(res, 200, { ok: true, ...upload(user, await readJson(req, MAX_UPLOAD * 1.4)) });
     if (req.method === 'POST' && name === 'unmedia') return send(res, 200, { ok: true, ...unmedia(user, await readJson(req)) });
     if (req.method === 'GET' && name === 'media') return sendMedia(user, url, res);

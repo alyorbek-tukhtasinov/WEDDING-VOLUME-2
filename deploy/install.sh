@@ -37,9 +37,9 @@ command -v npm >/dev/null || die "npm topilmadi"
 command -v nginx >/dev/null || die "nginx topilmadi"
 say "Node.js $NODE_VER ($NODE), $(nginx -v 2>&1)"
 
-# --- Kerakli dasturlar
+# --- Kerakli dasturlar (ffmpeg — Instagram video uchun)
 missing=()
-for p in git certbot curl; do command -v "$p" >/dev/null || missing+=("$p"); done
+for p in git certbot curl ffmpeg; do command -v "$p" >/dev/null || missing+=("$p"); done
 if [ ${#missing[@]} -gt 0 ]; then
   say "o'rnatilmoqda: ${missing[*]}"
   apt-get update -q && apt-get install -y -q "${missing[@]}"
@@ -77,6 +77,16 @@ fi
 # --- Skriptlar root'ga tegishli nusxada ishlaydi: repodagi o'zgarish serverda root huquqini bera olmaydi
 install -m 755 "$SRC/deploy.sh" "$SRC/web.sh" "$LIB/"
 install -m 644 "$SRC"/nginx/*.conf "$LIB/nginx/"
+
+# --- Instagram video: Chromium (sayt kadrlari shu brauzerda chiziladi). Versiya package.json dagi playwright-core bilan bir xil.
+PW_VER=$("$NODE" -p "require('$SRC/../package.json').dependencies['playwright-core'] || ''" 2>/dev/null || true)
+if [ -n "$PW_VER" ]; then
+  install -d -m 755 "$APP/browsers"
+  say "video uchun Chromium o'rnatilmoqda (playwright $PW_VER, bir marta ~150 MB)..."
+  PLAYWRIGHT_BROWSERS_PATH="$APP/browsers" PATH="$(dirname "$NODE"):$PATH" npx -y "playwright@$PW_VER" install --with-deps chromium \
+    || echo "! Chromium o'rnatilmadi — video tayyorlash ishlamaydi (saytlar va botga ta'sir qilmaydi)"
+  chmod -R a+rX "$APP/browsers" 2>/dev/null || true
+fi
 
 # --- systemd
 for u in taklifnoma.service taklifnoma-bot.service taklifnoma-deploy.service taklifnoma-deploy.timer taklifnoma-deploy.path; do

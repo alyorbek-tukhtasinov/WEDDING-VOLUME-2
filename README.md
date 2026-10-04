@@ -236,6 +236,19 @@ Qanday ishlaydi:
   shablonda — havola ulashilganda chiqadigan rasm. Rasm telefonda 1600 px JPEG ga kichraytiriladi, faqat
   JPG/PNG/WEBP qabul qilinadi, to‘lovgacha rasmlarni faqat egasi ko‘radi.
 
+### Instagram video (qo‘shimcha xizmat, `VIDEO_PRICE`, standart 15 000 so‘m)
+
+`scripts/render-video.js` saytni Chromium’da ochib, **sayt oxirigacha** aylantirib yozadi (1080×1920, 30 kadr/s,
+saytning musiqasi bilan; uzunligi — sayt oxirigacha ketgan vaqt, ko‘pi bilan `VIDEO_MAX_SECONDS`=150). Sahifa vaqti
+to‘xtatilib, har kadr alohida chiziladi — server kuchsiz bo‘lsa ham video silliq (60 s video ≈ 6–15 daqiqada).
+Kitob — varaqlanadi, kino uslubi (yz) — bo‘limlar almashadi. Telegram chegarasi uchun 48 MB dan oshmaydi.
+
+- Mijoz: Mini App’da to‘lovdan oldin «🎬 Instagram uchun video ham kerak» (jami narxga qo‘shiladi) yoki keyin —
+  botda «📂 Mening taklifnomalarim» → «🎬 Instagram uchun video». Alohida chek → admin ✅ → video tayyorlanib,
+  botga yuboriladi; «🎬 Videoni olish» — qayta yuborish.
+- Admin: panelda har kartada «🎬 Video» — tayyor video sizga Telegram’da keladi (mijoz holatiga ta’sir qilmaydi).
+- Qo‘lda: `node scripts/render-video.js <nom> --out video.mp4`.
+
 ### Botni ishga tushirish (bir marta)
 
 1. Telegram’da @BotFather → `/newbot` → token oling. @userinfobot’dan o‘z Telegram ID’ingizni oling.

@@ -505,3 +505,33 @@ h1 {
   font-size: 0.75rem;
   margin-top: 2px;
 }
+
+/* Qo'shimcha xizmat: Instagram video */
+.tg-addon {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 12px 0 4px;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--tg-bg);
+  cursor: pointer;
+}
+.tg-addon.is-on {
+  border-color: var(--tg-btn);
+}
+.tg-addon input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--tg-btn);
+  flex: none;
+}
+.tg-addon small {
+  display: block;
+  margin-top: 2px;
+  color: var(--tg-hint);
+  font-size: 0.85rem;
+}

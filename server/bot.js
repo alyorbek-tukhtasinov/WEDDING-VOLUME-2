@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { tg, BOT_TOKEN, adminIds, isAdmin, appUrl, siteUrlOf, siteDomain, PRICE, fmtSum } from './telegram.js';
+import { tg, tgUpload, BOT_TOKEN, adminIds, isAdmin, appUrl, siteUrlOf, siteDomain, PRICE, VIDEO_PRICE, fmtSum } from './telegram.js';
 import { DATA_DIR, ensureDirs, listSites, readSite, writeSite, updateMeta, removeSite, takeQueue, sitesOf, STATUS, enqueue } from './data.js';
 import { requestContext } from '../api/_lib/context.js';
 import { storeConfigured, storeReady, getFinance, setFinance, listEntries } from '../api/_lib/store.js';
@@ -37,6 +37,17 @@ const STATUS_TEXT = {
   receipt: '🧾 Chek tekshirilmoqda',
   paid: '✅ Faol',
   rejected: '⚠️ Chek tasdiqlanmadi',
+};
+
+const VIDEO_TEXT = {
+  'with-site': 'sayt bilan birga buyurtma qilingan',
+  awaiting: 'to‘lov kutilmoqda',
+  receipt: 'chek tekshirilmoqda',
+  paid: 'navbatda',
+  rendering: 'tayyorlanmoqda ⏳',
+  done: 'tayyor ✅',
+  failed: 'tayyorlashda muammo — admin tekshiryapti',
+  rejected: 'chek tasdiqlanmadi',
 };
 
 const BTN = {
@@ -132,6 +143,9 @@ function siteButtons(s) {
   if (s.meta.status === STATUS.paid) {
     rows.push([{ text: '🌐 Ochish', url: siteUrlOf(s.slug) }, ...(appUrl() ? [appButton('✏️ Tahrirlash', `?slug=${s.slug}`)] : [])]);
     rows.push([{ text: '📊 Javoblar', callback_data: `rsvp:${s.slug}` }]);
+    const v = s.meta.video?.status;
+    if (v === 'done') rows.push([{ text: '🎬 Videoni olish', callback_data: `vget:${s.slug}` }]);
+    else if (!['paid', 'rendering', 'receipt'].includes(v) && !s.config.paused) rows.push([{ text: `🎬 Instagram uchun video — ${fmtSum(VIDEO_PRICE())}`, callback_data: `vbuy:${s.slug}` }]);
   } else {
     if (appUrl()) rows.push([appButton('✏️ Davom ettirish', `?slug=${s.slug}`)]);
     if (s.meta.status !== STATUS.receipt) rows.push([{ text: '💳 To‘lov qilish', callback_data: `pay:${s.slug}` }]);
@@ -152,7 +166,8 @@ async function mine(msg) {
       msg.chat.id,
       `${ev.icon} <b>${esc(namesOf(s.config))}</b>\n${esc(ev.title)} · ${prettyDate(s.config.event?.date)}${s.config.event?.time ? `, ${s.config.event.time}` : ''}\n` +
         `Holat: ${STATUS_TEXT[s.meta.status] || s.meta.status}${s.config.paused ? ' (to‘xtatilgan)' : ''}` +
-        (s.meta.status === STATUS.paid ? `\n🔗 ${siteUrlOf(s.slug)}` : ''),
+        (s.meta.status === STATUS.paid ? `\n🔗 ${siteUrlOf(s.slug)}` : '') +
+        (VIDEO_TEXT[s.meta.video?.status] ? `\n🎬 Video: ${VIDEO_TEXT[s.meta.video.status]}` : ''),
       { reply_markup: siteButtons(s) },
     );
   }
@@ -167,10 +182,14 @@ async function payInstructions(chatId, slug) {
   const card = env('PAY_CARD');
   const holder = env('PAY_CARD_HOLDER');
   const note = env('PAY_NOTE');
+  const price = s.meta.price || PRICE();
+  const withVideo = s.meta.video?.status === 'with-site';
+  const total = price + (withVideo ? s.meta.video.price || VIDEO_PRICE() : 0);
   await send(
     chatId,
     `💳 <b>To‘lov</b> — ${esc(namesOf(s.config))}\n\n` +
-      `Summa: <b>${fmtSum(s.meta.price || PRICE())}</b>\n` +
+      (withVideo ? `Taklifnoma: ${fmtSum(price)}\n🎬 Instagram video: ${fmtSum(s.meta.video.price || VIDEO_PRICE())}\n` : '') +
+      `Summa: <b>${fmtSum(total)}</b>\n` +
       (card ? `Karta: <code>${esc(card)}</code>\n` : '') +
       (holder ? `Egasi: ${esc(holder)}\n` : '') +
       (note ? `\n${esc(note)}\n` : '') +
@@ -180,18 +199,45 @@ async function payInstructions(chatId, slug) {
   );
 }
 
+/** Instagram video (to'langan saytga alohida xizmat) — to'lov ko'rsatmasi */
+async function videoPayInstructions(chatId, slug) {
+  const s = readSite(slug);
+  if (!s || s.meta.status !== STATUS.paid) return;
+  const v = s.meta.video || {};
+  if (['paid', 'rendering'].includes(v.status)) return send(chatId, '🎬 Videongiz tayyorlanmoqda — tayyor bo‘lishi bilan shu yerga yuboramiz.');
+  if (v.status === 'done') return sendVideoTo(chatId, slug);
+  updateMeta(slug, (m) => ({ ...m, video: { ...(m.video || {}), status: 'awaiting', price: m.video?.price || VIDEO_PRICE(), orderedAt: m.video?.orderedAt || new Date().toISOString(), awaitingAt: new Date().toISOString() } }));
+  const card = env('PAY_CARD');
+  const holder = env('PAY_CARD_HOLDER');
+  await send(
+    chatId,
+    `🎬 <b>Instagram uchun video</b> — ${esc(namesOf(s.config))}\n\n` +
+      `Saytingiz musiqa bilan boshidan oxirigacha o‘zi aylanadigan video (1080×1920, Reels/Stories uchun tayyor).\n\n` +
+      `Summa: <b>${fmtSum(VIDEO_PRICE())}</b>\n` +
+      (card ? `Karta: <code>${esc(card)}</code>\n` : '') +
+      (holder ? `Egasi: ${esc(holder)}\n` : '') +
+      `\nTo‘lov qilib, <b>chek rasmini shu chatga yuboring</b> 📸 — tasdiqlangach video 10–20 daqiqada tayyor bo‘ladi.`,
+    { reply_markup: mainKeyboard() },
+  );
+}
+
 async function onReceipt(msg) {
   const userId = msg.from.id;
-  const waiting = sitesOf(userId)
-    .filter((s) => [STATUS.awaiting, STATUS.rejected, STATUS.receipt].includes(s.meta.status))
-    .sort((a, b) => ((a.meta.awaitingAt || a.meta.updatedAt) < (b.meta.awaitingAt || b.meta.updatedAt) ? 1 : -1));
+  // Kutilayotgan to'lovlar: sayt yoki video — eng oxirgi so'ralgani
+  const waiting = [];
+  for (const s of sitesOf(userId)) {
+    if ([STATUS.awaiting, STATUS.rejected, STATUS.receipt].includes(s.meta.status)) waiting.push({ s, kind: 'site', at: s.meta.awaitingAt || s.meta.updatedAt });
+    if (['awaiting', 'rejected', 'receipt'].includes(s.meta.video?.status) && s.meta.status === STATUS.paid) waiting.push({ s, kind: 'video', at: s.meta.video.awaitingAt || s.meta.video.orderedAt });
+  }
+  waiting.sort((a, b) => (a.at < b.at ? 1 : -1));
   if (!waiting.length) {
     return send(msg.chat.id, 'Hozir to‘lov kutilayotgan taklifnoma yo‘q. Avval taklifnomani yarating va «💳 To‘lov qilish»ni bosing 🙂', { reply_markup: mainKeyboard() });
   }
-  const s = waiting[0];
+  const { s, kind } = waiting[0];
   const photo = msg.photo?.at(-1)?.file_id;
   const doc = msg.document?.file_id;
   const receipt = { fileId: photo || doc, kind: photo ? 'photo' : 'document', at: new Date().toISOString(), messageId: msg.message_id };
+  if (kind === 'video') return onVideoReceipt(msg, s, receipt);
   updateMeta(s.slug, (m) => ({ ...m, status: STATUS.receipt, receipt }));
   await send(msg.chat.id, '🧾 Chek qabul qilindi! Tekshirib, tez orada tasdiqlaymiz. Odatda bu bir necha daqiqa oladi ⏳', { reply_markup: mainKeyboard() });
 
@@ -201,8 +247,9 @@ async function onReceipt(msg) {
     `🧾 <b>Yangi to‘lov cheki</b>\n\n` +
     `${ev.icon} ${esc(namesOf(s.config))} — ${esc(ev.title)}\n` +
     `📅 ${prettyDate(s.config.event?.date)} · ${esc(s.config.venue?.name || '')}\n` +
-    `💰 ${fmtSum(s.meta.price || PRICE())}\n` +
-    `👤 ${esc(owner.name || '')}${owner.username ? ` (@${esc(owner.username)})` : ''} · ID <code>${owner.id}</code>\n` +
+    `💰 ${fmtSum((s.meta.price || PRICE()) + (s.meta.video?.status === 'with-site' ? s.meta.video.price || VIDEO_PRICE() : 0))}` +
+    (s.meta.video?.status === 'with-site' ? ' (sayt + 🎬 video)' : '') +
+    `\n👤 ${esc(owner.name || '')}${owner.username ? ` (@${esc(owner.username)})` : ''} · ID <code>${owner.id}</code>\n` +
     `🔗 ${s.slug}.${siteDomain()}`;
   const keyboard = { inline_keyboard: [[{ text: '✅ Tasdiqlash', callback_data: `ok:${s.slug}` }, { text: '❌ Rad etish', callback_data: `no:${s.slug}` }]] };
   for (const id of adminIds()) {
@@ -215,12 +262,57 @@ async function onReceipt(msg) {
   }
 }
 
-async function recordFinance(slug, amount) {
+async function onVideoReceipt(msg, s, receipt) {
+  updateMeta(s.slug, (m) => ({ ...m, video: { ...m.video, status: 'receipt', receipt } }));
+  await send(msg.chat.id, '🧾 Video uchun chek qabul qilindi! Tasdiqlangach, video tayyorlanadi ⏳', { reply_markup: mainKeyboard() });
+  const owner = s.meta.owner || {};
+  const caption =
+    `🧾 <b>🎬 Video uchun chek</b>\n\n${esc(namesOf(s.config))}\n💰 ${fmtSum(s.meta.video?.price || VIDEO_PRICE())}\n` +
+    `👤 ${esc(owner.name || '')}${owner.username ? ` (@${esc(owner.username)})` : ''} · ID <code>${owner.id}</code>\n🔗 ${siteUrlOf(s.slug)}`;
+  const keyboard = { inline_keyboard: [[{ text: '✅ Tasdiqlash', callback_data: `vok:${s.slug}` }, { text: '❌ Rad etish', callback_data: `vno:${s.slug}` }]] };
+  for (const id of adminIds()) {
+    try {
+      if (receipt.kind === 'photo') await tg('sendPhoto', { chat_id: id, photo: receipt.fileId, caption, parse_mode: 'HTML', reply_markup: keyboard });
+      else await tg('sendDocument', { chat_id: id, document: receipt.fileId, caption, parse_mode: 'HTML', reply_markup: keyboard });
+    } catch (err) {
+      log(`! adminga video cheki yuborilmadi (${id}): ${err.message}`);
+    }
+  }
+}
+
+async function onVideoDecision(cb, ok, slug) {
+  const s = readSite(slug);
+  const answer = (text, alert = false) => tg('answerCallbackQuery', { callback_query_id: cb.id, text, show_alert: alert }).catch(() => {});
+  if (!s) return answer('Sayt topilmadi', true);
+  const caption = `${cb.message?.caption || cb.message?.text || ''}\n\n${ok ? '✅ Tasdiqlandi' : '❌ Rad etildi'} — ${esc(cb.from.first_name || 'admin')}`;
+  const mark = () =>
+    (cb.message?.caption != null
+      ? tg('editMessageCaption', { chat_id: cb.message.chat.id, message_id: cb.message.message_id, caption, parse_mode: 'HTML' })
+      : tg('editMessageText', { chat_id: cb.message.chat.id, message_id: cb.message.message_id, text: caption, parse_mode: 'HTML' })
+    ).catch(() => {});
+  if (ok) {
+    if (['paid', 'rendering', 'done'].includes(s.meta.video?.status)) return answer('Allaqachon tasdiqlangan');
+    updateMeta(slug, (m) => ({ ...m, video: { ...m.video, status: 'paid', paidAt: new Date().toISOString() } }));
+    await recordFinance(slug, (s.meta.price || PRICE()) + (s.meta.video?.price || VIDEO_PRICE()), '+ video');
+    enqueue({ type: 'video', slug, notify: true });
+    await mark();
+    await answer('Tasdiqlandi — video tayyorlanmoqda');
+    await send(s.meta.owner.id, '✅ To‘lov tasdiqlandi! 🎬 Videongiz tayyorlanmoqda — odatda 10–20 daqiqa. Tayyor bo‘lishi bilan shu yerga yuboramiz.');
+  } else {
+    updateMeta(slug, (m) => ({ ...m, video: { ...m.video, status: 'rejected' } }));
+    await mark();
+    await answer('Rad etildi');
+    await send(s.meta.owner.id, '⚠️ Video uchun chekni tasdiqlay olmadik. Summa va kartani tekshirib, <b>to‘g‘ri chekni qayta yuboring</b>.');
+  }
+}
+
+async function recordFinance(slug, amount, noteExtra = '') {
   if (!storeConfigured()) return;
   try {
     await requestContext.run({ slug: 'boshqaruv', adminPassword: '' }, async () => {
       const cur = (await getFinance())?.items || {};
-      const items = { ...cur, [slug]: { ...(cur[slug] || {}), amount, paid: true, note: cur[slug]?.note || 'Telegram bot' } };
+      const note = cur[slug]?.note || 'Telegram bot';
+      const items = { ...cur, [slug]: { ...(cur[slug] || {}), amount, paid: true, note: noteExtra && !note.includes(noteExtra) ? `${note} ${noteExtra}` : note } };
       await setFinance({ items, updatedAt: new Date().toISOString() });
     });
   } catch (err) {
@@ -249,8 +341,15 @@ async function onAdminDecision(cb, ok, slug) {
       await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Allaqachon tasdiqlangan' });
       return;
     }
-    updateMeta(slug, (m) => ({ ...m, status: STATUS.paid, paidAt: new Date().toISOString(), approvedBy: cb.from.id }));
-    await recordFinance(slug, s.meta.price || PRICE());
+    const withVideo = s.meta.video?.status === 'with-site';
+    updateMeta(slug, (m) => ({
+      ...m,
+      status: STATUS.paid,
+      paidAt: new Date().toISOString(),
+      approvedBy: cb.from.id,
+      ...(withVideo ? { video: { ...m.video, status: 'paid', paidAt: new Date().toISOString() } } : {}),
+    }));
+    await recordFinance(slug, (s.meta.price || PRICE()) + (withVideo ? s.meta.video.price || VIDEO_PRICE() : 0), withVideo ? '+ video' : '');
     enqueue({ type: 'build', slug, reason: 'paid', notify: true });
     await mark(`✅ Tasdiqlandi — ${who}`);
     await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Tasdiqlandi — sayt yig‘ilmoqda' });
@@ -348,6 +447,9 @@ async function processQueue() {
       const evt = pending.shift();
       try {
         if (evt.type === 'pay') await payInstructions(evt.chatId, evt.slug);
+        else if (evt.type === 'videopay') await videoPayInstructions(evt.chatId, evt.slug);
+        else if (evt.type === 'videosend') await sendVideoTo(evt.chatId, evt.slug);
+        else if (evt.type === 'video') queueVideo(evt);
         else if (evt.type === 'build') await handleBuild(evt);
         else if (evt.type === 'notify' && evt.chatId) await send(evt.chatId, evt.text);
       } catch (err) {
@@ -379,6 +481,8 @@ async function handleBuild(evt) {
   }
   log(`✔ ${evt.slug} yig'ildi (${((Date.now() - t0) / 1000).toFixed(1)} s, ${evt.reason || ''})`);
   linkLive(evt.slug);
+  // Sayt bilan birga buyurtma qilingan video — sayt tayyor bo'lgach
+  if (readSite(evt.slug)?.meta.video?.status === 'paid') queueVideo({ type: 'video', slug: evt.slug, notify: true });
   if (evt.notify) {
     const url = siteUrlOf(evt.slug);
     // Sertifikat kutilayotganda boshqa xabarlar to'xtab qolmasin
@@ -394,10 +498,112 @@ async function handleBuild(evt) {
   }
 }
 
+/* ------------------------------------ Video (Instagram) ------------------------------------ */
+// Alohida navbat: video uzoq (10–20 daqiqa) tayyorlanadi — sayt yig'ish va boshqa xabarlar kutib qolmaydi.
+const VIDEOS_DIR = () => path.join(DATA_DIR(), 'videos');
+const videoQueue = [];
+let videoBusy = false;
+
+function queueVideo(evt) {
+  if (videoQueue.some((e) => e.slug === evt.slug && !!e.admin === !!evt.admin)) return;
+  videoQueue.push(evt);
+  processVideos();
+}
+
+function runRender(slug, out) {
+  return new Promise((resolve) => {
+    const p = spawn(process.execPath, [path.join(ROOT, 'scripts', 'render-video.js'), slug, '--out', out], {
+      cwd: ROOT,
+      env: { ...process.env, VIDEO_TMP: path.join(DATA_DIR(), 'tmp') },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let outText = '';
+    p.stdout.on('data', (d) => (outText = (outText + d).slice(-2000)));
+    p.stderr.on('data', (d) => (outText = (outText + d).slice(-2000)));
+    const timer = setTimeout(() => p.kill('SIGKILL'), 60 * 60e3);
+    p.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ ok: code === 0, out: outText.trim() });
+    });
+  });
+}
+
+async function processVideos() {
+  if (videoBusy) return;
+  videoBusy = true;
+  try {
+    while (videoQueue.length) {
+      const evt = videoQueue.shift();
+      // Admin (panel) so'rovi mijozning video holatiga tegmaydi — alohida fayl, faqat adminlarga
+      const site = evt.admin ? null : readSite(evt.slug);
+      fs.mkdirSync(VIDEOS_DIR(), { recursive: true });
+      const out = path.join(VIDEOS_DIR(), evt.admin ? `admin-${evt.slug}.mp4` : `${evt.slug}.mp4`);
+      if (site) updateMeta(evt.slug, (m) => ({ ...m, video: { ...(m.video || {}), status: 'rendering', startedAt: new Date().toISOString() } }));
+      const t0 = Date.now();
+      log(`🎬 ${evt.slug}: video tayyorlanmoqda…`);
+      const r = await runRender(evt.slug, out);
+      if (!r.ok || !fs.existsSync(out)) {
+        log(`✖ ${evt.slug} video: ${r.out.slice(-400)}`);
+        if (site) updateMeta(evt.slug, (m) => ({ ...m, video: { ...m.video, status: 'failed' } }));
+        await toAdmins(`⚠️ <b>${esc(evt.slug)}</b> videosi tayyorlanmadi:\n<code>${esc(r.out.slice(-600))}</code>`);
+        if (site && evt.notify) await send(site.meta.owner.id, 'Videoni tayyorlashda muammo chiqdi — admin tekshiryapti, tez orada yuboramiz 🙏');
+        if (evt.admin) await toAdmins(`(panel so‘rovi: ${esc(evt.slug)})`);
+        continue;
+      }
+      const seconds = Number((/— ([\d.]+) s video/.exec(r.out) || [])[1]) || 0;
+      log(`✔ ${evt.slug} video tayyor (${seconds} s, ${((Date.now() - t0) / 60e3).toFixed(1)} daqiqada)`);
+      if (site) updateMeta(evt.slug, (m) => ({ ...m, video: { ...m.video, status: 'done', seconds, doneAt: new Date().toISOString(), fileId: '' } }));
+      // Panel'dan (admin) so'ralgan — adminlarga; mijoz buyurtmasi — mijozga
+      const targets = evt.admin ? adminIds() : site ? [site.meta.owner.id] : adminIds();
+      for (const chat of targets) await sendVideoTo(chat, evt.slug, { admin: !!evt.admin, file: out });
+    }
+  } finally {
+    videoBusy = false;
+  }
+}
+
+/** Tayyor videoni yuborish: avval yuborilgan bo'lsa — Telegram'dagi nusxasi (file_id), aks holda fayl */
+async function sendVideoTo(chatId, slug, { admin = false, file = path.join(VIDEOS_DIR(), `${slug}.mp4`) } = {}) {
+  const site = readSite(slug);
+  const names = site ? namesOf(site.config) : slug;
+  const caption = admin
+    ? `🎬 ${esc(names)} — video tayyor (${slug})`
+    : `🎬 <b>${esc(names)}</b> — taklifnomangiz videosi tayyor!\n\nInstagram Reels/Stories, Telegram yoki WhatsApp’da ulashing. Havola: ${siteUrlOf(slug)}`;
+  const fileId = admin ? '' : site?.meta.video?.fileId;
+  try {
+    if (fileId) {
+      await tg('sendVideo', { chat_id: chatId, video: fileId, caption, parse_mode: 'HTML', supports_streaming: true });
+      return;
+    }
+    if (!fs.existsSync(file)) {
+      if (site && !admin) queueVideo({ type: 'video', slug, notify: true });
+      return send(chatId, '🎬 Video qayta tayyorlanmoqda — biroz kuting.');
+    }
+    const r = await tgUpload(
+      'sendVideo',
+      { chat_id: chatId, caption, parse_mode: 'HTML', supports_streaming: true, width: 1080, height: 1920, duration: admin ? undefined : Math.round(site?.meta.video?.seconds || 0) || undefined },
+      { field: 'video', path: file, name: `${slug}.mp4` },
+    );
+    if (site && !admin && r?.video?.file_id) updateMeta(slug, (m) => ({ ...m, video: { ...m.video, fileId: r.video.file_id } }));
+  } catch (err) {
+    log(`! video yuborilmadi (${chatId}): ${err.message}`);
+    await send(chatId, 'Videoni yuborishda xato bo‘ldi — admin tekshiryapti 🙏');
+  }
+}
+
 /* ------------------------------------ Tozalash ------------------------------------ */
 function cleanup(st) {
   if (Date.now() - (st.lastCleanup || 0) < 3600e3) return;
   st.lastCleanup = Date.now();
+  // Video fayllari 30 kundan keyin o'chadi (Telegram'dagi nusxasi orqali qayta yuborish mumkin)
+  try {
+    for (const f of fs.existsSync(VIDEOS_DIR()) ? fs.readdirSync(VIDEOS_DIR()) : []) {
+      const p = path.join(VIDEOS_DIR(), f);
+      if (Date.now() - fs.statSync(p).mtimeMs > 30 * 86400e3) fs.rmSync(p, { force: true });
+    }
+  } catch {
+    /* keyingi safar */
+  }
   const limit = Date.now() - DRAFT_DAYS() * 86400e3;
   for (const s of listSites()) {
     if ([STATUS.paid, STATUS.receipt].includes(s.meta.status)) continue;
@@ -413,14 +619,24 @@ async function adminStats(msg) {
   const all = listSites();
   const by = (st) => all.filter((s) => s.meta.status === st);
   const receipts = by(STATUS.receipt);
+  const vReceipts = all.filter((s) => s.meta.video?.status === 'receipt');
+  const vWork = all.filter((s) => ['paid', 'rendering'].includes(s.meta.video?.status)).length;
   await send(
     msg.chat.id,
     `🛠 <b>Bot saytlari</b>\n\n` +
       `✅ Faol: ${by(STATUS.paid).length}\n🧾 Chek tekshiruvda: ${receipts.length}\n💳 To‘lov kutilmoqda: ${by(STATUS.awaiting).length}\n` +
-      `📝 Qoralama: ${by(STATUS.draft).length}\n⚠️ Rad etilgan: ${by(STATUS.rejected).length}\n\n` +
+      `📝 Qoralama: ${by(STATUS.draft).length}\n⚠️ Rad etilgan: ${by(STATUS.rejected).length}\n` +
+      `🎬 Video: ${all.filter((s) => s.meta.video?.status === 'done').length} tayyor, ${vWork} navbatda, ${vReceipts.length} chek tekshiruvda\n\n` +
       `Barcha imkoniyatlar — boshqaruv panelida: https://boshqaruv.${siteDomain()}`,
-    receipts.length
-      ? { reply_markup: { inline_keyboard: receipts.slice(0, 10).map((s) => [{ text: `✅ ${namesOf(s.config)}`, callback_data: `ok:${s.slug}` }, { text: '❌', callback_data: `no:${s.slug}` }]) } }
+    receipts.length || vReceipts.length
+      ? {
+          reply_markup: {
+            inline_keyboard: [
+              ...receipts.slice(0, 10).map((s) => [{ text: `✅ ${namesOf(s.config)}`, callback_data: `ok:${s.slug}` }, { text: '❌', callback_data: `no:${s.slug}` }]),
+              ...vReceipts.slice(0, 10).map((s) => [{ text: `✅ 🎬 ${namesOf(s.config)}`, callback_data: `vok:${s.slug}` }, { text: '❌', callback_data: `vno:${s.slug}` }]),
+            ],
+          },
+        }
       : {},
   );
 }
@@ -431,6 +647,13 @@ async function onUpdate(u) {
     const cb = u.callback_query;
     const [kind, slug] = String(cb.data || '').split(':');
     if ((kind === 'ok' || kind === 'no') && isAdmin(cb.from.id)) return onAdminDecision(cb, kind === 'ok', slug);
+    if ((kind === 'vok' || kind === 'vno') && isAdmin(cb.from.id)) return onVideoDecision(cb, kind === 'vok', slug);
+    if (kind === 'vbuy' || kind === 'vget') {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+      const s = readSite(slug);
+      if (!s || String(s.meta.owner?.id) !== String(cb.from.id)) return;
+      return kind === 'vget' ? sendVideoTo(cb.from.id, slug) : videoPayInstructions(cb.from.id, slug);
+    }
     if (kind === 'pay') {
       await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
       const s = readSite(slug);
@@ -490,7 +713,9 @@ async function main() {
   // Yangilanish (deploy) paytida to'xtab qolgan yig'ishlar — qaytadan
   for (const s of listSites()) {
     if (s.meta.status === STATUS.paid && !fs.existsSync(path.join(DATA_DIR(), 'built', s.slug, 'index.html'))) enqueue({ type: 'build', slug: s.slug, reason: 'restart' });
+    else if (s.meta.status === STATUS.paid && ['paid', 'rendering'].includes(s.meta.video?.status)) enqueue({ type: 'video', slug: s.slug, notify: true });
   }
+  fs.rmSync(path.join(DATA_DIR(), 'tmp'), { recursive: true, force: true }); // to'xtab qolgan video qoldiqlari
   const st = loadState();
   const me = await tg('getMe');
   log(`Bot: @${me.username} · ma'lumotlar: ${DATA_DIR()} · Mini App: ${appUrl() || '(yo‘q)'} · adminlar: ${adminIds().join(', ') || '(yo‘q!)'}`);

@@ -121,10 +121,37 @@ function showHome() {
                     ${s.url ? html`<a class="tg-btn" href="${s.url}" target="_blank" rel="noopener" data-open="${s.url}">🌐 Ochish</a>` : ''}
                     ${s.status !== 'paid' ? html`<button class="tg-btn tg-btn--ghost" type="button" data-act="remove" data-slug="${s.slug}">🗑</button>` : ''}
                   </div>
+                  ${s.status === 'paid' && !s.paused ? videoRow(s) : ''}
                 </article>`;
               })}
             </div>`
         : html`<p class="tg-muted tg-center">Narxi: <b>${fmtSum(me.price)}</b> · namunalarni bot menyusidagi «👀 Namunalar»da ko‘ring</p>`}
+    </main>`);
+}
+
+/** To'langan sayt kartasida: Instagram video (buyurtma / holat / olish) */
+const VIDEO_STATE = { awaiting: '💳 Video: to‘lov kutilmoqda', receipt: '🧾 Video: chek tekshirilmoqda', paid: '⏳ Video navbatda', rendering: '⏳ Video tayyorlanmoqda', 'with-site': '⏳ Video navbatda', failed: '⚠️ Video: admin tekshiryapti' };
+function videoRow(s) {
+  if (s.video === 'done') return html`<div class="tg-row"><button class="tg-btn" type="button" data-act="video" data-slug="${s.slug}">🎬 Videoni olish</button></div>`;
+  if (['receipt', 'paid', 'rendering', 'with-site', 'failed'].includes(s.video)) return html`<p class="tg-muted">${VIDEO_STATE[s.video]}</p>`;
+  return html`<div class="tg-row"><button class="tg-btn" type="button" data-act="video" data-slug="${s.slug}">🎬 Instagram uchun video — ${fmtSum(state.me.videoPrice)}</button></div>`;
+}
+
+async function orderVideo(slug) {
+  const r = await api('video', { method: 'POST', body: { slug } });
+  if (!r.ok) return toast(r.message || 'Bo‘lmadi');
+  haptic('heavy');
+  const done = r.video === 'done';
+  root.innerHTML = String(html`
+    <main class="tg-page tg-done">
+      <p class="tg-done__icon">🎬</p>
+      <h1>${done ? 'Video bot chatiga yuborildi' : r.video === 'awaiting' ? 'Video buyurtmasi qabul qilindi' : 'Video tayyorlanmoqda'}</h1>
+      <p class="tg-lead">${done
+        ? 'Bot chatini oching — video o‘sha yerda.'
+        : r.video === 'awaiting'
+          ? html`To‘lov ma’lumotlari (${fmtSum(state.me.videoPrice)}) <b>bot chatiga</b> yuborildi. Chekni o‘sha chatga yuboring — tasdiqlangach video 10–20 daqiqada tayyor bo‘ladi.`
+          : 'Tayyor bo‘lishi bilan bot chatiga yuboramiz.'}</p>
+      <button class="tg-btn tg-btn--primary tg-btn--big" type="button" data-act="close">Bot chatiga qaytish</button>
     </main>`);
 }
 
@@ -160,7 +187,7 @@ async function openSite(slug) {
   }
   await loadMediaUrls(r.config, slug);
   // Qoralama — ismlardan davom etadi (dizayn/marosim orqaga qaytib o'zgartiriladi)
-  state.ed = { slug, config: r.config, status: r.status, url: r.url, step: r.status === 'paid' ? 0 : 2, textTouched: r.config.texts?.invitation && r.config.texts.invitation !== autoText(r.config) };
+  state.ed = { slug, video: r.video === 'with-site', config: r.config, status: r.status, url: r.url, step: r.status === 'paid' ? 0 : 2, textTouched: r.config.texts?.invitation && r.config.texts.invitation !== autoText(r.config) };
   renderStep();
 }
 
@@ -285,8 +312,12 @@ function stepHtml(id, c) {
         ${errs.length ? html`<p class="tg-warn">⚠ ${errs.length} ta maydon to‘ldirilmagan — orqaga qaytib to‘ldiring</p>` : ''}
         ${paid
           ? html`<p class="tg-muted">Saqlasangiz, o‘zgarishlar ~1 daqiqada saytda paydo bo‘ladi.</p>`
-          : html`<p class="tg-price">Narxi: <b>${fmtSum(state.me.price)}</b></p>
-              <p class="tg-muted">To‘lov ma’lumotlari bot chatiga keladi. Chekni yuborganingizdan keyin sayt havolasi shu yerga keladi.</p>`}
+          : html`<label class="tg-addon ${ed.video ? 'is-on' : ''}">
+                <input type="checkbox" data-video-addon ${ed.video ? 'checked' : ''} />
+                <span><b>🎬 Instagram uchun video ham kerak</b><small>Saytingiz musiqa bilan o‘zi aylanadigan video (Reels/Stories) — +${fmtSum(state.me.videoPrice)}</small></span>
+              </label>
+              <p class="tg-price">Jami: <b>${fmtSum(state.me.price + (ed.video ? state.me.videoPrice : 0))}</b></p>
+              <p class="tg-muted">To‘lov ma’lumotlari bot chatiga keladi. Chekni yuborganingizdan keyin sayt havolasi${ed.video ? ' (va keyin video)' : ''} shu yerga keladi.</p>`}
       </div>`;
   }
   return '';
@@ -391,6 +422,11 @@ function onChange(e) {
     c.musicTrack = t.value;
     $$('.tg-option--music, .tg-option').forEach((x) => x.classList.toggle('is-on', !!x.querySelector('input:checked')));
     return;
+  }
+  if (t.matches('[data-video-addon]')) {
+    ed.video = t.checked;
+    haptic();
+    return renderStep();
   }
   if (t.matches('[data-upload]')) {
     const files = [...(t.files || [])];
@@ -601,7 +637,7 @@ async function pay() {
   if (!r) return;
   const errs = validateConfig(ed.config, [...usedMedia(ed.config)]);
   if (errs.length) return toast('Barcha maydonlarni to‘ldiring');
-  const p = await api('pay', { method: 'POST', body: { slug: ed.slug } });
+  const p = await api('pay', { method: 'POST', body: { slug: ed.slug, video: !!ed.video } });
   if (!p.ok) return toast(p.message || 'Xato');
   haptic('heavy');
   root.innerHTML = String(html`
@@ -655,6 +691,7 @@ root.addEventListener('click', async (e) => {
   if (act === 'next') return next();
   if (act === 'back') return back();
   if (act === 'pay') return pay();
+  if (act === 'video') return orderVideo(b.dataset.slug);
   if (act === 'close') return tg?.close ? tg.close() : showHome();
   if (act === 'save') {
     const r = await saveDraft();

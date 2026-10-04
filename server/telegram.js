@@ -74,6 +74,19 @@ export async function tg(method, body = {}, { timeoutMs = 70e3 } = {}) {
   }
 }
 
+/** Fayl yuborish (sendVideo, sendDocument …): multipart. fields — oddiy maydonlar, file — { field, path, name }. */
+export async function tgUpload(method, fields, file, { timeoutMs = 300e3 } = {}) {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields)) if (v !== undefined) form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+  form.append(file.field, new Blob([fs.readFileSync(file.path)]), file.name || 'file');
+  const res = await fetch(`${API_BASE()}/bot${BOT_TOKEN()}/${method}`, { method: 'POST', body: form, signal: AbortSignal.timeout(timeoutMs) });
+  const json = await res.json().catch(() => ({}));
+  if (!json.ok) throw new Error(json.description || `Telegram ${method}: HTTP ${res.status}`);
+  return json.result;
+}
+
+export const VIDEO_PRICE = () => Number(env('VIDEO_PRICE', '15000').replace(/\D/g, '')) || 15000;
+
 /** Sayt domeni: SITE_DOMAIN yoki /etc/taklifnoma/deploy.conf dan. */
 export function siteDomain() {
   if (env('SITE_DOMAIN')) return env('SITE_DOMAIN').toLowerCase();

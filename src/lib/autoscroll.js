@@ -78,7 +78,8 @@ export function initAutoScroll(c, o = {}) {
   const mode = autoScrollMode(c);
   // Saytga xos tezlik (config.autoScrollSpeed, standart 1): 1.5 — 1.5 baravar tez
   const k = Number(c?.autoScrollSpeed) > 0 ? Math.min(3, Math.max(0.5, Number(c.autoScrollSpeed))) : 1;
-  if (mode === 'off') return (current = { ready() {}, destroy() {} });
+  // Video yozilayotganda (scripts/render-video.js) sahifani yozuvchining o'zi aylantiradi
+  if (mode === 'off' || globalThis.__TAKLIFNOMA_VIDEO__) return (current = { ready() {}, destroy() {} });
   ensureStyle();
 
   const scroller = o.scroller || window;
