@@ -15,7 +15,7 @@
   "texts": {
     "heroCaption": "Nikoh to‘yiga taklifnoma",
     "greeting": "Hurmatli mehmonimiz!",
-    "invitation": "Ikki qalbni bir taqdirga bog‘lagan Yaratganga hamdlar bo‘lsin! Farzandlarimiz Jahongirshox va Gulasalning nikoh to‘yi — hayotimizdagi eng nurli kunlardan biri. Shu quvonchli kunda sizni davramizda ko‘rish va duolaringizni olish biz uchun katta baxt.",
+    "invitation": "Ikki qalbni bir taqdirga bog‘lagan Yaratganga hamdlar bo‘lsin! Biz — Jahongirshox va Gulasal — hayotimizdagi eng nurli kunda, nikoh to‘yimizda sizni davramizda ko‘rishni chin dildan istaymiz. Duolaringiz va tabassumingiz bu kunni yanada go‘zal qiladi.",
     "closing": "Tashrifingiz — to‘yimizning eng go‘zal bezagi!"
   },
   "venue": {
@@ -71,5 +71,6 @@
   "backgroundImage": "fon-muspmbzvbk2.jpg",
   "backgroundOverlay": 0.84,
   "autoScroll": "auto",
-  "autoScrollSpeed": 1.5
+  "autoScrollSpeed": 1.5,
+  "invitedBy": "couple"
 }
