@@ -231,6 +231,10 @@ Qanday ishlaydi:
   xabarlar adminga boradi; admin o‘sha xabarga **reply** qilsa — javob mijozga yetadi. `/admin` — statistika.
 - Boshqaruv panelida bot saytlari **🤖** belgisi bilan: tahrirlash, to‘xtatish, o‘chirish va **«✅ To‘lovni tasdiqlash»**.
 - To‘lanmagan qoralamalar `DRAFT_DAYS` (10) kundan keyin o‘chadi.
+- **Rasmlar** (Mini App’ning «Rasmlar» qadami, `src/lib/photo-slots.js`): Klassik (volume2) — orqa fon, to‘yxona
+  surati, galereya (6 tagacha); Yashil/Pushti bog‘ — orqa fon; Kino uslubi (yz) — 5 ta bo‘lim surati; hamma
+  shablonda — havola ulashilganda chiqadigan rasm. Rasm telefonda 1600 px JPEG ga kichraytiriladi, faqat
+  JPG/PNG/WEBP qabul qilinadi, to‘lovgacha rasmlarni faqat egasi ko‘radi.
 
 ### Botni ishga tushirish (bir marta)
 

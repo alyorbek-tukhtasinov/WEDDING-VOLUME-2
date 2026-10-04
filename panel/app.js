@@ -7,6 +7,7 @@ import { EVENTS, findEvent, eventTexts } from '../src/lib/events.js';
 import { parseMapInput } from '../src/lib/maps.js';
 import { MONTHS, isValidDate, TIME_RE, validateConfig } from '../src/lib/config.js';
 import { defaultConfig, addDays, todayIso } from '../src/lib/starter.js';
+import { slotsFor, getField, usedMedia } from '../src/lib/photo-slots.js';
 
 const tg = window.Telegram?.WebApp;
 const root = document.getElementById('app');
@@ -36,6 +37,7 @@ const STATUS = {
 /* ------------------------------------ Holat ------------------------------------ */
 const state = {
   me: null,
+  mediaUrls: {}, // fayl nomi → ko'rsatish uchun blob: URL (qoralama rasmlari ochiq emas)
   ed: null, // { slug, config, status, step, textTouched, saving }
 };
 
@@ -80,6 +82,7 @@ const STEPS = [
   { id: 'date', title: 'Sana va vaqt' },
   { id: 'venue', title: 'To‘yxona' },
   { id: 'music', title: 'Musiqa' },
+  { id: 'photos', title: 'Rasmlar' },
   { id: 'text', title: 'Taklif matni', skip: (c) => c.template === 'yz' },
   { id: 'preview', title: 'Ko‘rinish' },
 ];
@@ -155,6 +158,7 @@ async function openSite(slug) {
     toast(r.message || 'Topilmadi');
     return showHome();
   }
+  await loadMediaUrls(r.config, slug);
   // Qoralama — ismlardan davom etadi (dizayn/marosim orqaga qaytib o'zgartiriladi)
   state.ed = { slug, config: r.config, status: r.status, url: r.url, step: r.status === 'paid' ? 0 : 2, textTouched: r.config.texts?.invitation && r.config.texts.invitation !== autoText(r.config) };
   renderStep();
@@ -236,6 +240,33 @@ function stepHtml(id, c) {
         <label class="tg-option ${c.musicTrack === 'none' ? 'is-on' : ''}"><input type="radio" name="music" value="none" ${c.musicTrack === 'none' ? 'checked' : ''} /><span class="tg-option__icon">🔇</span><span><b>Musiqasiz</b></span></label>
       </div>`;
   }
+  if (id === 'photos') {
+    return html`<p class="tg-lead">Xohlasangiz, o‘z suratlaringizni qo‘shing — hammasi ixtiyoriy. Rasm avtomatik kichraytiriladi.</p>
+      ${slotsFor(c.template).map((s) => {
+        const v = getField(c, s.field);
+        const list = (Array.isArray(v) ? v : v ? [v] : []).filter(Boolean);
+        const canAdd = s.multi ? list.length < s.multi : !list.length;
+        return html`<section class="tg-slot" data-slot="${s.field}">
+          <p class="tg-slot__title">${s.title}${s.multi ? html` <small>${list.length}/${s.multi}</small>` : ''}</p>
+          ${s.hint ? html`<p class="tg-muted">${s.hint}</p>` : ''}
+          <div class="tg-thumbs">
+            ${list.map((n) => html`<figure class="tg-thumb">
+              <img src="${state.mediaUrls[n] || ''}" alt="" />
+              <button type="button" class="tg-thumb__del" data-unmedia="${s.field}" data-name="${n}" aria-label="O‘chirish">✕</button>
+            </figure>`)}
+            ${canAdd
+              ? html`<label class="tg-thumb tg-thumb--add">
+                  <input type="file" accept="image/*" data-upload="${s.field}" ${s.multi ? 'multiple' : ''} />
+                  <span>＋<small>${list.length && !s.multi ? 'Almashtirish' : 'Rasm qo‘shish'}</small></span>
+                </label>`
+              : !s.multi
+                ? html`<label class="tg-thumb tg-thumb--add"><input type="file" accept="image/*" data-upload="${s.field}" /><span>↻<small>Almashtirish</small></span></label>`
+                : ''}
+          </div>
+          <p class="tg-muted tg-slot__status" data-status="${s.field}"></p>
+        </section>`;
+      })}`;
+  }
   if (id === 'text') {
     return html`<p class="tg-lead">Taklif matni ismlaringiz bilan tayyor. Xohlasangiz, o‘zgartiring.</p>
       <label class="tg-field"><span>Taklif matni</span><textarea data-path="texts.invitation" rows="8" maxlength="1200">${c.texts?.invitation || autoText(c)}</textarea></label>
@@ -244,7 +275,7 @@ function stepHtml(id, c) {
       <label class="tg-field"><span>Taklif qiluvchilar (ixtiyoriy)</span><input data-path="hosts" value="${c.hosts || ''}" placeholder="Masalan: Karimovlar oilasi" maxlength="120" /></label>`;
   }
   if (id === 'preview') {
-    const errs = validateConfig(c, []);
+    const errs = validateConfig(c, [...usedMedia(c)]);
     const paid = ed.status === 'paid';
     return html`<div class="tg-phone"><iframe id="preview-frame" title="Ko‘rinish" src="/preview-${DESIGNS[c.template]?.preview || 'v2'}.html"></iframe></div>
       <div class="tg-summary">
@@ -361,6 +392,11 @@ function onChange(e) {
     $$('.tg-option--music, .tg-option').forEach((x) => x.classList.toggle('is-on', !!x.querySelector('input:checked')));
     return;
   }
+  if (t.matches('[data-upload]')) {
+    const files = [...(t.files || [])];
+    if (files.length) uploadFiles(t.dataset.upload, files);
+    return;
+  }
   if (t.matches('[data-solo]')) {
     c.couple = { ...c.couple };
     if (t.checked) c.couple.showGroom = false;
@@ -378,7 +414,6 @@ function carryOver(from, to, { keepTime }) {
   if (from.invitedBy) to.invitedBy = from.invitedBy;
   if (from.palette && ['volume3', 'volume4'].includes(to.template)) to.palette = from.palette;
   if (from.hosts && 'hosts' in to) to.hosts = from.hosts;
-  if (from.musicTrack) to.musicTrack = from.musicTrack;
   if (to.texts && from.texts && to.template !== 'yz') {
     to.texts = { ...to.texts };
     // Qo'lda yozilgan taklif matni saqlanadi; avtomatik matn yangi ismlar bilan qayta tuziladi
@@ -405,11 +440,86 @@ function previewConfig(c) {
 function sendPreview() {
   const frame = $('#preview-frame');
   if (!frame?.contentWindow || !state.ed) return;
-  frame.contentWindow.postMessage({ config: previewConfig(state.ed.config), media: {}, mediaBase: '/media/' }, location.origin);
+  frame.contentWindow.postMessage({ config: previewConfig(state.ed.config), media: { ...state.mediaUrls }, mediaBase: '/media/' }, location.origin);
 }
 window.addEventListener('message', (e) => {
   if (e.origin === location.origin && e.data?.previewReady) sendPreview();
 });
+
+/* ------------------------------------ Rasmlar ------------------------------------ */
+// Telefondagi katta rasm brauzerda kichraytiriladi (1600 px, JPEG) — tez yuklanadi, sayt tez ochiladi
+async function compressImage(file, maxSide = 1600, quality = 0.84) {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bmp.width * scale);
+  canvas.height = Math.round(bmp.height * scale);
+  canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close?.();
+  const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', quality));
+  const b64 = await new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(',')[1]);
+    fr.onerror = reject;
+    fr.readAsDataURL(blob);
+  });
+  return { b64, url: URL.createObjectURL(blob) };
+}
+
+/** Saytdagi rasmlarni ko'rsatish uchun yuklab olish (qoralama rasmlari faqat egasiga ochiq) */
+async function loadMediaUrls(c, slug) {
+  await Promise.all(
+    [...usedMedia(c)].filter((n) => !state.mediaUrls[n]).map(async (n) => {
+      try {
+        const r = await fetch(`/api/panel/app/media?slug=${encodeURIComponent(slug)}&name=${encodeURIComponent(n)}`, { headers: { 'X-Telegram-Init-Data': tg?.initData || '' } });
+        if (r.ok) state.mediaUrls[n] = URL.createObjectURL(await r.blob());
+      } catch {
+        /* ko'rinishda rasm chiqmaydi, xolos */
+      }
+    }),
+  );
+}
+
+async function uploadFiles(field, files) {
+  const ed = state.ed;
+  const status = $(`[data-status="${field}"]`);
+  for (const [i, file] of files.entries()) {
+    if (status) status.textContent = files.length > 1 ? `Yuklanmoqda… ${i + 1}/${files.length}` : 'Yuklanmoqda…';
+    try {
+      const { b64, url } = await compressImage(file);
+      const r = await api('upload', { method: 'POST', body: { slug: ed.slug, field, data: b64 } });
+      if (!r.ok) {
+        toast(r.message || 'Rasm yuklanmadi');
+        break;
+      }
+      state.mediaUrls[r.name] = url;
+      setPathValue(ed.config, field, r.value);
+      if (field === 'backgroundImage' && ed.config.template === 'volume2') ed.config.backgroundOverlay ??= 0.84;
+    } catch {
+      toast('Bu faylni o‘qib bo‘lmadi — boshqa rasm tanlang');
+      break;
+    }
+  }
+  haptic();
+  renderStep();
+}
+
+async function removeMedia(field, name) {
+  const ed = state.ed;
+  const r = await api('unmedia', { method: 'POST', body: { slug: ed.slug, field, name } });
+  if (!r.ok) return toast(r.message || 'O‘chirib bo‘lmadi');
+  setPathValue(ed.config, field, r.value ?? undefined);
+  if (field === 'backgroundImage') delete ed.config.backgroundOverlay;
+  renderStep();
+}
+
+function setPathValue(c, field, value) {
+  const keys = field.split('.');
+  let o = c;
+  for (const k of keys.slice(0, -1)) o = o[k] && typeof o[k] === 'object' ? o[k] : (o[k] = {});
+  if (value == null || value === '') delete o[keys.at(-1)];
+  else o[keys.at(-1)] = value;
+}
 
 /* ------------------------------------ Saqlash / to'lov ------------------------------------ */
 function payload(c) {
@@ -489,7 +599,7 @@ async function pay() {
   const ed = state.ed;
   const r = await saveDraft({ quiet: true });
   if (!r) return;
-  const errs = validateConfig(ed.config, []);
+  const errs = validateConfig(ed.config, [...usedMedia(ed.config)]);
   if (errs.length) return toast('Barcha maydonlarni to‘ldiring');
   const p = await api('pay', { method: 'POST', body: { slug: ed.slug } });
   if (!p.ok) return toast(p.message || 'Xato');
@@ -528,6 +638,12 @@ root.addEventListener('click', async (e) => {
     audio.play().catch(() => toast('Ijro etib bo‘lmadi'));
     play.textContent = '⏸';
     audio.onended = () => (play.textContent = '▶');
+    return;
+  }
+  const del = e.target.closest('[data-unmedia]');
+  if (del) {
+    e.preventDefault();
+    if (await confirmBox('Bu rasmni olib tashlaymi?')) removeMedia(del.dataset.unmedia, del.dataset.name);
     return;
   }
   const b = e.target.closest('[data-act]');

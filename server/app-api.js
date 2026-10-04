@@ -6,6 +6,9 @@
 //   POST /api/panel/app/save          — { slug?, config } → yangi qoralama yoki tahrir (to'langan bo'lsa — qayta yig'iladi)
 //   POST /api/panel/app/pay           — { slug } → bot to'lov ma'lumotlarini yuboradi, chek kutiladi
 //   POST /api/panel/app/remove        — { slug } → to'lanmagan qoralamani o'chirish
+//   POST /api/panel/app/upload        — { slug, field, data: base64 } → rasm (src/lib/photo-slots.js dagi joylarga)
+//   POST /api/panel/app/unmedia       — { slug, field, name } → rasmni olib tashlash
+//   GET  /api/panel/app/media?slug=&name= — qoralama rasmini ko'rish (faqat egasi; sayt hali ochiq emas)
 //
 // Mijozdan kelgan sozlamalar ruxsat etilgan maydonlar bo'yicha qabul qilinadi (demo, paused, musicUrl kabi
 // ichki maydonlarni o'zgartira olmaydi).
@@ -17,10 +20,16 @@ import { defaultConfig, addDays } from '../src/lib/starter.js';
 import { verifyInitData, BOT_TOKEN, PRICE, siteUrlOf, siteDomain } from './telegram.js';
 import { readSite, writeSite, sitesOf, removeSite, enqueue, STATUS, mediaFiles, isSlug } from './data.js';
 import { takenSlugs } from './panel.js';
+import { findSlot, getField, setField, usedMedia } from '../src/lib/photo-slots.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { siteDir } from './data.js';
 
 export const APP_TEMPLATES = ['volume3', 'volume4', 'osmon', 'volume2', 'suzani', 'bulut', 'kitob', 'yz'];
 const MAX_DRAFTS = 3;
 const MAX_BODY = 256 * 1024;
+const MAX_UPLOAD = 8 * 1024 * 1024; // brauzerda siqilgan rasm odatda 200–600 KB
 
 class UserError extends Error {
   constructor(code, message) {
@@ -36,12 +45,12 @@ function send(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
-async function readJson(req) {
+async function readJson(req, limit = MAX_BODY) {
   let size = 0;
   const chunks = [];
   for await (const c of req) {
     size += c.length;
-    if (size > MAX_BODY) throw new UserError('too_large', 'Ma’lumot juda katta');
+    if (size > limit) throw new UserError('too_large', 'Rasm juda katta — boshqa rasm tanlang');
     chunks.push(c);
   }
   try {
@@ -218,6 +227,7 @@ async function save(user, body) {
     price: PRICE(),
   };
   writeSite(slug, { config, meta });
+  pruneMedia(slug, config);
   if (meta.status === STATUS.paid) enqueue({ type: 'build', slug, reason: 'edit' });
   return { slug, status: meta.status, errors, url: meta.status === STATUS.paid ? siteUrlOf(slug) : '' };
 }
@@ -233,6 +243,76 @@ function pay(user, body) {
   writeSite(s.slug, { meta });
   enqueue({ type: 'pay', slug: s.slug, chatId: user.id });
   return { status: meta.status };
+}
+
+/* ------------------------------- Rasmlar ------------------------------- */
+const mediaDirOf = (slug) => path.join(siteDir(slug), 'media');
+const IMG = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+function sniffImage(buf) {
+  const hex = buf.subarray(0, 12).toString('hex');
+  if (hex.startsWith('ffd8ff')) return 'jpg';
+  if (hex.startsWith('89504e47')) return 'png';
+  if (hex.startsWith('52494646') && buf.subarray(8, 12).toString() === 'WEBP') return 'webp';
+  return null;
+}
+/** Sozlamada ishlatilmay qolgan fayllarni o'chirish (dizayn almashganda, rasm almashtirilganda) */
+function pruneMedia(slug, config) {
+  const dir = mediaDirOf(slug);
+  if (!fs.existsSync(dir)) return;
+  const used = usedMedia(config);
+  // Mijoz yuklamagan (masalan, admin panel orqali qo'shilgan) fayllar — tegilmaydi: faqat "m-" bilan boshlanganlar
+  for (const n of fs.readdirSync(dir)) if (n.startsWith('m-') && !used.has(n)) fs.rmSync(path.join(dir, n), { force: true });
+}
+
+function upload(user, body) {
+  const s = ownSite(user, body?.slug);
+  const slot = findSlot(s.config.template, String(body?.field || ''));
+  if (!slot) throw new UserError('bad_field', 'Bu shablonda bunday rasm joyi yo‘q');
+  const buf = Buffer.from(String(body?.data || ''), 'base64');
+  const ext = sniffImage(buf);
+  if (!buf.length || !ext) throw new UserError('bad_media', 'Faqat JPG, PNG yoki WEBP rasm yuklash mumkin');
+  if (buf.length > MAX_UPLOAD) throw new UserError('too_large', 'Rasm juda katta');
+  const config = structuredClone(s.config);
+  const cur = getField(config, slot.field);
+  if (slot.multi && Array.isArray(cur) && cur.length >= slot.multi) throw new UserError('limit', `Ko‘pi bilan ${slot.multi} ta rasm`);
+  const name = `m-${slot.field.replace(/\W+/g, '-')}-${Date.now().toString(36)}${crypto.randomBytes(2).toString('hex')}.${ext}`;
+  fs.mkdirSync(mediaDirOf(s.slug), { recursive: true });
+  fs.writeFileSync(path.join(mediaDirOf(s.slug), name), buf);
+  if (slot.multi) setField(config, slot.field, [...(Array.isArray(cur) ? cur : []), name]);
+  else setField(config, slot.field, name);
+  // Volume 2: suratli fon ustida matn o'qilishi uchun och parda
+  if (slot.field === 'backgroundImage' && (config.template || 'volume2') === 'volume2') config.backgroundOverlay ??= 0.84;
+  writeSite(s.slug, { config });
+  pruneMedia(s.slug, config);
+  if (s.meta.status === STATUS.paid) enqueue({ type: 'build', slug: s.slug, reason: 'photo' });
+  return { name, field: slot.field, value: getField(config, slot.field) };
+}
+
+function unmedia(user, body) {
+  const s = ownSite(user, body?.slug);
+  const slot = findSlot(s.config.template, String(body?.field || ''));
+  if (!slot) throw new UserError('bad_field', 'Bu shablonda bunday rasm joyi yo‘q');
+  const config = structuredClone(s.config);
+  const cur = getField(config, slot.field);
+  if (slot.multi) setField(config, slot.field, (Array.isArray(cur) ? cur : []).filter((n) => n !== body?.name));
+  else setField(config, slot.field, undefined);
+  if (slot.field === 'backgroundImage') delete config.backgroundOverlay;
+  writeSite(s.slug, { config });
+  pruneMedia(s.slug, config);
+  if (s.meta.status === STATUS.paid) enqueue({ type: 'build', slug: s.slug, reason: 'photo' });
+  return { field: slot.field, value: getField(config, slot.field) ?? null };
+}
+
+function sendMedia(user, url, res) {
+  const s = ownSite(user, url.searchParams.get('slug') || '');
+  const name = url.searchParams.get('name') || '';
+  if (!/^[\w.-]{1,120}$/.test(name)) throw new UserError('not_found', 'Rasm topilmadi');
+  const file = path.join(mediaDirOf(s.slug), name);
+  if (!fs.existsSync(file)) throw new UserError('not_found', 'Rasm topilmadi');
+  res.statusCode = 200;
+  res.setHeader('Content-Type', IMG[path.extname(name).slice(1)] || 'application/octet-stream');
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  fs.createReadStream(file).pipe(res);
 }
 
 function remove(user, body) {
@@ -267,6 +347,9 @@ export async function appHandler(req, res, name) {
     }
     if (req.method === 'POST' && name === 'save') return send(res, 200, { ok: true, ...(await save(user, await readJson(req))) });
     if (req.method === 'POST' && name === 'pay') return send(res, 200, { ok: true, ...pay(user, await readJson(req)) });
+    if (req.method === 'POST' && name === 'upload') return send(res, 200, { ok: true, ...upload(user, await readJson(req, MAX_UPLOAD * 1.4)) });
+    if (req.method === 'POST' && name === 'unmedia') return send(res, 200, { ok: true, ...unmedia(user, await readJson(req)) });
+    if (req.method === 'GET' && name === 'media') return sendMedia(user, url, res);
     if (req.method === 'POST' && name === 'remove') return send(res, 200, { ok: true, ...remove(user, await readJson(req)) });
     return send(res, 404, { ok: false, error: 'not_found' });
   } catch (err) {

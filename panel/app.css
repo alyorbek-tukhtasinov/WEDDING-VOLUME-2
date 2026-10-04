@@ -431,3 +431,77 @@ h1 {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+/* Rasmlar qadami */
+.tg-slot {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: var(--radius);
+  background: var(--tg-card);
+}
+.tg-slot__title {
+  margin: 0;
+  font-weight: 700;
+}
+.tg-slot__title small {
+  font-weight: 500;
+  color: var(--tg-hint);
+}
+.tg-slot__status:empty {
+  display: none;
+}
+.tg-thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.tg-thumb {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--tg-text) 8%, transparent);
+}
+.tg-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tg-thumb__del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.tg-thumb--add {
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--line);
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  color: var(--tg-link);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+.tg-thumb--add input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.tg-thumb--add small {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 2px;
+}

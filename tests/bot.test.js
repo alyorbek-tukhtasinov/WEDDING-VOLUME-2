@@ -75,3 +75,17 @@ test('Ma’lumotlar: egasi bo‘yicha, band nomlar, navbat tartibi', () => {
   assert.deepEqual(takeQueue().map((e) => e.n), [...Array(20).keys()]);
   assert.deepEqual(takeQueue(), []);
 });
+
+test('Rasm joylari: shablon bo‘yicha, ishlatilgan fayllar', async () => {
+  const { slotsFor, findSlot, usedMedia, setField } = await import('../src/lib/photo-slots.js');
+  assert.ok(findSlot('volume2', 'gallery').multi);
+  assert.equal(findSlot('osmon', 'gallery'), null);
+  assert.ok(findSlot('osmon', 'seo.ogImage'));
+  assert.equal(slotsFor('yz').filter((s) => s.field.startsWith('photos.')).length, 5);
+  const c = { template: 'volume2', gallery: ['a.jpg', 'b.jpg'], seo: {} };
+  setField(c, 'seo.ogImage', 'c.jpg');
+  setField(c, 'backgroundImage', 'd.jpg');
+  assert.deepEqual([...usedMedia(c)].sort(), ['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg']);
+  setField(c, 'backgroundImage', undefined);
+  assert.equal(c.backgroundImage, undefined);
+});
