@@ -24,6 +24,8 @@ as_app() { runuser -u "$RUN_USER" -- "$@"; }
 
 exec 9>/run/taklifnoma-deploy.lock
 flock -n 9 || { log "boshqa deploy ishlayapti"; exit 0; }
+# Uzilib qolgan (masalan, vaqt tugab to'xtatilgan) yig'ishlarning qoldiqlari — diskni to'ldirmasin
+rm -rf "$APP"/releases/*.tmp 2>/dev/null || true
 
 revision() { cat "$1/REVISION" 2>/dev/null || true; }
 

@@ -129,8 +129,57 @@ for (const slug of clients) {
   else toBuild.push(slug);
 }
 
-// Bir vaqtda bir nechta sayt (standart: 2 ta; BUILD_JOBS bilan o'zgartiriladi)
-const jobs = Math.max(1, Math.min(Number(process.env.BUILD_JOBS) || Math.min(2, os.cpus().length), 8));
+// Bir xil fayllar diskda bir marta turadi (hardlink). Har sayt yig'ilishi bilan darhol bajariladi —
+// aks holda 35+ sayt × ~45 MB musiqa vaqtincha diskni to'ldirib qo'yadi.
+//  1) o'sha saytning oldingi versiyasi bilan (--cache) — o'zgarmagan rasm/musiqa qayta joy olmaydi
+//  2) umumiy fayllar (dizayn rasmlari, musiqa) — bitta namuna sayt bilan
+let saved = 0;
+let refDir = '';
+function pickRef() {
+  const r = reused.find((s) => fs.existsSync(path.join(out, s, 'music')));
+  if (r) return path.join(out, r);
+  if (cacheDir && fs.existsSync(cacheDir)) {
+    for (const s of fs.readdirSync(cacheDir)) {
+      const d = path.join(cacheDir, s);
+      if (!fs.lstatSync(d).isSymbolicLink() && fs.existsSync(path.join(d, 'music')) && !fs.existsSync(path.join(d, '.paused'))) return d;
+    }
+  }
+  return '';
+}
+function linkSame(dir, ref, sub = '') {
+  if (!ref || !fs.existsSync(path.join(ref, sub))) return;
+  for (const name of fs.readdirSync(path.join(dir, sub))) {
+    const rel = path.join(sub, name);
+    const dst = path.join(dir, rel);
+    const src = path.join(ref, rel);
+    const ds = fs.lstatSync(dst);
+    if (ds.isDirectory()) {
+      linkSame(dir, ref, rel);
+      continue;
+    }
+    if (!ds.isFile() || !fs.existsSync(src)) continue;
+    const st = fs.lstatSync(src);
+    if (!st.isFile() || st.ino === ds.ino || st.size !== ds.size) continue;
+    if (!fs.readFileSync(src).equals(fs.readFileSync(dst))) continue;
+    const tmp = `${dst}.link-${process.pid}`;
+    fs.linkSync(src, tmp);
+    fs.renameSync(tmp, dst);
+    saved += ds.size;
+  }
+}
+function dedupeFresh(slug) {
+  const dir = path.join(out, slug);
+  if (cacheDir) linkSame(dir, path.join(cacheDir, slug));
+  refDir ||= pickRef();
+  if (!refDir) {
+    refDir = dir;
+    return;
+  }
+  for (const sub of ['images', 'music']) if (fs.existsSync(path.join(dir, sub))) linkSame(dir, refDir, sub);
+}
+
+// Bir vaqtda bir nechta sayt (standart: 2 ta, xotira 2 GB dan kam bo'lsa — 1 ta; BUILD_JOBS bilan o'zgartiriladi)
+const jobs = Math.max(1, Math.min(Number(process.env.BUILD_JOBS) || (os.totalmem() < 2 * 1024 ** 3 ? 1 : Math.min(2, os.cpus().length)), 8));
 let next = 0;
 async function worker() {
   while (next < toBuild.length) {
@@ -141,6 +190,7 @@ async function worker() {
       process.exit(1);
     }
     fresh.push(slug);
+    dedupeFresh(slug);
   }
 }
 await Promise.all(Array.from({ length: Math.min(jobs, toBuild.length) }, worker));
@@ -159,35 +209,10 @@ await Promise.all(Array.from({ length: Math.min(jobs, toBuild.length) }, worker)
   }
   clients.push('boshqaruv');
   fresh.push('boshqaruv');
+  dedupeFresh('boshqaruv');
 }
 
 // Umumiy fayllar (musiqa, dizayn rasmlari) har saytda bir xil — diskda bir marta turishi uchun hardlink
-// Faqat yangi yig'ilganlar tekshiriladi: keshdan olinganlar oldingi deploy'da birlashtirilgan
-let saved = 0;
-const live = clients.filter((s) => !paused.includes(s));
-const first = reused.find((s) => live.includes(s)) || fresh[0];
-const rest = fresh.filter((s) => s !== first);
-for (const dir of ['images', 'music']) {
-  const base = path.join(out, first, dir);
-  if (!fs.existsSync(base)) continue;
-  for (const file of fs.readdirSync(base, { recursive: true })) {
-    const src = path.join(base, file);
-    if (!fs.statSync(src).isFile()) continue;
-    const st = fs.statSync(src);
-    let data = null;
-    for (const slug of rest) {
-      const dst = path.join(out, slug, dir, file);
-      if (!fs.existsSync(dst)) continue;
-      const ds = fs.statSync(dst);
-      if (ds.ino === st.ino || ds.size !== st.size) continue;
-      data ??= fs.readFileSync(src);
-      if (!data.equals(fs.readFileSync(dst))) continue;
-      fs.unlinkSync(dst);
-      fs.linkSync(src, dst);
-      saved += data.length;
-    }
-  }
-}
 if (saved) console.log(`  umumiy fayllar birlashtirildi: ${(saved / 1048576).toFixed(0)} MB tejaldi`);
 
 // Bot orqali yaratilgan (to'langan) saytlar: DATA_DIR/built/<nom> ga symlink — har deploy'da qayta
