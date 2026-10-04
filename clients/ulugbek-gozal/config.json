@@ -74,6 +74,5 @@
   },
   "eventType": "nikoh",
   "autoScroll": "auto",
-  "watermark": true,
   "autoScrollSpeed": 1.25
 }
