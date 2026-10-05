@@ -69,5 +69,6 @@
   },
   "eventType": "qiz-uzatish",
   "autoScroll": "auto",
-  "watermark": true
+  "watermark": true,
+  "paused": true
 }
