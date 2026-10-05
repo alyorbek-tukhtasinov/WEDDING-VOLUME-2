@@ -629,7 +629,7 @@ function markResumed(r) {
 /* ------------------------------------------------------------------ */
 /*  Shablon tanlash                                                     */
 /* ------------------------------------------------------------------ */
-const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg', volume3: '/images/og-volume3.jpg', volume4: '/images/og-volume4.jpg' };
+const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg', volume3: '/images/og-volume3.jpg', volume4: '/images/og-volume4.jpg', volume5: '/images/og-volume5.jpg' };
 
 function showTemplatePicker() {
   root.innerHTML = html`
@@ -1342,6 +1342,19 @@ async function pickIntroVideo() {
 }
 
 function secGiftNote() {
+  if (state.ed.config.template === 'volume5') {
+    // Volume 5: surat ustidagi eslatma (sovg'a, iltimos) — sarlavha bo'sh bo'lsa "Eslatma"
+    const g = state.ed.config.giftNote;
+    return section(
+      'giftnote',
+      'Eslatma (sovg‘a haqida)',
+      html`
+        ${field('Sarlavha', 'giftNote.title', { placeholder: 'Eslatma' })}
+        ${area('Matn', 'giftNote.text', { rows: 3 })}
+      `,
+      { toggle: { on: !!(g?.title || g?.text), label: 'Surat ustidagi eslatma bo‘limini ko‘rsatish' } },
+    );
+  }
   const on = !!state.ed.config.giftNote?.title;
   return section(
     'giftnote',
@@ -1365,16 +1378,23 @@ const YZ_PHOTOS = [
   ['countdown', 'Sanoq'],
   ['map', 'Xarita'],
   ['gift', 'Sovg‘a'],
+].map(([key, label], i) => [key, label, `/images/yz/wedding${i + 1}.jpg`]);
+// Volume 5: to'yxona, eslatma va sanoq bo'limlari (yuklanmasa — maketdagi suratlar)
+const V5_PHOTOS = [
+  ['venue', 'To‘yxona', '/images/volume5/venue.webp'],
+  ['details', 'Eslatma (sovg‘a)', '/images/volume5/details.webp'],
+  ['countdown', 'Sanoq', '/images/volume5/countdown.webp'],
 ];
 
 function yzPhotosHtml() {
   const photos = state.ed.config.photos || {};
+  const list = state.ed.config.template === 'volume5' ? V5_PHOTOS : YZ_PHOTOS;
   return html`
-    ${YZ_PHOTOS.map(([key, label], i) => {
+    ${list.map(([key, label, def]) => {
       const own = photos[key];
       return html`
         <div class="thumb">
-          <img src="${own ? mediaSrc(own) : `/images/yz/wedding${i + 1}.jpg`}" alt="" />
+          <img src="${own ? mediaSrc(own) : def}" alt="" />
           ${own ? '' : html`<span class="thumb__tag">standart</span>`}
           <span>${label}</span>
           <div class="actions-row" style="justify-content:center">
@@ -1508,7 +1528,7 @@ function secMusicRsvp() {
 function secRsvp() {
   const c = state.ed.config;
   const on = c.rsvp?.enabled !== false;
-  const wishes = c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4'].includes(c.template);
+  const wishes = c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4', 'volume5'].includes(c.template);
   return section(
     'rsvp',
     'Tashrifni tasdiqlash va tilaklar',
@@ -1529,7 +1549,7 @@ function secEffects() {
   if (state.ed.config.template === 'suzani') {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq (kashta gardishlari)', 'effects.countdown', true)}</div>`);
   }
-  if (['volume3', 'volume4'].includes(state.ed.config.template)) {
+  if (['volume3', 'volume4', 'volume5'].includes(state.ed.config.template)) {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq', 'effects.countdown', true)}</div>`);
   }
   if (state.ed.config.template === 'bulut') {
@@ -1919,7 +1939,7 @@ async function openExisting(slug, { copy = false } = {}) {
     if (c.seo) c.seo.ogImage = '';
     if (c.music) {
       c.music = '';
-      c.musicTrack ||= c.template === 'yz' ? 'musiqa-4' : c.template === 'osmon' ? 'musiqa-3' : ['suzani', 'kitob', 'bulut', 'volume3', 'volume4'].includes(c.template) ? 'musiqa-5' : 'musiqa-1';
+      c.musicTrack ||= c.template === 'yz' ? 'musiqa-4' : c.template === 'osmon' ? 'musiqa-3' : ['suzani', 'kitob', 'bulut', 'volume3', 'volume4', 'volume5'].includes(c.template) ? 'musiqa-5' : 'musiqa-1';
     }
     delete c.giftCard;
     state.ed = newEditor({ isNew: true, config: c });
@@ -1943,9 +1963,12 @@ function showEditor() {
   const kitob = c.template === 'kitob';
   const bulut = c.template === 'bulut';
   const volume3 = c.template === 'volume3' || c.template === 'volume4';
+  const volume5 = c.template === 'volume5';
   const sections = yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secRsvp(), secYzRu(), secYzTexts(), secSeo()]
-    : osmon
+    : volume5
+      ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secGiftNote(), secContacts(), secYzPhotos(), secMusicRsvp(), secRsvp(), secEffects(), secSeo()]
+      : osmon
       ? [secMain(), secOsmonLangs(), secTexts(), secIslamic(), secIntroVideo(), secVenue(), secSky(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secRsvp(), secSeo()]
       : suzani || kitob || bulut || volume3
         ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secContacts(), secMusicRsvp(), secRsvp(), secEffects(), secSeo()]
@@ -1974,7 +1997,7 @@ function showEditor() {
           </div>
         </form>
         <aside class="preview" id="preview">
-          <div class="phone"><iframe id="preview-frame" title="Jonli ko‘rinish" src="${yz ? '/preview-yz.html' : osmon ? '/preview-osmon.html' : suzani ? '/preview-suzani.html' : kitob ? '/preview-kitob.html' : bulut ? '/preview-bulut.html' : volume3 ? '/preview-volume3.html' : '/preview-v2.html'}"></iframe></div>
+          <div class="phone"><iframe id="preview-frame" title="Jonli ko‘rinish" src="${yz ? '/preview-yz.html' : osmon ? '/preview-osmon.html' : suzani ? '/preview-suzani.html' : kitob ? '/preview-kitob.html' : bulut ? '/preview-bulut.html' : volume3 ? '/preview-volume3.html' : volume5 ? '/preview-volume5.html' : '/preview-v2.html'}"></iframe></div>
           <p class="preview__note">Jonli ko‘rinish — saqlanmagan o‘zgarishlar ham ko‘rinadi</p>
           <button class="btn btn--small preview-toggle" type="button" data-action="preview-close">Yopish</button>
         </aside>
@@ -2160,9 +2183,11 @@ function setToggle(id, on) {
   }
   if (id === 'giftnote') {
     if (on) {
-      c.giftNote = c.giftNote?.title
+      c.giftNote = c.giftNote?.title || (c.template === 'volume5' && c.giftNote?.text)
         ? c.giftNote
-        : {
+        : c.template === 'volume5'
+          ? { title: '', text: 'Iliq so‘z va tilaklaringizni qalbingizda olib keling — biz uchun eng qimmatli sovg‘a sizning tashrifingiz.' }
+          : {
             eyebrow: 'Eng qimmatli sovg‘a',
             title: 'Sizning tashrifingiz',
             text: 'Kelishingizning o‘zi biz uchun eng katta sovg‘a. Quvonchimizga sherik bo‘lib, duolaringiz bilan qutlasangiz — shuning o‘zi kifoya.',

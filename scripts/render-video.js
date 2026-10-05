@@ -122,6 +122,17 @@ export async function renderVideo(slug, { out, siteDir, onProgress = () => {}, f
       const st = document.createElement('style');
       st.textContent = '.ascroll,#music-toggle,.fab--music{display:none!important}html{scroll-behavior:auto!important}';
       document.addEventListener('DOMContentLoaded', () => document.head.append(st));
+      // Sahifada hech qanday CSS animatsiya ishlamay qolsa (masalan, harakatsiz bo'limlar), vaqt to'xtatilgan
+      // headless brauzer yangi kadr chizmaydi va captureScreenshot qaytmaydi. Shu 1 pikselli, deyarli
+      // ko'rinmas nuqtaning doimiy animatsiyasi kadrlarni uzluksiz ushlab turadi.
+      document.addEventListener('DOMContentLoaded', () => {
+        const dot = document.createElement('div');
+        dot.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;background:#000;opacity:.01;pointer-events:none;z-index:2147483647;animation:__vt_tick 1s linear infinite';
+        const kf = document.createElement('style');
+        kf.textContent = '@keyframes __vt_tick{50%{opacity:.02}}';
+        document.head.append(kf);
+        document.body.append(dot);
+      });
     });
     await page.goto(`http://127.0.0.1:${srv.address().port}/`, { waitUntil: 'load', timeout: 60e3 });
     await page.evaluate(() => document.fonts?.ready).catch(() => {});

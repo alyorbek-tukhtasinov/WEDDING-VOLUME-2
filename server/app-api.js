@@ -27,7 +27,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { siteDir } from './data.js';
 
-export const APP_TEMPLATES = ['volume3', 'volume4', 'osmon', 'volume2', 'suzani', 'bulut', 'kitob', 'yz'];
+export const APP_TEMPLATES = ['volume5', 'volume3', 'volume4', 'osmon', 'volume2', 'suzani', 'bulut', 'kitob', 'yz'];
 const MAX_DRAFTS = 3;
 const MAX_BODY = 256 * 1024;
 const MAX_UPLOAD = 8 * 1024 * 1024; // brauzerda siqilgan rasm odatda 200–600 KB

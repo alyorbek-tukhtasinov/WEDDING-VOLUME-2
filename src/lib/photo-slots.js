@@ -11,6 +11,11 @@ export const PHOTO_SLOTS = {
   ],
   volume3: [{ ...BACKGROUND, hint: 'Gullar o‘rnida sizning suratingiz yoki fon rasmingiz' }],
   volume4: [{ ...BACKGROUND, hint: 'Gullar o‘rnida sizning suratingiz yoki fon rasmingiz' }],
+  volume5: [
+    { field: 'photos.venue', title: 'To‘yxona surati', hint: 'Manzil bo‘limida chiqadi' },
+    { field: 'photos.details', title: 'Eslatma bo‘limi surati', hint: 'Sovg‘a haqidagi matn ortida' },
+    { field: 'photos.countdown', title: 'Sanoq bo‘limi surati', hint: 'Sahifa oxiridagi sanoq ortida' },
+  ],
   yz: [
     { field: 'photos.hero', title: '1. Bosh surat', hint: 'Sayt ochilganda birinchi ko‘rinadi' },
     { field: 'photos.invitation', title: '2. Taklif bo‘limi' },

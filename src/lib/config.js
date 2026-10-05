@@ -128,6 +128,15 @@ export function validateConfig(c, mediaFiles = null) {
     });
   }
 
+  // "Volume 5": bo'limlar suratlari (yuklanmasa — shablonning o'z surati)
+  if (c.template === 'volume5') {
+    const PHOTO_KEYS = ['venue', 'details', 'countdown'];
+    for (const [k, v] of Object.entries(c.photos || {})) {
+      need(PHOTO_KEYS.includes(k), `photos.${k} — noma'lum bo'lim (${PHOTO_KEYS.join(', ')})`);
+      checkMedia(v, `photos.${k}`);
+    }
+  }
+
   // "Yusuf & Zulayho" (yz) shabloni maydonlari
   if (c.template === 'yz') {
     const PHOTO_KEYS = ['hero', 'invitation', 'details', 'countdown', 'map', 'gift'];

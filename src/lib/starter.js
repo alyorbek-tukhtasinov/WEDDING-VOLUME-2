@@ -44,6 +44,31 @@ export function baseConfig(template) {
     };
   }
   const kechki = DRESS_PRESETS.find((p) => p.id === 'kechki');
+  if (template === 'volume5') {
+    return {
+      template,
+      couple: { groom: '', bride: '', initials: '' },
+      event: { date, time: '18:00', timezone: '+05:00', durationHours: 5 },
+      hosts: '',
+      texts: {
+        heroCaption: 'Nikoh to‘yiga taklifnoma',
+        greeting: 'Aziz mehmonlar!',
+        invitation: eventTexts('nikoh', '', '').invitation,
+        closing: 'Tashrifingiz biz uchun katta sharaf!',
+      },
+      venue: { name: '', address: '', googleMaps: '', yandexMaps: '' },
+      program: buildProgram('kechki', '18:00'),
+      // Maketdagi zaytun-ko'k palitra
+      dressCode: { text: 'To‘yimiz ranglarini qo‘llab-quvvatlasangiz, biz uchun katta quvonch bo‘ladi.', colors: ['#73806f', '#9caa99', '#8799a7', '#c4d1e2', '#f5f2ed'] },
+      giftNote: { title: '', text: 'Iliq so‘z va tilaklaringizni qalbingizda olib keling — biz uchun eng qimmatli sovg‘a sizning tashrifingiz.' },
+      photos: {},
+      musicTrack: 'musiqa-5',
+      rsvp: { enabled: true, deadline: addDays(date, -1), maxGuests: 5, showWishes: true },
+      contacts: [],
+      seo: { title: '', description: '', ogImage: '' },
+      effects: { countdown: true },
+    };
+  }
   if (['suzani', 'kitob', 'bulut', 'volume3', 'volume4'].includes(template)) {
     return {
       template,

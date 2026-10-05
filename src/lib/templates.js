@@ -51,6 +51,12 @@ export const TEMPLATES = [
     description: 'Volume 3 ning pushti ko‘rinishi: gulli fon, pushti ranglar, xira oynali kartochkalar, sanoq, javob va mehmonlar kitobi (o‘zbek/rus)',
     features: ['program', 'dressCode', 'rsvp', 'wishes'],
   },
+  {
+    id: 'volume5',
+    title: 'Volume 5',
+    description: 'Zaytun-bej “Our Story”: konvert ochilish videosi, raqsga tushayotgan juftlik, to‘lqinli to‘y dasturi, 3 kunlik taqvim, anketa va tilaklar',
+    features: ['program', 'dressCode', 'contacts', 'giftNote', 'photos', 'rsvp', 'wishes'],
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';

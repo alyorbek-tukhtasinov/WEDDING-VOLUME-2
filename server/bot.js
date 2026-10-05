@@ -64,6 +64,7 @@ const mainKeyboard = () => ({
 const appButton = (text, query = '') => ({ text, web_app: { url: `${appUrl()}${query}` } });
 
 const DEMOS = [
+  ['volume5', '💃 Our Story (raqsdagi juftlik)', 'demo-volume5'],
   ['volume3', '🌿 Yashil bog‘', 'demo-volume3'],
   ['volume4', '🌸 Pushti bog‘', 'demo-volume4'],
   ['osmon', '🌌 To‘y kechasining osmoni', 'demo-osmon'],

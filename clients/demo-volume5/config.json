@@ -1,0 +1,78 @@
+{
+  "template": "volume5",
+  "autoScroll": "auto",
+  "languages": [
+    "uz",
+    "ru"
+  ],
+  "couple": {
+    "groom": "Doniyor",
+    "bride": "Anora"
+  },
+  "event": {
+    "date": "2027-08-12",
+    "time": "17:00",
+    "timezone": "+05:00",
+    "durationHours": 6
+  },
+  "hosts": "Karimovlar va Rahimovlar oilasi",
+  "texts": {
+    "greeting": "Aziz mehmonlar!",
+    "invitation": "Bu kunni biz uchun alohida qilishni juda istaymiz, shu bois Sizni hayotimizdagi eng baxtli kun — nikoh to‘yimiz tantanasini biz bilan birga nishonlashga taklif etamiz!",
+    "closing": "Tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "“Bog‘i Eram” to‘yxonasi",
+    "address": "Toshkent shahri, Yunusobod tumani",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.364000%2C69.288000",
+    "yandexMaps": ""
+  },
+  "program": [
+    {
+      "time": "17:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "17:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "18:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "22:00",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "To‘yimiz ranglarini qo‘llab-quvvatlasangiz, biz uchun katta quvonch bo‘ladi.",
+    "colors": [
+      "#73806f",
+      "#9caa99",
+      "#8799a7",
+      "#c4d1e2",
+      "#f5f2ed"
+    ]
+  },
+  "giftNote": {
+    "title": "",
+    "text": "Iliq so‘z va tilaklaringizni qalbingizda olib keling — biz uchun eng qimmatli sovg‘a sizning tashrifingiz."
+  },
+  "musicTrack": "musiqa-5",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2027-08-01",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [
+    {
+      "name": "To‘y tashkilotchisi",
+      "phone": "+998 90 123 45 67"
+    }
+  ],
+  "effects": {
+    "countdown": true
+  }
+}

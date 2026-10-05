@@ -17,6 +17,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 
 /* ------------------------------------ Shablonlar ------------------------------------ */
 const DESIGNS = {
+  volume5: { title: 'Our Story', note: 'Konvert ochiladi, raqsdagi juftlik videosi, zaytun ranglar', img: '/images/og-volume5.jpg', demo: 'demo-volume5', preview: 'volume5' },
   volume3: { title: 'Yashil bog‘', note: 'Akvarel gullar, nafis va yorug‘', img: '/images/og-volume3.jpg', demo: 'demo-volume3', preview: 'volume3' },
   volume4: { title: 'Pushti bog‘', note: 'Pushti gullar, mayin va romantik', img: '/images/og-volume4.jpg', demo: 'demo-volume4', preview: 'volume3' },
   osmon: { title: 'To‘y kechasining osmoni', note: 'Haqiqiy yulduzli osmon, ismlar — yulduz turkumi', img: '/images/og-osmon.jpg', demo: 'demo-osmon', preview: 'osmon' },
