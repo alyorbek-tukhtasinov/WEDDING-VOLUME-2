@@ -9,6 +9,9 @@ export const NAME_FONTS = {
 };
 // Kengroq shriftlar uzun ismlarda ekranga sig'ishi uchun biroz kichraytiriladi
 const NAME_SCALE = { 'bad-script': 0.8 };
+// Bitta (ingichka) qalinlikdagi shriftlar — chiziq bilan qalinlashtiriladi (o'lchamga mos, em)
+const NAME_STROKE = { 'bad-script': '0.03em' };
+const NAME_SELECTORS = '.envelope__names,.envelope__initials,.hero__names,.footer__names';
 
 /** <head> uchun: shrift havolasi + --f-names. nameFont yo'q bo'lsa — bo'sh (sayt o'zgarmaydi). */
 export function nameFontHead(id) {
@@ -17,6 +20,8 @@ export function nameFontHead(id) {
   const q = family.replace(/ /g, '+');
   return (
     `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${q}&display=swap" />\n    ` +
-    `<style>:root{--f-names:'${family}',var(--f-script)${NAME_SCALE[id] ? `;--f-names-scale:${NAME_SCALE[id]}` : ''}}</style>`
+    `<style>:root{--f-names:'${family}',var(--f-script)${NAME_SCALE[id] ? `;--f-names-scale:${NAME_SCALE[id]}` : ''}}` +
+    (NAME_STROKE[id] ? `${NAME_SELECTORS}{-webkit-text-stroke:${NAME_STROKE[id]} currentColor}` : '') +
+    `</style>`
   );
 }
