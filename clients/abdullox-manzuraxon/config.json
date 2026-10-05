@@ -70,5 +70,6 @@
     "uzc"
   ],
   "largeText": true,
-  "nameFont": "yeseva"
+  "nameFont": "yeseva",
+  "paused": true
 }
