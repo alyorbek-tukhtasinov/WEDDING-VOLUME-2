@@ -70,6 +70,5 @@
     "ogImage": ""
   },
   "eventType": "nikoh",
-  "autoScroll": "auto",
-  "watermark": true
+  "autoScroll": "auto"
 }
