@@ -75,5 +75,6 @@
   "eventType": "nikoh",
   "autoScroll": "auto",
   "watermark": true,
-  "nameFont": "parisienne"
+  "nameFont": "parisienne",
+  "largeText": true
 }
