@@ -12,6 +12,7 @@ import { LANGS, STR as OSMON_STR } from '../templates/osmon/i18n.js';
 import { autoScrollMode } from '../src/lib/autoscroll.js';
 import { prepareAudio, toBase64 } from './audio-convert.js';
 import { defaultConfig } from '../src/lib/starter.js';
+import { NAME_FONTS } from '../src/lib/fonts.js';
 
 const AUTOSCROLL_SPEED = [
   { v: 0.75, title: 'Tezlik: sekinroq' },
@@ -884,6 +885,14 @@ function secMain() {
               <option value="green" ${(c.palette || (c.template === 'volume4' ? 'pink' : 'green')) === 'green' ? 'selected' : ''}>Yashil</option>
               <option value="pink" ${(c.palette || (c.template === 'volume4' ? 'pink' : 'green')) === 'pink' ? 'selected' : ''}>Pushti</option>
             </select></label>`
+        : ''}
+      ${(c.template || 'volume2') === 'volume2'
+        ? html`<label class="f" data-field="nameFont"><span>Ismlar shrifti</span>
+            <select data-path="nameFont">
+              <option value="" ${!c.nameFont ? 'selected' : ''}>Great Vibes (standart)</option>
+              ${Object.entries(NAME_FONTS).map(([id, name]) => html`<option value="${id}" ${c.nameFont === id ? 'selected' : ''}>${name}</option>`)}
+            </select>
+            <small class="hint">Konvert, muhr, bosh sahifa va oxiridagi ismlar. Bosh harf (masalan “A”) noaniq ko‘rinsa — Parisienne</small></label>`
         : ''}
       <label class="f" data-field="autoScroll"><span>Avto-aylantirish</span>
         <select data-path="autoScroll">

@@ -180,7 +180,7 @@ a {
 
 .envelope__names {
   margin-top: 0.3em;
-  font-family: var(--f-script);
+  font-family: var(--f-names, var(--f-script));
   font-size: clamp(2.2rem, 10vw, 3rem);
   line-height: 1.1;
   color: var(--navy);
@@ -218,7 +218,7 @@ a {
 }
 
 .envelope__initials {
-  font-family: var(--f-script);
+  font-family: var(--f-names, var(--f-script));
   font-size: clamp(1.6rem, 8vw, 2.4rem);
   color: #f4d9b8;
   text-shadow:
@@ -334,7 +334,7 @@ a {
 
 .hero__names {
   margin: 0.6rem 0 0.4rem;
-  font-family: var(--f-script);
+  font-family: var(--f-names, var(--f-script));
   font-weight: 400;
   font-size: clamp(2.8rem, 13vw, 4rem);
   line-height: 1.05;
@@ -1568,7 +1568,7 @@ a {
 
 .footer__names {
   margin-top: 0.5rem;
-  font-family: var(--f-script);
+  font-family: var(--f-names, var(--f-script));
   font-size: 2.6rem;
   color: var(--gold);
 }

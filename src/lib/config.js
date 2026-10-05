@@ -1,6 +1,7 @@
 import { findTrack } from './music.js';
 import { TEMPLATES } from './templates.js';
 import { EVENT_IDS, findEvent } from './events.js';
+import { NAME_FONTS } from './fonts.js';
 
 // Konfiguratsiyani tekshirish va undan hosila qiymatlarni hisoblash.
 // Bu fayl ham brauzerda, ham build vaqtida (Node) ishlatiladi — DOM ishlatmang.
@@ -55,6 +56,7 @@ export function validateConfig(c, mediaFiles = null) {
   need(c.invitedBy == null || ['parents', 'couple'].includes(c.invitedBy), `invitedBy noma'lum: "${c.invitedBy}" (parents, couple)`);
   need(c.autoScroll == null || ['off', 'button', 'auto'].includes(c.autoScroll), `autoScroll noma'lum: "${c.autoScroll}" (off, button, auto)`);
   need(c.autoScrollSpeed == null || (typeof c.autoScrollSpeed === 'number' && c.autoScrollSpeed >= 0.5 && c.autoScrollSpeed <= 3), 'autoScrollSpeed 0.5 dan 3 gacha son bo\'lishi kerak');
+  need(!c.nameFont || c.nameFont in NAME_FONTS, `nameFont noma'lum: "${c.nameFont}" (${Object.keys(NAME_FONTS).join(', ')})`);
   need(c.paused == null || typeof c.paused === 'boolean', 'paused faqat true yoki false bo\'lishi mumkin');
   need(c.watermark == null || typeof c.watermark === 'boolean', 'watermark faqat true yoki false bo\'lishi mumkin');
   need(c.palette == null || ['green', 'pink'].includes(c.palette), `palette noma'lum: "${c.palette}" (green, pink)`);
