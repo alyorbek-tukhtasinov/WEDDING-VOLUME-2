@@ -56,8 +56,9 @@ function hashTree(hash, dir, skip = new Set()) {
     else if (st.isFile()) hash.update(`${path.relative(ROOT, p)}\0${st.size}\0`).update(fs.readFileSync(p));
   }
 }
-// Sayt yig'ilishiga ta'sir qilmaydigan papkalar (server, testlar, deploy, panel) kalitga kirmaydi
-const NOT_SITE = new Set(['node_modules', 'clients', 'sites', 'dist', 'server', 'tests', 'e2e', 'deploy', 'panel', 'api', '.git', '.data', '.build-cache.json', 'README.md']);
+// Sayt yig'ilishiga ta'sir qilmaydigan papkalar (server, testlar, deploy, panel) kalitga kirmaydi.
+// REVISION — deploy.sh har versiyaga yozadi (commit raqami); kirsa, har safar hamma sayt qayta yig'ilardi
+const NOT_SITE = new Set(['REVISION', 'node_modules', 'clients', 'sites', 'dist', 'server', 'tests', 'e2e', 'deploy', 'panel', 'api', '.git', '.data', '.build-cache.json', 'README.md']);
 const codeHash = (() => {
   const h = crypto.createHash('sha256');
   h.update(`${process.version}\0${domain}\0`);
