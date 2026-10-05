@@ -18,8 +18,44 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const pad = (n) => String(n).padStart(2, '0');
 const IMG = '/images/volume5';
 // Instagram video yozilayotganda (scripts/render-video.js) sahifa vaqti to'xtatib-yuritiladi — <video> o'ynasa,
-// vaqt oldinga siljimay qotib qoladi. Shu rejimda videolar o'rniga ularning kadri (sekin yaqinlashuvchi) turadi.
+// vaqt oldinga siljimay qotib qoladi. Shu rejimda videolar o'rniga ularning kadrlari (frames/*.webp) ketma-ket
+// almashtiriladi: konvert ochilishi — 33 kadr (15 kadr/s), juftlik — 85 kadr (12 kadr/s, takrorlanadi).
 const STILL = () => !!globalThis.__TAKLIFNOMA_VIDEO__;
+const SEQ = {
+  env: { n: 33, fps: 15 },
+  hero: { n: 85, fps: 12 },
+};
+const frameUrl = (name, i) => `${IMG}/frames/${name}-${pad(i + 1)}.webp`;
+// Barcha kadrlar oldindan yuklanadi (yozish boshlangunicha)
+function preloadFrames() {
+  const all = Object.entries(SEQ).flatMap(([name, { n }]) => Array.from({ length: n }, (_, i) => frameUrl(name, i)));
+  return Promise.all(all.map((u) => new Promise((r) => {
+    const im = new Image();
+    im.onload = im.onerror = () => (im.decode ? im.decode().catch(() => {}).finally(r) : r());
+    im.src = u;
+  })));
+}
+// Kadrlarni <img> da o'ynatish; loop bo'lmasa, oxirida onEnd
+function playFrames(img, name, { loop = false, onEnd } = {}) {
+  const { n, fps } = SEQ[name];
+  const t0 = performance.now();
+  let shown = -1;
+  const step = () => {
+    if (!img.isConnected) return;
+    let i = Math.floor(((performance.now() - t0) / 1000) * fps);
+    if (!loop && i >= n) {
+      onEnd?.();
+      return;
+    }
+    i %= n;
+    if (i !== shown) {
+      shown = i;
+      img.src = frameUrl(name, i);
+    }
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 
 /* ------------------------------------ Matnlar ------------------------------------ */
 const UZ_MONTHS_GEN = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
@@ -215,7 +251,8 @@ function threeDays(d, lang) {
 }
 
 /* ------------------------------------ To'lqinli dastur ------------------------------------ */
-// Har tadbir — egri chiziqning navbatdagi burilishida yurak; matn chiziqning qarama-qarshi tomonida.
+// Tadbirlar egri chiziqning navbatdagi burilishlarida, matn chiziqning qarama-qarshi tomonida.
+// Bitta yurakcha sahifa surilgani sari chiziq bo'ylab pastga tushadi (initWave).
 const STEP = 170;
 function programWave(items) {
   const n = items.length;
@@ -231,11 +268,11 @@ function programWave(items) {
   d += ` C${xs[n - 1]} ${ys[n - 1] + 40} 50 ${h - 30} 50 ${h}`;
   return html`
     <div class="v5-wave" style="height:${h}px">
-      <svg class="v5-wave__line" viewBox="0 0 100 ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" vector-effect="non-scaling-stroke"/></svg>
+      <svg class="v5-wave__line" viewBox="0 0 100 ${h}" preserveAspectRatio="none" aria-hidden="true"><path id="wave-path" d="${d}" vector-effect="non-scaling-stroke"/></svg>
+      <img class="v5-wave__heart" id="wave-heart" src="${IMG}/heart.svg" alt="" aria-hidden="true" style="left:50%;top:0" />
       ${items.map(
         (p, i) => html`
           <div class="v5-wave__item ${xs[i] < 50 ? 'is-left' : 'is-right'} reveal" style="top:${ys[i]}px;--x:${xs[i]}%">
-            <img class="v5-wave__heart" src="${IMG}/heart.svg" alt="" aria-hidden="true" />
             <div class="v5-wave__text">
               <p class="v5-script v5-wave__title">${p.title}</p>
               <p class="v5-wave__time">${p.time}</p>
@@ -276,7 +313,7 @@ function renderPage(c, d, L, lang, langs, config0) {
       </div>` : ''}
 
       <div class="v5-gate" id="gate">
-        ${STILL() ? '' : html`
+        ${STILL() ? html`<img class="v5-gate__video" id="gate-still" src="${frameUrl('env', 0)}" alt="" />` : html`
         <video class="v5-gate__video" id="gate-video" muted playsinline webkit-playsinline preload="auto" poster="${IMG}/gate.webp">
           <source src="${IMG}/envelope.mp4" type="video/mp4" />
           <source src="${IMG}/envelope.webm" type="video/webm" />
@@ -289,7 +326,7 @@ function renderPage(c, d, L, lang, langs, config0) {
       <main class="v5-main">
         <section class="v5-hero">
           ${STILL()
-            ? html`<img class="v5-hero__video v5-hero__still" src="${IMG}/hero-poster.webp" alt="" />`
+            ? html`<img class="v5-hero__video" id="hero-still" src="${frameUrl('hero', 0)}" alt="" />`
             : html`
           <video class="v5-hero__video" id="hero-video" muted loop playsinline webkit-playsinline autoplay preload="auto" poster="${IMG}/hero-poster.webp">
             <source src="${IMG}/hero.mp4" type="video/mp4" />
@@ -432,6 +469,46 @@ function renderPage(c, d, L, lang, langs, config0) {
       <audio id="music" loop preload="none"></audio>
     </div>
   `.value;
+}
+
+/* ------------------------------------ Yurakcha chiziq bo'ylab ------------------------------------ */
+// Yurak ekranning o'rtasi balandligida turadi: egri chiziqda shu balandlikdagi nuqtani topamiz
+// (chiziq tepadan pastga faqat pastlaydi — y bo'yicha ikkiga bo'lib qidirish yetarli).
+function initWave() {
+  const path = $('#wave-path');
+  const heart = $('#wave-heart');
+  if (!path || !heart) return;
+  const wave = heart.parentElement;
+  const total = path.getTotalLength();
+  const h = path.viewportElement.viewBox.baseVal.height;
+  const pointAtY = (y) => {
+    let lo = 0;
+    let hi = total;
+    for (let i = 0; i < 22; i++) {
+      const mid = (lo + hi) / 2;
+      if (path.getPointAtLength(mid).y < y) lo = mid;
+      else hi = mid;
+    }
+    return path.getPointAtLength(lo);
+  };
+  let raf = 0;
+  let last = -1;
+  const place = () => {
+    raf = 0;
+    const top = wave.getBoundingClientRect().top;
+    const y = Math.min(h, Math.max(0, window.innerHeight * 0.55 - top));
+    if (Math.abs(y - last) < 0.5) return;
+    last = y;
+    const p = pointAtY(y);
+    heart.style.left = `${p.x}%`;
+    heart.style.top = `${p.y}px`;
+  };
+  const queue = () => {
+    if (!raf) raf = requestAnimationFrame(place);
+  };
+  scope.on(window, 'scroll', queue, { passive: true });
+  scope.on(window, 'resize', queue);
+  place();
 }
 
 /* ------------------------------------ Sanoq ------------------------------------ */
@@ -636,16 +713,18 @@ export async function mountVolume5(config, { preview = false } = {}) {
   document.documentElement.classList.toggle('v5-still', STILL());
   try {
     await Promise.race([
-      Promise.all([document.fonts.load('48px "V5 Script"'), document.fonts.load('300 16px "V5 Montserrat"')]),
+      Promise.all([document.fonts.load('48px "V5 Script"'), document.fonts.load('500 18px "V5 Cormorant"')]),
       new Promise((r) => setTimeout(r, 2000)),
     ]);
   } catch {
     /* shriftsiz ham davom etamiz */
   }
+  if (STILL()) await Promise.race([preloadFrames(), new Promise((r) => setTimeout(r, 8000))]);
   const y = window.scrollY;
   $('#app').innerHTML = renderPage(c, d, L, lang, langs, config);
   initCountdown(d);
   initReveal();
+  initWave();
   initRsvp(c, d, L, preview);
 
   $$('[data-lang]').forEach((b) =>
@@ -661,7 +740,15 @@ export async function mountVolume5(config, { preview = false } = {}) {
 
   const gate = $('#gate');
   const hero = $('#hero-video');
-  const startHero = () => hero?.play().catch(() => {});
+  let heroOn = false;
+  const startHero = () => {
+    if (STILL()) {
+      if (!heroOn && $('#hero-still')) playFrames($('#hero-still'), 'hero', { loop: true });
+      heroOn = true;
+      return;
+    }
+    hero?.play().catch(() => {});
+  };
   const opened = () => {
     gate.remove();
     document.documentElement.classList.remove('is-locked');
@@ -708,6 +795,7 @@ export async function mountVolume5(config, { preview = false } = {}) {
       }, 700);
     };
     // Konvert ochilish videosi (~2 soniya); o'ynamasa yoki osilib qolsa — baribir ochiladi
+    if (STILL()) return playFrames($('#gate-still'), 'env', { onEnd: finish });
     if (!video) return finish();
     scope.on(video, 'ended', finish, { once: true });
     scope.later(finish, 2600);

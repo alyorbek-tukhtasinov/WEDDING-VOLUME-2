@@ -6,6 +6,7 @@
   --v5-olive-2: #9a9e7a;
   --v5-line: rgba(61, 35, 20, 0.28);
   --v5-script: 'V5 Script', 'V5 Script Fallback', 'Great Vibes', cursive;
+  --v5-serif: 'V5 Cormorant', 'Cormorant Garamond', Georgia, serif;
   --v5-sans: 'V5 Montserrat', 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --v5-w: 480px;
 }
@@ -22,8 +23,8 @@ body {
   margin: 0;
   background: #e9dfcd;
   color: var(--v5-ink);
-  font-family: var(--v5-sans);
-  font-weight: 300;
+  font-family: var(--v5-serif);
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
 }
 * {
@@ -82,8 +83,8 @@ textarea {
   color: #fff;
 }
 .v5-text {
-  font-size: 1.06rem;
-  line-height: 1.6;
+  font-size: 1.24rem;
+  line-height: 1.5;
   text-align: center;
   margin: 0 auto;
   max-width: 34ch;
@@ -271,14 +272,6 @@ textarea {
   height: 100%;
   object-fit: cover;
 }
-.v5-hero__still {
-  animation: v5-zoom 14s ease-out both;
-}
-@keyframes v5-zoom {
-  from {
-    transform: scale(1.12);
-  }
-}
 .v5-hero__shade {
   position: absolute;
   inset: 0;
@@ -445,11 +438,11 @@ textarea {
 }
 .v5-wave__heart {
   position: absolute;
-  left: var(--x);
-  top: 0;
-  width: 46px;
+  z-index: 1;
+  width: 50px;
   height: auto;
   transform: translate(-50%, -50%);
+  will-change: left, top;
 }
 .v5-wave__text {
   position: absolute;
@@ -829,4 +822,75 @@ textarea {
 .v5-cta small {
   font-size: 0.78rem;
   opacity: 0.75;
+}
+
+/* Matn — Cormorant (nafis serif); mayda bosh harfli yorliqlar, tugmalar va raqamlar ostidagi birliklar — Montserrat */
+.v5-cal__wd,
+.v5-gate__hint,
+.v5-btn,
+.v5-langs button,
+.v5-footer__love,
+.v5-count__unit,
+.v5-cal__mon,
+.v5-round,
+.v5-field > span,
+.v5-choice legend {
+  font-family: var(--v5-sans);
+}
+.v5-hosts {
+  font-size: 1.24rem;
+  font-weight: 600;
+}
+.v5-venue__name {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+.v5-cal__num,
+.v5-cal__time,
+.v5-wave__time,
+.v5-count__num {
+  font-family: var(--v5-serif);
+  font-weight: 500;
+}
+.v5-cal__num {
+  font-size: 3.8rem;
+}
+.v5-cal__time {
+  font-size: 2rem;
+}
+.v5-wave__time {
+  font-size: 2rem;
+}
+.v5-count__num {
+  font-size: 2.9rem;
+}
+.v5-details__note {
+  font-size: 1.24rem;
+  font-weight: 600;
+}
+.v5-field input,
+.v5-field select,
+.v5-field textarea,
+.v5-choice label {
+  font-size: 1.18rem;
+  font-weight: 500;
+}
+.v5-wish__msg {
+  font-size: 1.18rem;
+}
+.v5-wish__name,
+.v5-contact__name {
+  font-size: 1.06rem;
+  font-weight: 600;
+}
+.v5-done,
+.v5-count__done {
+  font-size: 1.24rem;
+}
+.v5-cta b {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.v5-cta small {
+  font-size: 0.92rem;
 }
