@@ -11,7 +11,7 @@
     "timezone": "+05:00",
     "durationHours": 5
   },
-  "hosts": "Obidjon Sattorovlar oilasi",
+  "hosts": "Xakimxoji  o'g'li Obidjon Sattorovlar oilasi",
   "texts": {
     "heroCaption": "Nikoh to‘yiga taklifnoma",
     "greeting": "Hurmatli mehmonimiz!",
@@ -37,20 +37,11 @@
     {
       "time": "19:00",
       "title": "Tantanali ziyofat"
-    },
-    {
-      "time": "21:30",
-      "title": "To‘y tortini kesish"
     }
   ],
   "dressCode": {
-    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
-    "colors": [
-      "#0b2545",
-      "#c9a96e",
-      "#f4efe6",
-      "#7a1f3d"
-    ]
+    "text": "",
+    "colors": []
   },
   "gallery": [],
   "musicTrack": "musiqa-1",
