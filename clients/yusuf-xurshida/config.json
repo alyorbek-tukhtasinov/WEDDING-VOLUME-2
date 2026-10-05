@@ -73,5 +73,6 @@
     "typing": true
   },
   "eventType": "nikoh-kunduzgi",
-  "autoScroll": "auto"
+  "autoScroll": "auto",
+  "watermark": true
 }
