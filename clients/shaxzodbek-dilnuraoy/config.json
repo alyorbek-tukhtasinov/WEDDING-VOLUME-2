@@ -1,0 +1,78 @@
+{
+  "template": "volume2",
+  "couple": {
+    "groom": "Shaxzodbek",
+    "bride": "Dilnuraoy",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-24",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Yarmatovlar va Shukurovlar oilasi",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Ikki qalbni bir taqdirga bog‘lagan Yaratganga hamdlar bo‘lsin! Farzandlarimiz Shaxzodbek va Dilnuraoyning nikoh to‘yi — hayotimizdagi eng nurli kunlardan biri. Shu quvonchli kunda sizni davramizda ko‘rish va duolaringizni olish biz uchun katta baxt.",
+    "closing": "Tashrifingiz — to‘yimizning eng go‘zal bezagi!"
+  },
+  "venue": {
+    "name": "\"Sherxon\" to'yxonasi",
+    "address": "Qashqadaryo viloyati Yakkabog' tumani Serob qishlog'i",
+    "googleMaps": "",
+    "yandexMaps": "",
+    "image": ""
+  },
+  "program": [
+    {
+      "time": "18:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "18:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "19:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "21:30",
+      "title": "To‘y tortini kesish"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "gallery": [],
+  "musicTrack": "musiqa-1",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-23",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "theme": {},
+  "effects": {
+    "envelope": true,
+    "petals": true,
+    "typing": true
+  },
+  "eventType": "nikoh",
+  "autoScroll": "auto",
+  "watermark": true
+}
