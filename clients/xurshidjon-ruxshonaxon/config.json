@@ -76,5 +76,6 @@
   "autoScroll": "auto",
   "watermark": true,
   "nameFont": "parisienne",
-  "largeText": true
+  "largeText": true,
+  "paused": true
 }
