@@ -21,8 +21,8 @@
   "venue": {
     "name": "\"Humo\" to'yxonasi ",
     "address": "Toshkent viloyati Zangiota tumani",
-    "googleMaps": "",
-    "yandexMaps": "",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.237548%2C69.285497",
+    "yandexMaps": "https://yandex.uz/maps/?pt=69.285497,41.237548&z=17&l=map",
     "image": ""
   },
   "program": [
@@ -74,5 +74,6 @@
   },
   "eventType": "nikoh",
   "autoScroll": "auto",
-  "watermark": true
+  "watermark": true,
+  "nameFont": ""
 }
