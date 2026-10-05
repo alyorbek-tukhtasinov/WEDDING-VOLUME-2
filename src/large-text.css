@@ -1,6 +1,7 @@
 /* Katta matn (config.largeText) — yoshi kattalar uchun mayda yozuvlar kattalashtiriladi.
    Faqat volume2. Belgilangan saytning <head>iga ichki <style> bo'lib qo'shiladi (boshqa saytlar
    CSS'iga umuman tegmaydi). "html" prefiksi — asosiy CSS'dagi qoidalardan ustun turishi uchun. */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,700;1,600;1,700&display=swap');
 html body { font-size: 1.3rem; }
 html .invite__text, html .gift__text, html .footer__closing { font-size: 1.4rem; font-weight: 500; }
 html .notice__text, html .wish__msg { font-size: 1.3rem; font-weight: 500; }
@@ -16,3 +17,7 @@ html .envelope__hint, html .hero__caption, html .btn, html .badge__weekday, html
 html .gift__eyebrow, html .guest__eyebrow, html .wish__name, html .prelude__hint { font-size: 0.95rem; }
 html .cal__grid--head, html .countdown__label, html .garland__hint, html .field > span, html .choice legend,
 html .prelude__play, html .intro__skip { font-size: 0.9rem; }
+/* Tilaklar: mehmonlar yozgan matn, ismi va forma ichidagi matn — qalin */
+html .wish__msg { font-weight: 700; }
+html .wish__name { font-weight: 700; }
+html .field textarea, html .field input { font-weight: 600; }
