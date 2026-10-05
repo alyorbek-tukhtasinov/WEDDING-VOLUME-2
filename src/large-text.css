@@ -4,6 +4,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,700;1,600;1,700&display=swap');
 html body { font-size: 1.3rem; }
 html .invite__text, html .gift__text, html .footer__closing { font-size: 1.4rem; font-weight: 500; }
+/* Taklif matni — eng qalin (700) + ingichka chiziq: tilaklardan ham qalinroq */
+html .invite__text { font-weight: 700; -webkit-text-stroke: 0.025em currentColor; }
 html .notice__text, html .wish__msg { font-size: 1.3rem; font-weight: 500; }
 html .invite__hosts { font-size: 1.35rem; }
 html .invite__hosts span, html .timeline__desc, html .form__status { font-size: 1.2rem; }

@@ -12,7 +12,7 @@ import { LANGS, STR as OSMON_STR } from '../templates/osmon/i18n.js';
 import { autoScrollMode } from '../src/lib/autoscroll.js';
 import { prepareAudio, toBase64 } from './audio-convert.js';
 import { defaultConfig } from '../src/lib/starter.js';
-import { NAME_FONTS } from '../src/lib/fonts.js';
+import { NAME_FONT_LIST, nameFontsHref, nameFontStyle } from '../src/lib/fonts.js';
 
 const AUTOSCROLL_SPEED = [
   { v: 0.75, title: 'Tezlik: sekinroq' },
@@ -819,6 +819,33 @@ function area(label, path, { rows = 3, placeholder = '', hint = '', attrs = '' }
   `;
 }
 
+// Ismlar shrifti: har variant o'z shriftida — nomi va kelin-kuyov ismlari bilan ko'rsatiladi
+function nameFontPicker(c) {
+  loadNameFonts();
+  const names = [c.couple?.groom, c.couple?.bride].filter(Boolean).join(' & ') || 'Ism & Ism';
+  const opts = [['', { family: 'Great Vibes', cyr: true }], ...Object.entries(NAME_FONT_LIST)];
+  return html`<div class="f" data-field="nameFont"><span>Ismlar shrifti</span>
+    <div class="font-pick">
+      ${opts.map(
+        ([id, f]) => html`<label class="font-pick__item">
+          <input type="radio" name="nameFont" data-path="nameFont" value="${id}" ${(c.nameFont || '') === id ? 'checked' : ''} />
+          <span class="font-pick__name" style="${nameFontStyle(id)}">${f.family}</span>
+          <span class="font-pick__sample" style="${nameFontStyle(id)}">${names}</span>
+          <small>${id ? '' : 'standart · '}${f.cyr ? 'lotin va kirill' : 'faqat lotin'}</small>
+        </label>`,
+      )}
+    </div>
+    <small class="hint">Konvert, muhr, bosh sahifa va oxiridagi ismlar shu shriftda chiqadi</small></div>`;
+}
+let nameFontsLoaded = false;
+function loadNameFonts() {
+  if (nameFontsLoaded) return;
+  nameFontsLoaded = true;
+  for (const href of [nameFontsHref(), 'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap']) {
+    document.head.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href }));
+  }
+}
+
 function check(label, path, def = false) {
   const v = get(state.ed.config, path);
   return html`<label class="check"><input type="checkbox" data-path="${path}" data-kind="bool" ${(v ?? def) ? 'checked' : ''} /> ${label}</label>`;
@@ -886,14 +913,7 @@ function secMain() {
               <option value="pink" ${(c.palette || (c.template === 'volume4' ? 'pink' : 'green')) === 'pink' ? 'selected' : ''}>Pushti</option>
             </select></label>`
         : ''}
-      ${(c.template || 'volume2') === 'volume2'
-        ? html`<label class="f" data-field="nameFont"><span>Ismlar shrifti</span>
-            <select data-path="nameFont">
-              <option value="" ${!c.nameFont ? 'selected' : ''}>Great Vibes (standart)</option>
-              ${Object.entries(NAME_FONTS).map(([id, name]) => html`<option value="${id}" ${c.nameFont === id ? 'selected' : ''}>${name}</option>`)}
-            </select>
-            <small class="hint">Konvert, muhr, bosh sahifa va oxiridagi ismlar. Bosh harf (masalan “A”) noaniq ko‘rinsa: lotincha ismlar — Parisienne, kirillcha — Bad Script</small></label>`
-        : ''}
+      ${(c.template || 'volume2') === 'volume2' ? nameFontPicker(c) : ''}
       ${(c.template || 'volume2') === 'volume2'
         ? html`<div class="f" data-field="largeText">${check('Kattaroq matn — yoshi kattalar o‘qishi oson bo‘lsin', 'largeText')}
             <small class="hint">Mayda yozuvlar (sana, yorliqlar, tugmalar) va taklif matni kattalashadi</small></div>`
