@@ -894,6 +894,10 @@ function secMain() {
             </select>
             <small class="hint">Konvert, muhr, bosh sahifa va oxiridagi ismlar. Bosh harf (masalan “A”) noaniq ko‘rinsa — Parisienne</small></label>`
         : ''}
+      ${(c.template || 'volume2') === 'volume2'
+        ? html`<div class="f" data-field="largeText">${check('Kattaroq matn — yoshi kattalar o‘qishi oson bo‘lsin', 'largeText')}
+            <small class="hint">Mayda yozuvlar (sana, yorliqlar, tugmalar) va taklif matni kattalashadi</small></div>`
+        : ''}
       <label class="f" data-field="autoScroll"><span>Avto-aylantirish</span>
         <select data-path="autoScroll">
           ${AUTOSCROLL.map((o) => html`<option value="${o.id}" ${autoScrollMode(c) === o.id ? 'selected' : ''}>${o.title}</option>`)}

@@ -6,6 +6,8 @@ import { loadClient, htmlEscape, siteUrl } from './scripts/client.js';
 import { watermarkHtml } from './src/lib/watermark.js';
 import { nameFontHead } from './src/lib/fonts.js';
 
+const LARGE_TEXT_CSS = fs.readFileSync(fileURLToPath(new URL('./src/large-text.css', import.meta.url)), 'utf8');
+
 const root = path.dirname(fileURLToPath(import.meta.url));
 
 const MIME = {
@@ -98,7 +100,7 @@ function weddingPlugin(client, template) {
         DESCRIPTION: derived.description,
         OG_IMAGE: abs(ogImage),
         OG_URL: base ? base + '/' : '',
-        THEME_STYLE: [themeVars ? `<style>:root{${themeVars}}</style>` : '', nameFontHead(config.nameFont)].filter(Boolean).join('\n    '),
+        THEME_STYLE: [themeVars ? `<style>:root{${themeVars}}</style>` : '', nameFontHead(config.nameFont), config.largeText === true ? `<style>${LARGE_TEXT_CSS}</style>` : ''].filter(Boolean).join('\n    '),
       };
       return html
         .replace(/%%(\w+)%%/g, (m, key) => {

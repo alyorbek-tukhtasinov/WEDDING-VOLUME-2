@@ -68,5 +68,6 @@
   "watermark": true,
   "languages": [
     "uzc"
-  ]
+  ],
+  "largeText": true
 }

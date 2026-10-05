@@ -1,0 +1,18 @@
+/* Katta matn (config.largeText) — yoshi kattalar uchun mayda yozuvlar kattalashtiriladi.
+   Faqat volume2. Belgilangan saytning <head>iga ichki <style> bo'lib qo'shiladi (boshqa saytlar
+   CSS'iga umuman tegmaydi). "html" prefiksi — asosiy CSS'dagi qoidalardan ustun turishi uchun. */
+html body { font-size: 1.3rem; }
+html .invite__text, html .gift__text, html .footer__closing { font-size: 1.4rem; font-weight: 500; }
+html .notice__text, html .wish__msg { font-size: 1.3rem; font-weight: 500; }
+html .invite__hosts { font-size: 1.35rem; }
+html .invite__hosts span, html .timeline__desc, html .form__status { font-size: 1.2rem; }
+html .timeline__title { font-size: 1.35rem; }
+html .timeline__time, html .link, html .contacts__list a { font-size: 1.15rem; }
+html .hero__date, html .cal__grid, html .prelude__date { font-size: 1.25rem; }
+html .field input, html .field select, html .field textarea { font-size: 1.3rem; }
+html .rsvp__done { font-size: 1.4rem; }
+html .envelope__to, html .prelude__names, html .cal__title, html .notice__title, html .brand { font-size: 1.05rem; }
+html .envelope__hint, html .hero__caption, html .btn, html .badge__weekday, html .badge__year, html .badge__time,
+html .gift__eyebrow, html .guest__eyebrow, html .wish__name, html .prelude__hint { font-size: 0.95rem; }
+html .cal__grid--head, html .countdown__label, html .garland__hint, html .field > span, html .choice legend,
+html .prelude__play, html .intro__skip { font-size: 0.9rem; }
