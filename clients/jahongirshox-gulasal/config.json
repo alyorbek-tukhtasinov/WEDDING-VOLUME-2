@@ -72,6 +72,5 @@
   "backgroundOverlay": 0.84,
   "autoScroll": "auto",
   "autoScrollSpeed": 1.5,
-  "invitedBy": "couple",
-  "paused": true
+  "invitedBy": "couple"
 }
