@@ -892,7 +892,7 @@ function secMain() {
               <option value="" ${!c.nameFont ? 'selected' : ''}>Great Vibes (standart)</option>
               ${Object.entries(NAME_FONTS).map(([id, name]) => html`<option value="${id}" ${c.nameFont === id ? 'selected' : ''}>${name}</option>`)}
             </select>
-            <small class="hint">Konvert, muhr, bosh sahifa va oxiridagi ismlar. Bosh harf (masalan “A”) noaniq ko‘rinsa — Parisienne</small></label>`
+            <small class="hint">Konvert, muhr, bosh sahifa va oxiridagi ismlar. Bosh harf (masalan “A”) noaniq ko‘rinsa: lotincha ismlar — Parisienne, kirillcha — Bad Script</small></label>`
         : ''}
       ${(c.template || 'volume2') === 'volume2'
         ? html`<div class="f" data-field="largeText">${check('Kattaroq matn — yoshi kattalar o‘qishi oson bo‘lsin', 'largeText')}

@@ -69,5 +69,6 @@
   "languages": [
     "uzc"
   ],
-  "largeText": true
+  "largeText": true,
+  "nameFont": "bad-script"
 }

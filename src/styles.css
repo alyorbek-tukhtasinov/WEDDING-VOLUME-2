@@ -181,7 +181,7 @@ a {
 .envelope__names {
   margin-top: 0.3em;
   font-family: var(--f-names, var(--f-script));
-  font-size: clamp(2.2rem, 10vw, 3rem);
+  font-size: calc(clamp(2.2rem, 10vw, 3rem) * var(--f-names-scale, 1));
   line-height: 1.1;
   color: var(--navy);
 }
@@ -336,7 +336,7 @@ a {
   margin: 0.6rem 0 0.4rem;
   font-family: var(--f-names, var(--f-script));
   font-weight: 400;
-  font-size: clamp(2.8rem, 13vw, 4rem);
+  font-size: calc(clamp(2.8rem, 13vw, 4rem) * var(--f-names-scale, 1));
   line-height: 1.05;
   color: var(--navy);
   display: flex;
@@ -1569,7 +1569,7 @@ a {
 .footer__names {
   margin-top: 0.5rem;
   font-family: var(--f-names, var(--f-script));
-  font-size: 2.6rem;
+  font-size: calc(2.6rem * var(--f-names-scale, 1));
   color: var(--gold);
 }
 
