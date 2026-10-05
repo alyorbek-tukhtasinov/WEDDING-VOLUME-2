@@ -52,7 +52,10 @@
       "#7a1f3d"
     ]
   },
-  "gallery": [],
+  "gallery": [
+    "rasm-muvg5aj6f94.jpg",
+    "rasm-muvg5dpu9so.jpg"
+  ],
   "musicTrack": "musiqa-1",
   "rsvp": {
     "enabled": true,
@@ -74,5 +77,8 @@
   },
   "eventType": "nikoh",
   "autoScroll": "auto",
-  "watermark": true
+  "watermark": true,
+  "backgroundImage": "fon-muvg51hf96y.jpg",
+  "backgroundOverlay": 0.84,
+  "galleryStyle": "garland"
 }
