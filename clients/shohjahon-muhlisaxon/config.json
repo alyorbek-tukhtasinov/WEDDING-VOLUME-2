@@ -1,0 +1,107 @@
+{
+  "template": "osmon",
+  "couple": {
+    "groom": "Shohjahon",
+    "bride": "Muhlisaxon",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-17",
+    "time": "06:30",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "",
+  "texts": {
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
+    "greeting": "Aziz mehmonimiz",
+    "invitation": "Ikki qalbni bir taqdirga bog‘lagan Yaratganga hamdlar bo‘lsin! Biz — Shohjahon va Muhlisaxon — hayotimizdagi eng nurli kunda, nikoh to‘yimizda sizni davramizda ko‘rishni chin dildan istaymiz. Duolaringiz va tabassumingiz bu kunni yanada go‘zal qiladi.",
+    "closing": "Tashrifingiz — to‘yimizning eng go‘zal bezagi!",
+    "inviteTitle": "Hurmat bilan taklif etamiz",
+    "namesCaption": "Bir umrga birlashmoqdamiz",
+    "namesNote": "Alloh nasib etsa, nikoh to‘yimiz quyidagi kunda bo‘lib o‘tadi",
+    "countdownTitle": "To‘yimizgacha qolgan vaqt",
+    "detailsTitle": "Marosim tafsilotlari",
+    "timeNote": "Kechki ziyofat"
+  },
+  "venue": {
+    "name": "\"Yog'du\" To'yxonasida",
+    "address": "Farg'ona viloyati Furqat Tumani",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=40.483416%2C70.770041",
+    "yandexMaps": "https://yandex.uz/maps/?pt=70.770041,40.483416&z=17&l=map"
+  },
+  "sky": {
+    "city": "Farg'ona",
+    "lat": 40.483416,
+    "lng": 70.770041
+  },
+  "program": [
+    {
+      "time": "06:30",
+      "title": "Nahorgi osh"
+    },
+    {
+      "time": "10:00",
+      "title": "Ayollar bazmi"
+    },
+    {
+      "time": "15:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "16:00",
+      "title": "Kuyov va kelin kirib kelishi"
+    },
+    {
+      "time": "18:00",
+      "title": "Tantanali ziyofat"
+    }
+  ],
+  "dressCode": {
+    "text": "Kechki libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "musicTrack": "musiqa-3",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-16",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "eventType": "nikoh",
+  "autoScroll": "auto",
+  "invitedBy": "couple",
+  "islamic": {
+    "bismillah": "Bismillahir Rohmanir Rohiym",
+    "verse": {
+      "arabic": "وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُمْ مِنْ أَنْفُسِكُمْ أَزْوَاجًا لِتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُمْ مَوَدَّةً وَرَحْمَةً إِنَّ فِي ذَلِكَ لَآيَاتٍ لِقَوْمٍ يَتَفَكَّرُونَ",
+      "text": "“U Zotning oyat-belgilaridan biri shuki, sizlar uchun o‘z jinsingizdan juftlar yaratdi — toki ular bilan xotirjamlik topgaysiz. Va U orangizga muhabbat va rahm-shafqat joyladi. Albatta, bunda tafakkur qiluvchi qavm uchun ibratlar bordir.”",
+      "source": "Qur’oni Karim, Rum surasi — 21-oyat"
+    },
+    "skyVerse": {
+      "arabic": "وَلَقَدْ زَيَّنَّا السَّمَاءَ الدُّنْيَا بِمَصَابِيحَ",
+      "text": "“Albatta, Biz eng yaqin osmonni chiroqlar — yulduzlar bilan ziynatladik.”",
+      "source": "Qur’oni Karim, Mulk surasi — 5-oyat"
+    },
+    "dua": {
+      "eyebrow": "Muborak duo",
+      "title": "Duo va ezgu tilaklar",
+      "arabic": "بَارَكَ اللَّهُ لَكَ، وَبَارَكَ عَلَيْكَ، وَجَمَعَ بَيْنَكُمَا فِي خَيْرٍ",
+      "reading": "Barakallohu laka, va baroka ’alayka, va jama’a baynakuma fi xoyr",
+      "text": "“Alloh senga baraka bersin, seni barakotli qilsin va ikkovingizni ezgulikda jamlasin.”",
+      "source": "Rasululloh (s.a.v.) duosi — Termiziy, Abu Dovud, Ibn Moja rivoyati (sahih)",
+      "note": "Ushbu duo bilan sizlarni to‘yimizga chorlaymiz. Qalbimizdagi shu quvonchni siz aziz mehmonlarimiz bilan baham ko‘rishni istaymiz — tashrifingiz bizga eng katta tuhfa."
+    }
+  }
+}
