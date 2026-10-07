@@ -16,6 +16,7 @@ export const MUSIC_LIBRARY = [
   { id: 'musiqa-12', title: "Ed Sheeran — Perfect", file: '/music/musiqa-12.mp3' },
   { id: 'musiqa-13', title: "Alex Warren — Ordinary", file: '/music/musiqa-13.mp3' },
   { id: 'musiqa-14', title: "Bolalar — Kel yashaylik biz birga", file: '/music/musiqa-14.m4a' },
+  { id: 'musiqa-15', title: "Izzat Shukurov — Ketma Qol", file: '/music/musiqa-15.mp3' },
 ];
 
 export const findTrack = (id) => MUSIC_LIBRARY.find((t) => t.id === id) || null;
