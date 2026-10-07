@@ -1,9 +1,11 @@
-// Boshqaruv paneli: tug'ilgan kun saytlari (tort, sevgi) uchun yordamchilar —
+// Boshqaruv paneli: tug'ilgan kun saytlari (tort, sevgi, yulduz) uchun yordamchilar —
 // shablon maydonlari, boshlang'ich config, jonli ko'rinish uchun to'ldirish va saqlashdan oldin tozalash.
 import { findTemplate } from '../src/lib/templates.js';
 import { isValidDate, ageOf } from '../src/lib/config.js';
 import { tortTexts, ROMANTIC_WISHES } from '../templates/tort/texts.js';
 import { sevgiTexts } from '../templates/sevgi/texts.js';
+import { yulduzTexts } from '../templates/yulduz/texts.js';
+import { birthFacts } from '../templates/yulduz/facts.js';
 
 export { ROMANTIC_WISHES };
 export const isBday = (c) => findTemplate(c?.template)?.kind === 'birthday';
@@ -17,6 +19,20 @@ const addDays = (iso, n) => {
 
 // [kalit, sarlavha, qatorlar soni]
 export const BDAY = {
+  yulduz: {
+    photos: [['portrait', 'Qizning surati — minglab yulduzlardan yig‘iladi (yuzi aniq, yorug‘ surat)']],
+    texts: [
+      ['letter', 'Maktub matni', 6],
+      ['portrait', 'Surat yig‘ilganda chiqadigan so‘z', 1],
+      ['nameText', 'Ism ostidagi yozuv', 1],
+      ['finale', 'Yulduzlardan yoziladigan so‘z (yakunda)', 1],
+      ['finaleText', 'Yakuniy tabrik', 1],
+      ['wishesTitle', 'Tilaklar sarlavhasi', 1],
+      ['gateAsk', 'Kirishdagi savol', 1],
+    ],
+    memoriesHint: 'Har bir surat yulduzlardan yig‘iladi (sarlavha, yil va izoh bilan). Yorug‘, aniq suratlar eng chiroyli chiqadi.',
+    maxMemories: 6,
+  },
   tort: {
     photos: [
       ['letter', 'Maktubdagi surat (polaroid)'],
@@ -69,6 +85,7 @@ const dOf = (c) => ({ name: c.person?.name?.trim() || 'Ism', age: ageOf(c), part
 /** Panelda placeholder sifatida ko'rsatiladigan standart matnlar (config.texts yozilmagan holda). */
 export function defaultTexts(c) {
   const base = { ...c, texts: {} };
+  if (c.template === 'yulduz') return yulduzTexts(base, dOf(c), birthFacts(base));
   return c.template === 'sevgi' ? sevgiTexts(base, dOf(c)) : tortTexts(base, dOf(c));
 }
 
@@ -87,7 +104,7 @@ export function birthdayConfig(template) {
     memories: [],
     wishes: [...ROMANTIC_WISHES],
     gift: { title: '', text: '' },
-    musicTrack: template === 'sevgi' ? 'musiqa-11' : 'musiqa-16',
+    musicTrack: { sevgi: 'musiqa-11', yulduz: 'musiqa-8' }[template] || 'musiqa-16',
     rsvp: { enabled: true },
   };
 }

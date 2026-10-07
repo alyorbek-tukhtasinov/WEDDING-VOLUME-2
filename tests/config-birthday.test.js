@@ -6,18 +6,20 @@ import { findTemplate, isBirthday } from '../src/lib/templates.js';
 import { cakeSvg } from '../templates/tort/cake.js';
 import { tortTexts } from '../templates/tort/texts.js';
 import { sevgiTexts } from '../templates/sevgi/texts.js';
+import { yulduzTexts } from '../templates/yulduz/texts.js';
+import { burjOf, muchalOf, birthMoon, birthFacts, bigKm } from '../templates/yulduz/facts.js';
 import { birthdayConfig, cleanBirthday, birthdayPreview } from '../panel/birthday.js';
 
 const read = (slug) => JSON.parse(fs.readFileSync(new URL(`../clients/${slug}/config.json`, import.meta.url), 'utf8'));
 const media = (slug) => fs.readdirSync(new URL(`../clients/${slug}/media`, import.meta.url));
 
 test('tug‘ilgan kun: shablonlar ro‘yxatda, demo config‘lar to‘g‘ri', () => {
-  for (const id of ['tort', 'sevgi']) {
+  for (const id of ['tort', 'sevgi', 'yulduz']) {
     assert.equal(findTemplate(id)?.kind, 'birthday');
     assert.ok(isBirthday({ template: id }));
   }
   assert.ok(!isBirthday({ template: 'suzani' }));
-  for (const slug of ['demo-tort', 'demo-sevgi']) assert.deepEqual(validateConfig(read(slug), media(slug)), [], slug);
+  for (const slug of ['demo-tort', 'demo-sevgi', 'demo-yulduz']) assert.deepEqual(validateConfig(read(slug), media(slug)), [], slug);
 });
 
 test('tug‘ilgan kun: kelin-kuyov va to‘yxona shart emas, ism shart', () => {
@@ -62,6 +64,7 @@ test('matnlar: romantik "sen" standart, config.texts ustun', () => {
 });
 
 test('panel: yangi sayt, ko‘rinish va saqlashdan oldin tozalash', () => {
+  for (const t of ['sevgi', 'yulduz']) assert.deepEqual(validateConfig(birthdayPreview(birthdayConfig(t))), [], t);
   const c = birthdayConfig('tort');
   assert.ok(isBirthday(c));
   assert.ok(validateConfig(birthdayPreview(c)).length === 0, validateConfig(birthdayPreview(c)).join('; '));
@@ -75,4 +78,33 @@ test('panel: yangi sayt, ko‘rinish va saqlashdan oldin tozalash', () => {
   assert.equal(out.gift, undefined);
   assert.equal(out.together, undefined);
   assert.deepEqual(validateConfig(out, ['a.jpg']), []);
+});
+
+test('yulduz: tug‘ilgan kechaning haqiqiy faktlari', () => {
+  // Burjlar chegaralari
+  assert.equal(burjOf(1, 5).name, 'Jaddiy');
+  assert.equal(burjOf(1, 20).name, 'Dalv');
+  assert.equal(burjOf(3, 21).name, 'Hamal');
+  assert.equal(burjOf(10, 12).name, 'Mezon');
+  assert.equal(burjOf(12, 21).name, 'Qavs');
+  assert.equal(burjOf(12, 25).name, 'Jaddiy');
+  // Muchal: 2008 — Sichqon; Navro'zgacha — oldingi yil (To'ng'iz)
+  assert.equal(muchalOf(2008, 10, 12).name, 'Sichqon');
+  assert.equal(muchalOf(2008, 3, 1).name, 'To‘ng‘iz');
+  assert.equal(muchalOf(2026, 6, 1).name, 'Ot');
+  // Oy: 2008-yil 14-oktabr — to'lin oy, 12-oktabr kechasi ~94%, o'sib bormoqda
+  const m = birthMoon('2008-10-12');
+  assert.ok(m.percent > 88 && m.percent < 99, String(m.percent));
+  assert.equal(m.waxing, true);
+  // 2024-yil 1-aprel atrofida — kamayib borayotgan (oxirgi chorak 2-aprel)
+  assert.equal(birthMoon('2024-04-01').waxing, false);
+  const f = birthFacts({ person: { birthDate: '2008-10-12' }, event: {} });
+  assert.equal(f.weekday, 'Yakshanba');
+  assert.ok(f.days > 6500);
+  assert.match(bigKm(f.km), /milliard/);
+  assert.equal(birthFacts({ person: {}, event: {} }), null);
+  const T = yulduzTexts({}, { name: 'Madina', age: 18 }, f);
+  assert.equal(T.gateAsk, 'Sen — Madinamisan?');
+  assert.match(T.intro, /kun oldin/);
+  assert.match(T.moonText, /%/);
 });

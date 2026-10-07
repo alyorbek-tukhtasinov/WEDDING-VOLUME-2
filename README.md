@@ -401,16 +401,17 @@ sahifasida rangli xatcha bo'lib ko'rinadi. Namuna: `clients/demo-kitob`.
 
 ## Tug‘ilgan kun saytlari — yigitdan sevgan qiziga tabrik
 
-Ikki shablon (`kind: 'birthday'`, `src/lib/templates.js`). Bu — taklifnoma emas: yigit sevgan qiziga
+Uchta shablon (`kind: 'birthday'`, `src/lib/templates.js`). Bu — taklifnoma emas: yigit sevgan qiziga
 (odatda 16–25 yosh) tug‘ilgan kuni uchun yuboradigan romantik sayt. Kelin-kuyov va to‘yxona o‘rniga
 `person` (qizning ismi va tug‘ilgan sanasi); birgalikdagi suratlar panelda yuklanadi.
 
 | Shablon | Nima bor | Namuna |
 |---|---|---|
 | **Sehrli tort** (`tort`) | Qorong‘i xona → “Shamlarni yoqish” (musiqa shu bilan) → yosh raqamli shamlar yonadi → qiz tilak tilab, tugmani bosib turib (yoki mikrofonga) puflaydi → chiroqlar yonadi, yurakchali konfetti, sharlar uchadi. So‘ng: folga sharlardagi ism, “bu dunyoni N kundan beri yoritib kelyapsan” jonli hisoblagichi, “Biz birgamiz — N kun”, muhrli konvertdagi maktub, ipga osilgan polaroid suratlar, ichida tilak bor sharlar (bosilsa yoriladi), sovg‘a qutisi (karta yoki Payme/Click havolasi), javob maktubi, salyutli yakun | `clients/demo-tort` |
+| **Yulduzlardan yaralgan** (`yulduz`) | Sahifa ortida 9–18 ming jonli yulduz (WebGL, `templates/yulduz/stars.js`). Kirish: *“Bu sayt faqat bitta inson uchun. Sen — Madinamisan?”* → “Ha, menman”. Pastga surilgan sari yulduzlar bir shakldan boshqasiga oqadi: *“Bundan 6 569 kun oldin…”* → qiz tug‘ilgan kechaning **haqiqiy Oyi** (faza astronomik hisoblanadi, `osmon/sky/astro.js`) + burji va muchal yili → aylanayotgan galaktika *“Koinot 13,8 milliard yil kutdi…”* → **qizning o‘z surati yulduzlardan yig‘iladi** *“…aynan seni yaratish uchun”* (barmoq tekkizilsa yulduzlar tarqaladi) → ismi (yozma harflar) → yoshi + “Yer seni Quyosh atrofida 16,9 milliard km olib yurdi” → yurak “Biz birgamiz N kun” → xotira suratlari (har biri yulduzlardan) → uchar yulduz-tilaklar → konvert va maktub → sovg‘a → javob maktubi → “Seni sevaman” (bosilsa portlab, qayta yig‘iladi) | `clients/demo-yulduz` |
 | **Sevgi kundaligi** (`sevgi`) | b-day loyihasining professional versiyasi: muhrli maktub → har bir sahifa to‘liq ekranli birgalikdagi surat ustida (Ken Burns harakati): muqova (ism, “18 bahorni qarshi olgan farishtam”, gul yaproqlari), ilk uchrashuv, kulgili lahza, minnatdorlik, “Bizning yo‘limiz” (suratli xotiralar), tilaklar, sovg‘a qutisi, javob maktubi, “Seni sevaman” | `clients/demo-sevgi` |
 
-**Panelda:** “Yangi sayt” → “Tug‘ilgan kun: sehrli tort” yoki “Sevgi kundaligi” → qizning ismi, tug‘ilgan
+**Panelda:** “Yangi sayt” → “Yulduzlardan yaralgan”, “Tug‘ilgan kun: sehrli tort” yoki “Sevgi kundaligi” → qizning ismi, tug‘ilgan
 sanasi, tabrik kuni, tanishgan kuningiz (ixtiyoriy), kimdan (“Sevgilingdan”) → **Birgalikdagi suratlar**
 (bir nechta suratni birdaniga tanlash mumkin; har biriga sarlavha, yil va izoh) → tilaklar (“✨ Tayyor
 romantik tilaklar”) → matnlar (bo‘sh qolsa — namunadagi romantik matn) → sovg‘a → musiqa. O‘ngda jonli ko‘rinish.
@@ -443,9 +444,9 @@ Config maydonlari (`config.json`):
 ```
 
 - `voice` — faqat `tort`: yozilmasa “sen” (romantik), `"siz"` — hurmat bilan.
-- `photos` kalitlari: `tort` — `letter`, `gift`; `sevgi` — `cover`, `first`, `funny`, `gratitude`, `journey`,
+- `photos` kalitlari: `yulduz` — `portrait` (yuklanmasa — birinchi xotira surati); `tort` — `letter`, `gift`; `sevgi` — `cover`, `first`, `funny`, `gratitude`, `journey`,
   `wishes`, `gift` (yuklanmagan sahifaga birgalikdagi suratlardan biri qo‘yiladi).
-- `texts` kalitlari — `templates/tort/texts.js` va `templates/sevgi/texts.js` (panel ham shu ro‘yxatni ko‘rsatadi).
+- `texts` kalitlari — `templates/tort/texts.js`, `templates/sevgi/texts.js`, `templates/yulduz/texts.js` (panel ham shu ro‘yxatni ko‘rsatadi).
 - Yosh `person.birthDate` va `event.date` dan hisoblanadi (raqamli shamlar, “18 bahor”).
 - `musiqa-16` — “Happy Birthday” musiqa qutisi (kuy jamoat mulki, sintez qilingan).
 
