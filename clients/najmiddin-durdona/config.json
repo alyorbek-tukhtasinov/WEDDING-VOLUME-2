@@ -1,0 +1,89 @@
+{
+  "template": "volume2",
+  "languages": [
+    "uzc",
+    "uz"
+  ],
+  "couple": {
+    "groom": "Najmiddin",
+    "bride": "Durdona",
+    "initials": ""
+  },
+  "event": {
+    "date": "2026-10-10",
+    "time": "17:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "hosts": "Ilhomjon Abdullayev oilasi",
+  "texts": {
+    "heroCaption": "Fotiha va nikoh to‘yiga taklifnoma",
+    "greeting": "Hurmatli mehmonimiz!",
+    "invitation": "Sizni farzandlarimiz Najmiddin va Durdonaning hayotlaridagi eng quvonchli kun — fotiha to‘yi va nikoh to‘yi marosimiga taklif etamiz. Ikki xonadon rishtasi bog‘lanayotgan bu muborak kunda duolaringiz va tashrifingiz biz uchun eng katta sovg‘a bo‘ladi.",
+    "closing": "Duolaringiz bilan yosh oilaga oq yo‘l tilang — tashrifingiz biz uchun katta sharaf!"
+  },
+  "venue": {
+    "name": "“Toj” to‘yxonasi",
+    "address": "Sirdaryo viloyati, Yangiyer shahri",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=Toj%20to%27yxonasi%20Yangiyer",
+    "yandexMaps": "https://yandex.uz/maps/?text=Toj%20to%27yxonasi%20Yangiyer",
+    "image": ""
+  },
+  "program": [
+    {
+      "time": "17:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "17:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "18:00",
+      "title": "Fotiha marosimi",
+      "description": "Ikki xonadon duosi va yoshlarga oq fotiha"
+    },
+    {
+      "time": "18:30",
+      "title": "Tantanali ziyofat",
+      "description": "Dasturxon atrofida qutlovlar va kuy-qo‘shiqlar"
+    },
+    {
+      "time": "20:30",
+      "title": "To‘y tortini kesish"
+    },
+    {
+      "time": "21:30",
+      "title": "Yosh oilaga oq yo‘l tilash"
+    }
+  ],
+  "dressCode": {
+    "text": "Bayramona libos. Iltimos, oq rangdagi liboslardan saqlaning.",
+    "colors": [
+      "#0b2545",
+      "#c9a96e",
+      "#f4efe6",
+      "#7a1f3d"
+    ]
+  },
+  "gallery": [],
+  "musicTrack": "musiqa-1",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-10-09",
+    "maxGuests": 5,
+    "showWishes": true
+  },
+  "contacts": [],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "effects": {
+    "envelope": true,
+    "petals": true,
+    "typing": true,
+    "countdown": true
+  }
+}
