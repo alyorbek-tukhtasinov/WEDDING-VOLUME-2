@@ -1,12 +1,15 @@
-// Boshqaruv paneli: tug'ilgan kun saytlari (tort, sevgi) uchun yordamchilar —
+// Boshqaruv paneli: tug'ilgan kun saytlari (tort, sevgi, plastinka) uchun yordamchilar —
 // shablon maydonlari, boshlang'ich config, jonli ko'rinish uchun to'ldirish va saqlashdan oldin tozalash.
 import { findTemplate } from '../src/lib/templates.js';
 import { isValidDate, ageOf } from '../src/lib/config.js';
 import { tortTexts, ROMANTIC_WISHES } from '../templates/tort/texts.js';
 import { sevgiTexts } from '../templates/sevgi/texts.js';
+import { plastinkaTexts, PARTY_PROGRAM } from '../templates/plastinka/texts.js';
 
 export { ROMANTIC_WISHES };
 export const isBday = (c) => findTemplate(c?.template)?.kind === 'birthday';
+/** Bazmga taklifnoma (manzil, dastur, javob) — romantik tabrik emas */
+export const isParty = (c) => isBday(c) && !!findTemplate(c?.template)?.party;
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const addDays = (iso, n) => {
@@ -63,17 +66,48 @@ export const BDAY = {
     memoriesHint: '5-sahifa — “Bizning yo‘limiz”: har bir qadam surat, sarlavha va qisqa matn bilan (2–6 ta).',
     maxMemories: 8,
   },
+  plastinka: {
+    photos: [
+      ['cover', 'Albom muqovasi (tug‘ilgan kun egasining surati)'],
+      ['venue', 'Bazm joyi surati (chipta ustida)'],
+    ],
+    photosHint: 'Muqova surati yuklanmasa — tilla nurli muqovada katta raqam bilan yoshi chiqadi.',
+    texts: [
+      ['inviteTitle', 'Taklif sarlavhasi', 1],
+      ['invitation', 'Taklif matni (tug‘ilgan kun egasi nomidan)', 4],
+    ],
+  },
 };
 
 const dOf = (c) => ({ name: c.person?.name?.trim() || 'Ism', age: ageOf(c), party: !!c.venue?.name?.trim() });
 /** Panelda placeholder sifatida ko'rsatiladigan standart matnlar (config.texts yozilmagan holda). */
 export function defaultTexts(c) {
   const base = { ...c, texts: {} };
+  if (c.template === 'plastinka') return plastinkaTexts(base, { ...dOf(c), year: Number(String(c.event?.date || '').slice(0, 4)) || new Date().getFullYear() });
   return c.template === 'sevgi' ? sevgiTexts(base, dOf(c)) : tortTexts(base, dOf(c));
 }
 
 /** Yangi tug'ilgan kun sayti. */
 export function birthdayConfig(template) {
+  if (findTemplate(template)?.party) {
+    const date = addDays(todayIso(), 14);
+    return {
+      template,
+      watermark: true,
+      autoScroll: 'auto',
+      person: { name: '', birthDate: '' },
+      event: { date, time: '19:00', timezone: '+05:00', durationHours: 5 },
+      texts: {},
+      photos: {},
+      venue: { name: '', address: '', googleMaps: '', yandexMaps: '' },
+      program: PARTY_PROGRAM.map((p) => ({ ...p })),
+      dressCode: { text: 'Black & Gold: qora va tilla ranglar, klassik yoki smart-casual.', colors: ['#111111', '#d4a24c', '#f2ece1', '#6b4a2b'] },
+      musicTrack: 'musiqa-16',
+      rsvp: { enabled: true, deadline: addDays(date, -2), maxGuests: 4, showWishes: true },
+      contacts: [],
+      effects: { countdown: true },
+    };
+  }
   return {
     template,
     watermark: true,
@@ -96,6 +130,12 @@ export function birthdayConfig(template) {
 export function birthdayPreview(c0) {
   const c = JSON.parse(JSON.stringify(c0));
   c.person = { ...c.person, name: c.person?.name?.trim() || 'Ism' };
+  if (isParty(c)) {
+    // Bazm joyi yozilmagan bo'lsa ham ko'rinishda chipta va javob kartasi chiqsin
+    c.venue = { ...c.venue, name: c.venue?.name?.trim() || 'Bazm joyi' };
+    if (Array.isArray(c.program)) c.program = c.program.filter((p) => p.time && p.title?.trim());
+    if (Array.isArray(c.contacts)) c.contacts = c.contacts.filter((p) => p.phone?.trim());
+  }
   if (!isValidDate(c.person.birthDate)) delete c.person.birthDate;
   c.event = { ...c.event };
   if (!isValidDate(c.event.date)) c.event.date = addDays(todayIso(), 7);
@@ -128,6 +168,14 @@ export function cleanBirthday(c) {
     if (!Object.keys(c.gift).length) delete c.gift;
   }
   if (c.voice !== 'siz') delete c.voice;
+  if (isParty(c)) {
+    // Bazm: manzil, dastur, kontaktlar va javob muddati saqlanadi (bo'sh qatorlar tozalanadi)
+    if (Array.isArray(c.program)) c.program = c.program.filter((p) => p.time || p.title?.trim());
+    if (Array.isArray(c.contacts)) c.contacts = c.contacts.filter((p) => p.name?.trim() || p.phone?.trim());
+    if (c.venue && !Object.values(c.venue).some((v) => String(v || '').trim())) delete c.venue;
+    if (c.rsvp && !c.rsvp.deadline) delete c.rsvp.deadline;
+    return c;
+  }
   if (c.rsvp) delete c.rsvp.deadline;
   delete c.venue;
   return c;

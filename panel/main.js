@@ -14,7 +14,7 @@ import { prepareAudio, toBase64 } from './audio-convert.js';
 import { defaultConfig } from '../src/lib/starter.js';
 import { NAME_FONT_LIST, nameFontsHref, nameFontStyle } from '../src/lib/fonts.js';
 import { ageOf } from '../src/lib/config.js';
-import { BDAY, isBday, defaultTexts, birthdayConfig, birthdayPreview, cleanBirthday, ROMANTIC_WISHES } from './birthday.js';
+import { BDAY, isBday, isParty, defaultTexts, birthdayConfig, birthdayPreview, cleanBirthday, ROMANTIC_WISHES } from './birthday.js';
 
 const AUTOSCROLL_SPEED = [
   { v: 0.75, title: 'Tezlik: sekinroq' },
@@ -968,7 +968,7 @@ function secVenue() {
     'venue',
     'Manzil va xarita',
     html`
-      ${field('To‘yxona nomi', 'venue.name', { placeholder: '“Zumrad” to‘yxonasi' })}
+      ${isBday(c) ? field('Bazm joyi nomi', 'venue.name', { placeholder: '“Black Vinyl” lounge' }) : field('To‘yxona nomi', 'venue.name', { placeholder: '“Zumrad” to‘yxonasi' })}
       ${field('Manzil', 'venue.address', { placeholder: 'Navoiy viloyati, Qiziltepa tumani…' })}
       <label class="f">
         <span>Xarita: mijoz yuborgan havola, &lt;iframe&gt; kodi yoki koordinata</span>
@@ -1115,7 +1115,7 @@ function secProgram() {
   const on = (c.program || []).length > 0;
   return section(
     'program',
-    'To‘y dasturi',
+    isBday(c) ? 'Bazm dasturi (treklar ro‘yxati)' : 'To‘y dasturi',
     html`
       <div class="actions-row">
         <select id="program-preset">
@@ -1542,7 +1542,7 @@ function secMusicRsvp() {
 function secRsvp() {
   const c = state.ed.config;
   const on = c.rsvp?.enabled !== false;
-  const wishes = c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4', 'volume5'].includes(c.template);
+  const wishes = c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4', 'volume5', 'plastinka'].includes(c.template);
   return section(
     'rsvp',
     'Tashrifni tasdiqlash va tilaklar',
@@ -1563,7 +1563,7 @@ function secEffects() {
   if (state.ed.config.template === 'suzani') {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq (kashta gardishlari)', 'effects.countdown', true)}</div>`);
   }
-  if (['volume3', 'volume4', 'volume5'].includes(state.ed.config.template)) {
+  if (['volume3', 'volume4', 'volume5', 'plastinka'].includes(state.ed.config.template)) {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq', 'effects.countdown', true)}</div>`);
   }
   if (state.ed.config.template === 'bulut') {
@@ -1606,6 +1606,19 @@ function secBdayMain() {
         ${check('“NAMUNA” belgisini qo‘shish', 'watermark')}
         <small class="hint">To‘lovdan keyin galochkani olib tashlab saqlang</small>
       </div>
+      ${isParty(c)
+        ? html`<div class="grid3">
+            ${field('Tug‘ilgan kun egasi', 'person.name', { placeholder: 'Jasur' })}
+            <label class="f" data-field="person.birthDate"><span>Tug‘ilgan sanasi</span>
+              <input type="date" data-path="person.birthDate" value="${c.person?.birthDate || ''}" />
+              <small class="hint" id="age-hint">${age ? `Yoshi: ${age}` : 'Yosh avtomatik hisoblanadi'}</small>
+            </label>
+            ${field('Bazm sanasi', 'event.date', { type: 'date' })}
+          </div>
+          <div class="grid3">
+            ${field('Boshlanish vaqti', 'event.time', { type: 'time' })}
+          </div>`
+        : html`
       <div class="grid2">
         ${field('Qizning ismi', 'person.name', { placeholder: 'Madina' })}
         ${field('Kimdan (imzo)', 'from', { placeholder: 'Sevgilingdan', hint: 'Maktub va oxirida chiqadi' })}
@@ -1617,7 +1630,7 @@ function secBdayMain() {
         </label>
         ${field('Tabrik kuni', 'event.date', { type: 'date', hint: 'Odatda — tug‘ilgan kuni' })}
         ${field('Tanishgan kuningiz', 'together', { type: 'date', hint: 'Ixtiyoriy: “Biz birgamiz — N kun”' })}
-      </div>
+      </div>`}
       ${c.template === 'tort'
         ? html`<label class="f" data-field="voice"><span>Murojaat</span>
             <select data-path="voice">
@@ -1650,7 +1663,7 @@ function secBdayTexts() {
   const def = defaultTexts(c);
   return section(
     'texts',
-    'Matnlar (romantik so‘zlar)',
+    isParty(c) ? 'Taklif matni' : 'Matnlar (romantik so‘zlar)',
     html`<small class="hint">Bo‘sh qoldirilsa — kulrang namunadagi matn chiqadi. O‘zingizning so‘zlaringiz bilan yozsangiz, sayt yanada samimiy bo‘ladi.</small>
       ${(BDAY[c.template]?.texts || []).map(([k, label, rows]) => area(label, `texts.${k}`, { rows, placeholder: def[k] || '' }))}`,
   );
@@ -1742,8 +1755,8 @@ function secBdayPhotos() {
   const c = state.ed.config;
   return section(
     'photos',
-    c.template === 'sevgi' ? 'Sahifalar suratlari' : 'Qo‘shimcha suratlar',
-    html`<small class="hint">${c.template === 'sevgi' ? 'Har bir sahifa foni — alohida surat (vertikal suratlar yaxshi chiqadi). Yuklanmagan sahifaga “Birgalikdagi suratlar”dan biri qo‘yiladi.' : 'Ixtiyoriy.'}</small>
+    c.template === 'sevgi' ? 'Sahifalar suratlari' : isParty(c) ? 'Suratlar' : 'Qo‘shimcha suratlar',
+    html`<small class="hint">${c.template === 'sevgi' ? 'Har bir sahifa foni — alohida surat (vertikal suratlar yaxshi chiqadi). Yuklanmagan sahifaga “Birgalikdagi suratlar”dan biri qo‘yiladi.' : BDAY[c.template]?.photosHint || 'Ixtiyoriy.'}</small>
       <div class="thumbs" id="yz-photos">${bdayPhotosHtml()}</div>`,
   );
 }
@@ -1755,9 +1768,9 @@ function secBdayGift() {
     'gift',
     'Sovg‘a',
     html`
-      <small class="hint">Qiz sovg‘a qutisini ochadi — ichidan shu yozuv chiqadi. Karta raqami yoki to‘lov havolasi (Payme, Click) ixtiyoriy.</small>
-      ${field('Sarlavha', 'gift.title', { placeholder: 'Sovg‘ang tayyor 🎁' })}
-      ${area('Matn', 'gift.text', { rows: 3, placeholder: 'Uzoqda bo‘lsam ham, senga kichik bir sovg‘a tayyorladim…' })}
+      <small class="hint">${isParty(c) ? '“Bonus trek” bo‘limi: sovg‘a haqida iltimos yoki istak. Karta raqami yoki to‘lov havolasi (Payme, Click) ixtiyoriy.' : 'Qiz sovg‘a qutisini ochadi — ichidan shu yozuv chiqadi. Karta raqami yoki to‘lov havolasi (Payme, Click) ixtiyoriy.'}</small>
+      ${field('Sarlavha', 'gift.title', { placeholder: isParty(c) ? 'Sovg‘a' : 'Sovg‘ang tayyor 🎁' })}
+      ${area('Matn', 'gift.text', { rows: 3, placeholder: isParty(c) ? 'Eng katta sovg‘a — sizning tashrifingiz…' : 'Uzoqda bo‘lsam ham, senga kichik bir sovg‘a tayyorladim…' })}
       <div class="grid3">
         ${field('Karta raqami', 'gift.card', { placeholder: '8600 …', attrs: 'inputmode="numeric"' })}
         ${field('Karta egasi', 'gift.holder', { placeholder: 'Ism Familiya' })}
@@ -2189,7 +2202,9 @@ function showEditor() {
   const volume3 = c.template === 'volume3' || c.template === 'volume4';
   const volume5 = c.template === 'volume5';
   const bday = isBday(c);
-  const sections = bday
+  const sections = isParty(c)
+    ? [secBdayMain(), secBdayTexts(), secVenue(), secProgram(), secDress(), secBdayPhotos(), secBdayGift(), secContacts(), secMusicRsvp(), secRsvp(), secEffects(), secSeo()]
+    : bday
     ? [secBdayMain(), secBdayTexts(), secBdayMemories(), secBdayWishes(), secBdayPhotos(), secBdayGift(), secBdayReply(), secMusicRsvp(), secSeo()]
     : yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secRsvp(), secYzRu(), secYzTexts(), secSeo()]

@@ -37,6 +37,7 @@ export default defineConfig({
         'preview-volume5': path.join(root, 'panel', 'preview-volume5.html'),
         'preview-tort': path.join(root, 'panel', 'preview-tort.html'),
         'preview-sevgi': path.join(root, 'panel', 'preview-sevgi.html'),
+        'preview-plastinka': path.join(root, 'panel', 'preview-plastinka.html'),
       },
     },
   },

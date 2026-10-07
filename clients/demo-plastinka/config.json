@@ -1,0 +1,49 @@
+{
+  "template": "plastinka",
+  "autoScroll": "auto",
+  "languages": ["uz", "ru"],
+  "person": {
+    "name": "Jasur",
+    "birthDate": "1996-11-14"
+  },
+  "event": {
+    "date": "2026-11-14",
+    "time": "19:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
+  "venue": {
+    "name": "“Black Vinyl” lounge",
+    "address": "Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.300000%2C69.280000",
+    "yandexMaps": "https://yandex.uz/maps/?pt=69.280000,41.300000&z=16"
+  },
+  "program": [
+    { "time": "19:00", "title": "Mehmonlarni kutib olish" },
+    { "time": "19:30", "title": "Bayram dasturxoni" },
+    { "time": "20:30", "title": "Tilaklar va qadahlar" },
+    { "time": "21:30", "title": "Tort va shamlar" },
+    { "time": "22:00", "title": "Raqslar va jonli musiqa" }
+  ],
+  "dressCode": {
+    "text": "Black & Gold: qora va tilla ranglar, klassik yoki smart-casual.",
+    "colors": ["#111111", "#d4a24c", "#f2ece1", "#6b4a2b"]
+  },
+  "gift": {
+    "title": "Sovg‘a",
+    "text": "Eng katta sovg‘a — sizning tashrifingiz. Baribir nimadir sovg‘a qilmoqchi bo‘lsangiz, orzuimdagi gitara uchun hissa qo‘shishingiz mumkin 🎸"
+  },
+  "musicTrack": "musiqa-16",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-11-10",
+    "maxGuests": 4,
+    "showWishes": true
+  },
+  "contacts": [
+    { "name": "Jasur", "phone": "+998 90 123 45 67" }
+  ],
+  "effects": {
+    "countdown": true
+  }
+}

@@ -73,6 +73,15 @@ export const TEMPLATES = [
     description: '🎂 Tug‘ilgan kun (sevgan qizga): qora-tilla kinematik “sevgi kundaligi” — har sahifa birgalikdagi surat ustida: ilk uchrashuv, kulgili lahza, minnatdorlik, bizning yo‘limiz, tilaklar va sovg‘a',
     features: ['photos', 'giftNote'],
   },
+  // Bazmga taklifnoma (party: manzil, dastur, javob formasi va mehmonlar tilaklari bilan)
+  {
+    id: 'plastinka',
+    kind: 'birthday',
+    party: true,
+    title: 'Tug‘ilgan kun: oltin plastinka',
+    description: '🎂 Yigitning tug‘ilgan kun bazmiga taklifnoma — musiqa albomi uslubida: muqovadan plastinka chiqib proigryvatelga tushadi, kuchaytirgichdagi sanoq, treklar ro‘yxati (dastur), konsert chiptasi (manzil), backstage karta (javob) va tilaklar',
+    features: ['program', 'dressCode', 'contacts', 'photos', 'rsvp', 'wishes'],
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';

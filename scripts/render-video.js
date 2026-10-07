@@ -182,7 +182,7 @@ export async function renderVideo(slug, { out, siteDir, onProgress = () => {}, f
         }
       });
     }
-    await hold(template === 'yz' || template === 'volume5' ? 3.2 : 2.6);
+    await hold(template === 'yz' || template === 'volume5' ? 3.2 : template === 'plastinka' ? 3.4 : 2.6);
 
     // 2) Sayt bo'ylab harakat
     if (template === 'kitob') {
