@@ -220,7 +220,7 @@ function validateBirthday(c, need, checkMedia) {
     const any = ['name', 'address', 'googleMaps', 'yandexMaps'].some((k) => c.venue?.[k]);
     need(!any || c.venue?.name?.trim(), 'venue.name (bazm joyi nomi) kiritilmagan');
   }
-  const PHOTO_KEYS = { tort: ['hero', 'letter', 'gift', 'finale'], sevgi: ['cover', 'first', 'funny', 'gratitude', 'journey', 'wishes', 'gift'], plastinka: ['cover', 'venue'] }[c.template] || [];
+  const PHOTO_KEYS = { tort: ['hero', 'letter', 'gift', 'finale'], sevgi: ['cover', 'first', 'funny', 'gratitude', 'journey', 'wishes', 'gift'], yulduz: ['portrait'], plastinka: ['cover', 'venue'] }[c.template] || [];
   for (const [k, v] of Object.entries(c.photos || {})) {
     need(PHOTO_KEYS.includes(k), `photos.${k} — noma'lum bo'lim (${PHOTO_KEYS.join(', ')})`);
     checkMedia(v, `photos.${k}`);

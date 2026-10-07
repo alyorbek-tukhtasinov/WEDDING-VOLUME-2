@@ -67,6 +67,13 @@ export const TEMPLATES = [
     features: ['photos', 'rsvp', 'wishes', 'giftNote'],
   },
   {
+    id: 'yulduz',
+    kind: 'birthday',
+    title: 'Yulduzlardan yaralgan',
+    description: '🎂 Tug‘ilgan kun (sevgan qizga): 10 mingta jonli yulduz — u tug‘ilgan kechaning haqiqiy Oyi, aylanayotgan galaktika, keyin QIZNING O‘Z SURATI yulduzlardan yig‘iladi (barmoq tekkizsa tarqaladi); ismi, yoshi, yurak, xotira suratlari, uchar yulduz-tilaklar, “Seni sevaman”',
+    features: ['photos', 'giftNote'],
+  },
+  {
     id: 'sevgi',
     kind: 'birthday',
     title: 'Sevgi kundaligi',

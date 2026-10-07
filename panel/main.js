@@ -634,7 +634,7 @@ function markResumed(r) {
 /* ------------------------------------------------------------------ */
 /*  Shablon tanlash                                                     */
 /* ------------------------------------------------------------------ */
-const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg', volume3: '/images/og-volume3.jpg', volume4: '/images/og-volume4.jpg', volume5: '/images/og-volume5.jpg', tort: '/images/og-tort.jpg', sevgi: '/images/og-sevgi.jpg' };
+const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg', volume3: '/images/og-volume3.jpg', volume4: '/images/og-volume4.jpg', volume5: '/images/og-volume5.jpg', tort: '/images/og-tort.jpg', sevgi: '/images/og-sevgi.jpg', yulduz: '/images/og-yulduz.jpg' };
 
 function showTemplatePicker() {
   root.innerHTML = html`
@@ -1726,7 +1726,7 @@ function secBdayWishes() {
   return section(
     'wishes',
     'Tilaklar',
-    html`<small class="hint">${c.template === 'tort' ? 'Har bir tilak — sharning ichida: qiz sharni bosib yoradi va tilakni o‘qiydi.' : 'Tilaklar sahifasida yurakchalar bilan birin-ketin chiqadi.'} 3–6 ta tavsiya etiladi.</small>
+    html`<small class="hint">${c.template === 'tort' ? 'Har bir tilak — sharning ichida: qiz sharni bosib yoradi va tilakni o‘qiydi.' : c.template === 'yulduz' ? 'Qiz osmonga bosadi — har bir uchar yulduz bitta tilakni olib keladi.' : 'Tilaklar sahifasida yurakchalar bilan birin-ketin chiqadi.'} 3–6 ta tavsiya etiladi.</small>
       <div id="wish-rows">${wishRows()}</div>`,
   );
 }
@@ -1755,8 +1755,8 @@ function secBdayPhotos() {
   const c = state.ed.config;
   return section(
     'photos',
-    c.template === 'sevgi' ? 'Sahifalar suratlari' : isParty(c) ? 'Suratlar' : 'Qo‘shimcha suratlar',
-    html`<small class="hint">${c.template === 'sevgi' ? 'Har bir sahifa foni — alohida surat (vertikal suratlar yaxshi chiqadi). Yuklanmagan sahifaga “Birgalikdagi suratlar”dan biri qo‘yiladi.' : BDAY[c.template]?.photosHint || 'Ixtiyoriy.'}</small>
+    c.template === 'sevgi' ? 'Sahifalar suratlari' : c.template === 'yulduz' ? 'Qizning surati ✨' : isParty(c) ? 'Suratlar' : 'Qo‘shimcha suratlar',
+    html`<small class="hint">${c.template === 'sevgi' ? 'Har bir sahifa foni — alohida surat (vertikal suratlar yaxshi chiqadi). Yuklanmagan sahifaga “Birgalikdagi suratlar”dan biri qo‘yiladi.' : c.template === 'yulduz' ? 'Saytning eng ta’sirli lahzasi: shu surat minglab yulduzlardan yig‘iladi. Yuklanmasa — birinchi xotira surati olinadi.' : BDAY[c.template]?.photosHint || 'Ixtiyoriy.'}</small>
       <div class="thumbs" id="yz-photos">${bdayPhotosHtml()}</div>`,
   );
 }
