@@ -286,8 +286,22 @@ export function applyOverrides(c, s) {
     }
     // originalDate — mehmonning brauzerdagi javobi sana o'zgarganda yo'qolmasligi uchun
     out = { ...out, event: { ...c.event, date, time, originalDate: c.event.date }, rsvp };
+    // Boshlanish vaqti o'zgarsa, to'y dasturi ham shuncha suriladi (panel tahriridagidek)
+    if (time !== c.event.time && Array.isArray(c.program)) out.program = shiftTimes(c.program, c.event.time, time);
   }
   return out;
+}
+
+const toMin = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+const fromMin = (m) => {
+  const v = ((m % 1440) + 1440) % 1440;
+  return `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
+};
+/** Dastur bandlarini vaqt farqiga surish (yarim tundan o'tsa — keyingi kun soati). */
+function shiftTimes(program, from, to) {
+  if (!TIME_RE.test(from || '') || !TIME_RE.test(to || '')) return program;
+  const delta = toMin(to) - toMin(from);
+  return program.map((p) => (p && TIME_RE.test(p.time || '') ? { ...p, time: fromMin(toMin(p.time) + delta) } : p));
 }
 
 // Boshqaruv panelidagi jonli ko'rinish yuklangan (hali saqlanmagan) rasmlarni shu ilgak orqali ko'rsatadi
