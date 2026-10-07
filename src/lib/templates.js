@@ -57,8 +57,28 @@ export const TEMPLATES = [
     description: 'Zaytun-bej “Our Story”: konvert ochilish videosi, raqsga tushayotgan juftlik, to‘lqinli to‘y dasturi, 3 kunlik taqvim, anketa va tilaklar',
     features: ['program', 'dressCode', 'contacts', 'giftNote', 'photos', 'rsvp', 'wishes'],
   },
+  // Tug'ilgan kun shablonlari (kind: 'birthday'): kelin-kuyov o'rniga `person`, to'yxona ixtiyoriy.
+  // Hozircha config.json orqali yaratiladi — panelning "Yangi to'y" ro'yxatida chiqmaydi (panel: false).
+  {
+    id: 'tort',
+    kind: 'birthday',
+    panel: false,
+    title: 'Tug‘ilgan kun: sehrli tort',
+    description: 'Qorong‘i xonada shamlar yonadi, tilak tilab shamlarni puflaysiz; folga sharlardagi ism, yashalgan kunlar hisoblagichi, polaroid xotiralar, yoriladigan tilak sharlari, sovg‘a qutisi va mehmonlar tilaklari',
+    features: ['photos', 'rsvp', 'wishes', 'giftNote'],
+  },
+  {
+    id: 'sevgi',
+    kind: 'birthday',
+    panel: false,
+    title: 'Sevgi kundaligi',
+    description: 'Qora-tilla kinematik tug‘ilgan kun tabrigi: har sahifada surat, xotiralar, yo‘limiz, tilaklar va sovg‘a',
+    features: ['photos', 'giftNote'],
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'volume2';
 export const findTemplate = (id) => TEMPLATES.find((t) => t.id === (id || DEFAULT_TEMPLATE)) || null;
 export const templateOf = (config) => config?.template || DEFAULT_TEMPLATE;
+/** Tug'ilgan kun shabloni (kelin-kuyov o'rniga `person`). */
+export const isBirthday = (config) => findTemplate(config?.template)?.kind === 'birthday';

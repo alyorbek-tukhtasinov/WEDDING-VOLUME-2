@@ -11,7 +11,8 @@ export default async function handler(req, res) {
 
   try {
     const wishes = (await listEntries())
-      .filter((e) => e.message)
+      // Javob maktublari (attending: 'wish') — shaxsiy: faqat /admin da ko'rinadi
+      .filter((e) => e.message && e.attending !== 'wish')
       .slice(0, 100)
       .map((e) => ({ name: e.name, message: e.message, attending: e.attending, at: e.updatedAt }));
     return send(res, 200, { ok: true, enabled: true, wishes });

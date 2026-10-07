@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       stats: {
         total: entries.length,
         attending: yes.length,
-        declined: entries.length - yes.length,
+        declined: entries.filter((e) => e.attending === 'no').length,
         guests: yes.reduce((sum, e) => sum + (e.guests || 1), 0),
       },
       entries,

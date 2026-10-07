@@ -1,0 +1,59 @@
+{
+  "template": "tort",
+  "demo": true,
+  "autoScroll": "button",
+  "person": {
+    "name": "Madina",
+    "birthDate": "2008-10-12"
+  },
+  "from": "Sevgilingdan",
+  "event": {
+    "date": "2026-10-12",
+    "timezone": "+05:00"
+  },
+  "texts": {
+    "letter": "Bugun — sen dunyoga kelgan kun. O‘sha kuni osmon biroz yorug‘roq bo‘lgan bo‘lsa kerak, chunki u menga sen kabi farishtani hadya qilgan. Tabassuming hech qachon so‘nmasin, orzularing birin-ketin ushalsin. Oramizda qancha masofa bo‘lmasin, yuragim doim sening yoningda. 18 bahoring muborak, jonim!"
+  },
+  "photos": {
+    "letter": "gullar.webp",
+    "gift": "qalb.webp"
+  },
+  "memories": [
+    {
+      "photo": "kecha.webp",
+      "title": "Ilk ko‘rishuv",
+      "text": "O‘sha kechani hamon eslayman — atrof chiroqlarga to‘la edi, men esa faqat seni ko‘rardim."
+    },
+    {
+      "photo": "dalada.webp",
+      "title": "Birga sayohat",
+      "text": "Yashil dalalar, shamol va sening kulging."
+    },
+    {
+      "photo": "shom.webp",
+      "title": "Shom chog‘i",
+      "text": "Quyosh botayotganda aytilgan eng muhim so‘zlar."
+    },
+    {
+      "photo": "quyosh.webp",
+      "title": "Masofalar ham qo‘rqadi bizdan",
+      "text": "Uzoqlik sevgimizni sinamadi — aksincha, mustahkamladi."
+    }
+  ],
+  "wishes": [
+    "Yuzingdan gullardek nafis tabassuming hech qachon arimasin",
+    "Yuragingdagi eng shirin orzularing hammasi ushalsin",
+    "Sog‘liging mustahkam, ko‘ngling doim tinch bo‘lsin",
+    "Yoningda bo‘lmasam ham, sevgim seni doim o‘rab tursin",
+    "Bu yil hayotingdagi eng baxtli yil bo‘lsin"
+  ],
+  "gift": {
+    "title": "Sovg‘ang tayyor 🎁",
+    "text": "Uzoqda bo‘lsam ham, senga kichik bir sovg‘a tayyorladim. Uni yaqin kunlarda qo‘lingga olasan — hozircha bu sir 🤫"
+  },
+  "musicTrack": "musiqa-16",
+  "rsvp": {
+    "enabled": true
+  },
+  "together": "2024-03-08"
+}

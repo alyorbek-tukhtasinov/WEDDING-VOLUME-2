@@ -411,7 +411,7 @@ function clientCard(c, today) {
     <article class="card ${past && !c.demo ? 'card--past' : ''} ${c.demo ? 'card--demo' : ''} ${c.paused ? 'card--paused' : ''}">
       <div class="actions-row">
         <span class="badge badge--${c.template}">${tpl?.title || c.template}</span>
-        <span class="badge badge--event" title="${ev.title}">${ev.icon} ${ev.title}</span>
+        ${tpl?.kind === 'birthday' ? html`<span class="badge badge--event">🎂 Tug‘ilgan kun</span>` : html`<span class="badge badge--event" title="${ev.title}">${ev.icon} ${ev.title}</span>`}
         ${c.bot ? html`<span class="badge badge--bot" title="Mijoz Telegram bot orqali o‘zi yaratgan">🤖 ${BOT_STATUS[c.bot.status] || c.bot.status}</span>` : ''}
         ${c.paused ? html`<span class="badge badge--paused" title="Havola ochilsa: “Saytning ishlashi uchun to‘lov amalga oshirilishi kutilmoqda”">⏸ To‘xtatilgan</span>` : ''}
         ${c.watermark ? html`<span class="badge badge--watermark" title="Saytda “NAMUNA” belgisi chiqmoqda — to‘lovdan keyin tahrirlab olib tashlang">Namuna belgisi</span>` : ''}
@@ -1926,6 +1926,12 @@ async function openExisting(slug, { copy = false } = {}) {
     if (l?.ok) state.clients = l.clients;
   }
   const config = r.config;
+  // Tug'ilgan kun shablonlari (tort, sevgi) hozircha faqat config.json orqali tahrirlanadi —
+  // to'y formasi ularning maydonlarini (person, memories, gift) buzib qo'ymasin
+  if (findTemplate(config.template)?.kind === 'birthday') {
+    root.innerHTML = html`${topbar()}<div class="wrap"><p class="empty">🎂 "${slug}" — tug‘ilgan kun sayti (${findTemplate(config.template).title}). U <b>clients/${slug}/config.json</b> orqali tahrirlanadi: sayt manzili — <a href="https://${slug}.${location.hostname.split('.').slice(1).join('.')}" target="_blank" rel="noopener">ochish</a>.</p></div>`;
+    return;
+  }
   if (copy) {
     // Rasmlar boshqa mijoz papkasida — nusxada ular qaytadan yuklanadi
     const c = clone(config);

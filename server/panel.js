@@ -190,8 +190,9 @@ async function listClients() {
       demo: isDemo(slug, c),
       paused: c.paused === true,
       watermark: c.watermark === true,
-      groom: c.couple?.groom || '',
-      bride: c.couple?.bride || '',
+      // Tug'ilgan kun saytlarida (person) — faqat bitta ism
+      groom: c.person ? '' : c.couple?.groom || '',
+      bride: c.person?.name || c.couple?.bride || '',
       date: c.event?.date || '',
       time: c.event?.time || '',
       venue: c.venue?.name || '',
@@ -410,7 +411,7 @@ async function save(body) {
     if (!(await git(['status', '--porcelain', '--', `clients/${slug}`]))) {
       return { sha: await git(['rev-parse', 'HEAD']), unchanged: true };
     }
-    const names = config.couple?.showGroom === false ? config.couple?.bride || '' : `${config.couple?.groom || ''} & ${config.couple?.bride || ''}`;
+    const names = config.person?.name || (config.couple?.showGroom === false ? config.couple?.bride || '' : `${config.couple?.groom || ''} & ${config.couple?.bride || ''}`);
     await git([
       '-c', 'user.name=Taklifnoma panel',
       '-c', 'user.email=panel@taklifnoma.local',

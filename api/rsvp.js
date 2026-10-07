@@ -57,7 +57,8 @@ export default async function handler(req, res) {
     name: clean(body.name, LIMITS.name),
     phone: clean(body.phone, LIMITS.phone),
     message: clean(body.message, LIMITS.message),
-    attending: body.attending === 'yes' ? 'yes' : body.attending === 'no' ? 'no' : '',
+    // 'wish' — faqat tabrik (tug'ilgan kun tabrigi: bazmga taklif yo'q)
+    attending: ['yes', 'no', 'wish'].includes(body.attending) ? body.attending : '',
     guests: 0,
     updatedAt: new Date().toISOString(),
   };

@@ -50,7 +50,7 @@ function renderLogin(error = '') {
   root.innerHTML = html`
     <main class="login">
       <p class="eyebrow">Mehmonlar javoblari</p>
-      <h1 class="names">${d.groom} <span>&amp;</span> ${d.bride}</h1>
+      <h1 class="names">${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</h1>
       <form class="login__form" id="login">
         <label class="field">
           <span>Parol</span>
@@ -115,7 +115,7 @@ function renderDashboard() {
     <header class="top">
       <div>
         <p class="eyebrow">Mehmonlar javoblari</p>
-        <h1 class="names">${d.groom} <span>&amp;</span> ${d.bride}</h1>
+        <h1 class="names">${d.groom ? html`${d.groom} <span>&amp;</span> ` : ''}${d.bride}</h1>
         <p class="scope">Faqat shu taklifnoma javoblari · ${data.wedding}</p>
       </div>
       <div class="top__actions">
@@ -311,7 +311,7 @@ function renderList() {
         <article class="entry entry--${e.attending}">
           <div class="entry__head">
             <h2>${e.name}</h2>
-            <span class="badge">${e.attending === 'yes' ? `Keladi · ${e.guests} kishi` : 'Kelmaydi'}</span>
+            <span class="badge">${e.attending === 'yes' ? `Keladi · ${e.guests} kishi` : e.attending === 'wish' ? 'Tabrik' : 'Kelmaydi'}</span>
           </div>
           ${e.phone ? html`<a class="entry__phone" href="tel:${e.phone.replace(/[^\d+]/g, '')}">${e.phone}</a>` : ''}
           ${e.message ? html`<p class="entry__msg">${e.message}</p>` : ''}
@@ -349,7 +349,7 @@ function downloadCsv() {
     ...data.entries.map((e) => [
       e.name,
       e.phone,
-      e.attending === 'yes' ? 'Keladi' : 'Kelmaydi',
+      e.attending === 'yes' ? 'Keladi' : e.attending === 'wish' ? 'Tabrik' : 'Kelmaydi',
       e.attending === 'yes' ? e.guests : 0,
       e.message,
       fmtDate(e.updatedAt),

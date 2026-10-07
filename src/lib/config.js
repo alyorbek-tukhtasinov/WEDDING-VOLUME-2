@@ -1,5 +1,5 @@
 import { findTrack } from './music.js';
-import { TEMPLATES } from './templates.js';
+import { TEMPLATES, isBirthday } from './templates.js';
 import { EVENT_IDS, findEvent } from './events.js';
 import { NAME_FONTS } from './fonts.js';
 
@@ -62,17 +62,25 @@ export function validateConfig(c, mediaFiles = null) {
   need(c.watermark == null || typeof c.watermark === 'boolean', 'watermark faqat true yoki false bo\'lishi mumkin');
   need(c.palette == null || ['green', 'pink'].includes(c.palette), `palette noma'lum: "${c.palette}" (green, pink)`);
   need(c.eventType == null || EVENT_IDS.includes(c.eventType), `eventType noma'lum: "${c.eventType}" (${EVENT_IDS.join(', ')})`);
-  // Qiz uzatishda kuyov ismi ko'rsatilmasligi mumkin (couple.showGroom: false) — unda ism shart emas
-  const solo = c.couple?.showGroom === false;
-  need(c.couple?.showGroom == null || typeof c.couple.showGroom === 'boolean', 'couple.showGroom faqat true yoki false bo\'lishi mumkin');
-  need(!solo || c.eventType === 'qiz-uzatish', 'Kuyov ismini yashirish faqat qiz uzatish to‘yida mumkin');
-  need(solo || c.couple?.groom?.trim(), 'couple.groom (kuyov ismi) kiritilmagan');
-  need(c.couple?.bride?.trim(), 'couple.bride (kelin ismi) kiritilmagan');
+  const bday = isBirthday(c);
+  if (bday) {
+    validateBirthday(c, need, checkMedia);
+  } else {
+    // Qiz uzatishda kuyov ismi ko'rsatilmasligi mumkin (couple.showGroom: false) — unda ism shart emas
+    const solo = c.couple?.showGroom === false;
+    need(c.couple?.showGroom == null || typeof c.couple.showGroom === 'boolean', 'couple.showGroom faqat true yoki false bo\'lishi mumkin');
+    need(!solo || c.eventType === 'qiz-uzatish', 'Kuyov ismini yashirish faqat qiz uzatish to‘yida mumkin');
+    need(solo || c.couple?.groom?.trim(), 'couple.groom (kuyov ismi) kiritilmagan');
+    need(c.couple?.bride?.trim(), 'couple.bride (kelin ismi) kiritilmagan');
+  }
   need(isValidDate(c.event?.date), `event.date noto'g'ri: "${c.event?.date}" (format: YYYY-MM-DD)`);
-  need(TIME_RE.test(c.event?.time || ''), `event.time noto'g'ri: "${c.event?.time}" (format: HH:MM)`);
+  // Tug'ilgan kun tabrigida vaqt shart emas (yozilmasa — kun boshidan)
+  need((bday && !c.event?.time) || TIME_RE.test(c.event?.time || ''), `event.time noto'g'ri: "${c.event?.time}" (format: HH:MM)`);
   need(!c.event?.timezone || TZ_RE.test(c.event.timezone), `event.timezone noto'g'ri: "${c.event?.timezone}" (masalan: +05:00)`);
-  need(c.venue?.name?.trim(), 'venue.name (to\'yxona nomi) kiritilmagan');
-  need(c.venue?.address?.trim(), 'venue.address (manzil) kiritilmagan');
+  if (!bday) {
+    need(c.venue?.name?.trim(), 'venue.name (to\'yxona nomi) kiritilmagan');
+    need(c.venue?.address?.trim(), 'venue.address (manzil) kiritilmagan');
+  }
   for (const key of ['googleMaps', 'yandexMaps']) {
     const v = c.venue?.[key];
     need(!v || isUrl(v), `venue.${key} to'g'ri havola emas: "${v}"`);
@@ -195,6 +203,54 @@ export function validateConfig(c, mediaFiles = null) {
   return errors;
 }
 
+// Tug'ilgan kun shablonlari (tort, sevgi): kelin-kuyov va to'yxona o'rniga
+//   person: { name, birthDate?, age? }, from?, venue? (bo'lsa — bazmga taklif), memories[], wishes[], gift
+function validateBirthday(c, need, checkMedia) {
+  const p = c.person;
+  need(p && typeof p === 'object', 'person (tug‘ilgan kun egasi) kiritilmagan: { "name": "Madina" }');
+  need(typeof p?.name === 'string' && p.name.trim() && p.name.trim().length <= 40, 'person.name (ism) kiritilmagan yoki juda uzun (40 belgigacha)');
+  need(p?.birthDate == null || p.birthDate === '' || isValidDate(p.birthDate), `person.birthDate noto'g'ri: "${p?.birthDate}" (format: YYYY-MM-DD)`);
+  if (isValidDate(p?.birthDate) && isValidDate(c.event?.date)) need(p.birthDate < c.event.date, 'person.birthDate bayram sanasidan oldin bo‘lishi kerak');
+  need(p?.age == null || (Number.isInteger(p.age) && p.age >= 1 && p.age <= 120), 'person.age 1 dan 120 gacha butun son bo‘lishi kerak');
+  need(c.from == null || typeof c.from === 'string', 'from (kimdan) matn bo‘lishi kerak');
+  need(c.voice == null || ['sen', 'siz'].includes(c.voice), `voice noma'lum: "${c.voice}" (sen, siz)`);
+  need(c.together == null || c.together === '' || isValidDate(c.together), `together (tanishgan kun) noto'g'ri: "${c.together}" (format: YYYY-MM-DD)`);
+  if (c.venue != null) {
+    need(typeof c.venue === 'object', 'venue obyekt bo‘lishi kerak: { name, address, googleMaps, yandexMaps }');
+    const any = ['name', 'address', 'googleMaps', 'yandexMaps'].some((k) => c.venue?.[k]);
+    need(!any || c.venue?.name?.trim(), 'venue.name (bazm joyi nomi) kiritilmagan');
+  }
+  const PHOTO_KEYS = { tort: ['hero', 'letter', 'gift', 'finale'], sevgi: ['cover', 'first', 'funny', 'gratitude', 'journey', 'wishes', 'gift'] }[c.template] || [];
+  for (const [k, v] of Object.entries(c.photos || {})) {
+    need(PHOTO_KEYS.includes(k), `photos.${k} — noma'lum bo'lim (${PHOTO_KEYS.join(', ')})`);
+    checkMedia(v, `photos.${k}`);
+  }
+  need(c.memories == null || Array.isArray(c.memories), 'memories ro‘yxat bo‘lishi kerak: [{ photo, title, text, year }]');
+  (Array.isArray(c.memories) ? c.memories : []).forEach((m, i) => {
+    need(m && typeof m === 'object', `memories[${i}] obyekt bo'lishi kerak`);
+    checkMedia(m?.photo, `memories[${i}].photo`);
+    for (const k of ['title', 'text', 'year']) need(m?.[k] == null || typeof m[k] === 'string', `memories[${i}].${k} matn bo'lishi kerak`);
+  });
+  need(c.wishes == null || (Array.isArray(c.wishes) && c.wishes.every((w) => typeof w === 'string' && w.trim())), 'wishes — matnlar ro‘yxati bo‘lishi kerak');
+  need(!Array.isArray(c.wishes) || c.wishes.length <= 12, 'wishes — ko‘pi bilan 12 ta tilak');
+  if (c.gift != null) {
+    need(typeof c.gift === 'object', 'gift obyekt bo‘lishi kerak: { title, text, card, holder, bank, link }');
+    for (const k of ['title', 'text', 'holder', 'bank', 'linkLabel']) need(c.gift?.[k] == null || typeof c.gift[k] === 'string', `gift.${k} matn bo'lishi kerak`);
+    if (c.gift?.card) need(/^\d{16}$/.test(String(c.gift.card).replace(/[\s-]/g, '')), `gift.card 16 xonali karta raqami bo'lishi kerak: "${c.gift.card}"`);
+    need(!c.gift?.link || isUrl(c.gift.link), `gift.link to'g'ri havola emas: "${c.gift?.link}"`);
+  }
+  for (const [k, v] of Object.entries(c.texts || {})) need(typeof v === 'string', `texts.${k} matn bo'lishi kerak`);
+}
+
+/** Tug'ilgan kun egasining yoshi: person.age yoki tug'ilgan sana va bayram kunidan. */
+export function ageOf(c) {
+  if (Number.isInteger(c.person?.age)) return c.person.age;
+  if (!isValidDate(c.person?.birthDate) || !isValidDate(c.event?.date)) return null;
+  const [by, bm, bd] = c.person.birthDate.split('-').map(Number);
+  const [y, m, d] = c.event.date.split('-').map(Number);
+  return y - by - (m < bm || (m === bm && d < bd) ? 1 : 0);
+}
+
 function initialsOf(name) {
   return (name || '').trim().charAt(0).toUpperCase();
 }
@@ -256,11 +312,13 @@ export function musicUrlOf(c) {
 export function deriveConfig(c) {
   const [y, m, d] = c.event.date.split('-').map(Number);
   const tz = c.event.timezone || '+05:00';
-  const start = new Date(`${c.event.date}T${c.event.time}:00${tz}`);
+  const start = new Date(`${c.event.date}T${c.event.time || '00:00'}:00${tz}`);
   const durationH = Number(c.event.durationHours) > 0 ? Number(c.event.durationHours) : 5;
   const end = new Date(start.getTime() + durationH * 3600e3);
   // Hafta kuni UTC bo'yicha hisoblanadi — foydalanuvchi vaqt zonasi ta'sir qilmaydi.
   const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+
+  if (isBirthday(c)) return deriveBirthday(c, { y, m, d, start, end, weekday, tz });
 
   // Kuyov ismi yashirilgan (qiz uzatish): hamma joyda faqat kelin ismi
   const solo = c.couple.showGroom === false;
@@ -303,6 +361,45 @@ export function deriveConfig(c) {
     description,
     rsvpOpen,
     rsvpClosesAt,
+    maxGuests: c.rsvp?.maxGuests ?? 5,
+  };
+}
+
+function deriveBirthday(c, { y, m, d, start, end, weekday, tz }) {
+  const name = c.person.name.trim();
+  const age = ageOf(c);
+  const dateText = `${y}-yil ${d}-${MONTHS[m - 1]}`;
+  const party = !!c.venue?.name?.trim();
+  const title = c.seo?.title?.trim() || `${name} — tug‘ilgan kun${age ? ` · ${age} yosh` : ''}`;
+  const description =
+    c.seo?.description?.trim() ||
+    (party
+      ? `${name}ning tug‘ilgan kuni${age ? ` (${age} yosh)` : ''}. ${dateText}${c.event.time ? `, soat ${c.event.time} da` : ''} ${c.venue.name.trim()}da sizni kutamiz.`
+      : `${name}, tug‘ilgan kuningiz muborak! 🎂 Siz uchun maxsus tayyorlangan tabrik.`);
+  const rsvpOpen = party && !!c.rsvp?.enabled;
+  return {
+    birthday: true,
+    party,
+    age,
+    groom: '',
+    bride: name,
+    name,
+    names: name,
+    solo: true,
+    initials: initialsOf(name),
+    start,
+    end,
+    year: y,
+    month: m,
+    day: d,
+    weekday,
+    weekdayName: WEEKDAYS[weekday],
+    monthName: MONTHS[m - 1],
+    dateText,
+    title,
+    description,
+    rsvpOpen,
+    rsvpClosesAt: rsvpOpen && c.rsvp.deadline ? new Date(`${c.rsvp.deadline}T23:59:59${tz}`) : null,
     maxGuests: c.rsvp?.maxGuests ?? 5,
   };
 }
