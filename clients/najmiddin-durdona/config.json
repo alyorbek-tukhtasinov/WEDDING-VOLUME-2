@@ -17,16 +17,16 @@
   },
   "hosts": "Ilhomjon Abdullayev oilasi",
   "texts": {
-    "heroCaption": "Fotiha va nikoh to‘yiga taklifnoma",
+    "heroCaption": "Fotiha to‘yi va qiz bazmiga taklifnoma",
     "greeting": "Hurmatli mehmonimiz!",
-    "invitation": "Sizni farzandlarimiz Najmiddin va Durdonaning hayotlaridagi eng quvonchli kun — fotiha to‘yi va nikoh to‘yi marosimiga taklif etamiz. Ikki xonadon rishtasi bog‘lanayotgan bu muborak kunda duolaringiz va tashrifingiz biz uchun eng katta sovg‘a bo‘ladi.",
+    "invitation": "Sizni farzandlarimiz Najmiddin va Durdonaning hayotlaridagi eng quvonchli kun — fotiha to‘yi va qiz bazmi marosimiga taklif etamiz. Ikki xonadon rishtasi bog‘lanayotgan bu muborak kunda duolaringiz va tashrifingiz biz uchun eng katta sovg‘a bo‘ladi.",
     "closing": "Duolaringiz bilan yosh oilaga oq yo‘l tilang — tashrifingiz biz uchun katta sharaf!"
   },
   "venue": {
     "name": "“Toj” to‘yxonasi",
     "address": "Sirdaryo viloyati, Yangiyer shahri",
-    "googleMaps": "https://www.google.com/maps/search/?api=1&query=Toj%20to%27yxonasi%20Yangiyer",
-    "yandexMaps": "https://yandex.uz/maps/?text=Toj%20to%27yxonasi%20Yangiyer",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=40.263881%2C68.823462",
+    "yandexMaps": "https://yandex.uz/maps/?pt=68.823462,40.263881&z=17&l=map",
     "image": ""
   },
   "program": [
@@ -54,7 +54,8 @@
     },
     {
       "time": "21:30",
-      "title": "Yosh oilaga oq yo‘l tilash"
+      "title": "Kelinni kuyov xonadoniga kuzatish",
+      "description": "Yosh oilaga oq yo‘l tilab, duolar bilan"
     }
   ],
   "dressCode": {
