@@ -85,14 +85,14 @@ function weddingPlugin(client, template) {
       const abs = (p) => (base ? base + p : p);
       // yz shablonida alohida rasm tanlanmagan bo'lsa — bosh sahifadagi surat
       // Tug'ilgan kun saytlarida — juftlikning o'z surati (muqova, maktub yoki birinchi xotira)
-      const bdayPhoto = ['tort', 'sevgi', 'yulduz', 'plastinka'].includes(template) && (config.photos?.cover || config.photos?.portrait || config.photos?.letter || (config.memories || []).find((m) => m?.photo)?.photo);
+      const bdayPhoto = ['tort', 'sevgi', 'yulduz', 'klassik'].includes(template) && (config.photos?.cover || config.photos?.portrait || config.photos?.letter || (config.memories || []).find((m) => m?.photo)?.photo);
       const ogImage = config.seo?.ogImage
         ? `/media/${config.seo.ogImage}`
         : bdayPhoto
           ? `/media/${bdayPhoto}`
           : template === 'yz'
           ? config.photos?.hero ? `/media/${config.photos.hero}` : '/images/yz/wedding1.jpg'
-          : ['osmon', 'suzani', 'kitob', 'bulut', 'volume3', 'volume4', 'volume5', 'tort', 'sevgi', 'yulduz', 'plastinka'].includes(template)
+          : ['osmon', 'suzani', 'kitob', 'bulut', 'volume3', 'volume4', 'volume5', 'tort', 'sevgi', 'yulduz', 'klassik'].includes(template)
             ? `/images/og-${template}.jpg`
             : '/images/og-default.jpg';
       const themeVars = Object.entries(config.theme || {})

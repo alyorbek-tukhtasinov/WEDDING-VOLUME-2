@@ -1,4 +1,4 @@
-// "Oltin plastinka" matnlari — yigitning tug'ilgan kun bazmiga taklifnoma (albom/plastinka uslubida).
+// "Klassik" matnlari — yigitning tug'ilgan kun bazmiga taklifnoma (yorug', sokin klassik uslubda).
 // config.texts.<kalit> — istalgan asosiy matnni almashtiradi (panel shu matnlarni namuna sifatida ko'rsatadi).
 // DOM ishlatmang: fayl panelda ham, testlarda ham yuklanadi.
 
@@ -24,71 +24,63 @@ export const ruProgramTitle = (t) => RU_PROGRAM[String(t || '').replace(/'/g, '�
 
 const UZ_MONTHS_GEN = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
 const RU_MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+export const UZ_MONTHS = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+export const RU_MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
 /**
  * @param {object} c config
  * @param {{ name: string, age: number|null }} d
  * @param {'uz'|'ru'} lang (o'zbek kirili — uz matnidan o'giriladi)
  */
-export function plastinkaTexts(c, d, lang = 'uz') {
-  const n = d.name;
+export function klassikTexts(c, d, lang = 'uz') {
   const age = d.age;
   const t = c.texts || {};
   if (lang === 'ru') {
     return {
-      gateEyebrow: 'Новый релиз',
-      gateHint: 'Нажмите на обложку — достаньте пластинку',
-      label: 'Birthday Records',
-      vol: age ? `Vol. ${age}` : 'Limited edition',
+      gateEyebrow: 'Приглашение',
+      gateTitle: 'на день рождения',
+      gateBtn: 'Открыть приглашение',
       heroEyebrow: 'Приглашение на день рождения',
       ageLine: age ? `${age} лет` : 'День рождения',
       musicOn: 'Включить музыку',
       musicOff: 'Пауза',
-      sideA: 'Сторона A',
       inviteTitle: t.ruInviteTitle || 'Дорогой гость!',
       invitation:
         t.ruInvitation ||
         (age
-          ? `Начинается новый трек моей жизни — мне ${age}! Этот вечер я хочу провести с самыми близкими людьми. Приходите — сделаем его незабываемым!`
-          : 'Начинается новый трек моей жизни! Этот вечер я хочу провести с самыми близкими людьми. Приходите — сделаем его незабываемым!'),
-      release: 'Дата релиза',
-      at: 'Начало',
-      countdown: 'До вечеринки осталось',
+          ? `Мне исполняется ${age}! Этот вечер я хочу провести в кругу самых близких и дорогих мне людей. Буду искренне рад видеть вас на моём празднике.`
+          : 'Этот вечер я хочу провести в кругу самых близких и дорогих мне людей. Буду искренне рад видеть вас на моём празднике.'),
+      when: 'Когда',
+      at: 'Начало в',
+      months: RU_MONTHS,
+      weekShort: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+      countdown: 'До праздника осталось',
       units: ['дней', 'часов', 'минут', 'секунд'],
-      live: 'Сегодня!',
-      tracklist: 'Треклист',
-      tracklistSub: 'Программа вечера',
-      sideAShort: 'A',
-      sideBShort: 'B',
-      venue: 'Живой концерт',
-      venueTitle: 'Место',
+      live: 'Праздник уже сегодня!',
+      program: 'Программа вечера',
+      venue: 'Место проведения',
       google: 'Google Maps',
       yandex: 'Яндекс Карты',
       dress: 'Дресс-код',
-      bonus: 'Бонус-трек',
       gift: 'Подарок',
       copy: 'Копировать',
       copied: 'Скопировано ✓',
-      guestList: 'Гостевой список',
       rsvpTitle: 'Подтвердите участие',
-      pass: 'All access',
-      passSub: 'Backstage · Гость',
+      rsvpSub: 'Пожалуйста, сообщите, сможете ли вы прийти',
       deadline: (dd, m) => `Ответ до ${dd} ${RU_MONTHS_GEN[m - 1]}`,
       yourName: 'Ваше имя',
       namePh: 'Имя Фамилия',
       canCome: 'Придёте?',
-      yes: 'Да, буду!',
-      no: 'Не получится',
+      yes: 'Да, с удовольствием',
+      no: 'К сожалению, не смогу',
       guests: 'Сколько вас будет?',
       person: 'чел.',
       wish: 'Пожелание имениннику',
       wishPh: 'Пару тёплых слов…',
-      send: 'Попасть в список',
+      send: 'Отправить ответ',
       sending: 'Отправка…',
-      approved: 'В списке',
-      declined: 'Жаль!',
-      thanksYes: (x) => `${x}, вы в гостевом списке! До встречи на вечеринке 🎉`,
-      thanksNo: (x) => `Спасибо, ${x}, что сообщили! Будем скучать.`,
+      thanksYes: (x) => `Спасибо, ${x}! Буду рад видеть вас на празднике.`,
+      thanksNo: (x) => `Спасибо, ${x}, что сообщили! Нам будет вас не хватать.`,
       change: 'Изменить ответ',
       closed: 'Приём ответов завершён. Спасибо!',
       needName: 'Пожалуйста, введите имя.',
@@ -96,67 +88,57 @@ export function plastinkaTexts(c, d, lang = 'uz') {
       error: 'Ошибка. Попробуйте ещё раз.',
       offline: 'Проверьте интернет и попробуйте ещё раз.',
       preview: 'Режим просмотра — ответ не отправляется.',
-      wishes: 'Пожелания',
-      wishesSub: 'Shout-outs',
+      wishes: 'Пожелания гостей',
       contacts: 'Остались вопросы?',
       call: 'Позвонить',
-      rights: `℗ ${d.year} ${n} Records · Все права защищены 😉`,
+      thanks: 'С уважением и любовью',
       cta: 'Закажите онлайн-приглашение',
     };
   }
   return {
-    gateEyebrow: 'Yangi albom chiqdi',
-    gateHint: 'Muqovani bosing — plastinkani chiqaring',
-    label: 'Birthday Records',
-    vol: age ? `Vol. ${age}` : 'Limited edition',
+    gateEyebrow: 'Taklifnoma',
+    gateTitle: 'tug‘ilgan kun bazmiga',
+    gateBtn: 'Taklifnomani ochish',
     heroEyebrow: 'Tug‘ilgan kun bazmiga taklifnoma',
     ageLine: age ? `${age} yosh` : 'Tug‘ilgan kun',
     musicOn: 'Musiqani yoqish',
     musicOff: 'To‘xtatish',
-    sideA: 'A tomon',
     inviteTitle: t.inviteTitle || 'Aziz mehmonim!',
     invitation:
       t.invitation ||
       (age
-        ? `Hayotimning yangi treki boshlanmoqda — ${age} yoshga to‘ldim! Shu kechani eng yaqin insonlarim bilan birga nishonlamoqchiman. Bazmimga keling — kechani birgalikda unutilmas qilamiz!`
-        : 'Hayotimning yangi treki boshlanmoqda! Shu kechani eng yaqin insonlarim bilan birga nishonlamoqchiman. Bazmimga keling — kechani birgalikda unutilmas qilamiz!'),
-    release: 'Reliz sanasi',
+        ? `${age} yoshga to‘lyapman! Shu quvonchli kunni eng yaqin va qadrli insonlarim davrasida nishonlamoqchiman. Bazmimga tashrif buyurishingizdan chin dildan xursand bo‘laman.`
+        : 'Shu quvonchli kunni eng yaqin va qadrli insonlarim davrasida nishonlamoqchiman. Bazmimga tashrif buyurishingizdan chin dildan xursand bo‘laman.'),
+    when: 'Sana',
     at: 'Boshlanishi',
+    months: UZ_MONTHS,
+    weekShort: ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'],
     countdown: 'Bazmgacha qoldi',
     units: ['kun', 'soat', 'daqiqa', 'soniya'],
-    live: 'Bugun!',
-    tracklist: 'Treklar ro‘yxati',
-    tracklistSub: 'Kecha dasturi',
-    sideAShort: 'A',
-    sideBShort: 'B',
-    venue: 'Jonli ijroda',
-    venueTitle: 'Manzil',
+    live: 'Bazm bugun!',
+    program: 'Kecha dasturi',
+    venue: 'Bazm manzili',
     google: 'Google Maps',
     yandex: 'Yandex xarita',
     dress: 'Kiyinish uslubi',
-    bonus: 'Bonus trek',
     gift: 'Sovg‘a',
     copy: 'Nusxa olish',
     copied: 'Nusxa olindi ✓',
-    guestList: 'Mehmonlar ro‘yxati',
     rsvpTitle: 'Ishtirokingizni tasdiqlang',
-    pass: 'All access',
-    passSub: 'Backstage · Mehmon',
+    rsvpSub: 'Iltimos, kela olishingizni bildiring',
     deadline: (dd, m) => `Javob muddati: ${dd}-${UZ_MONTHS_GEN[m - 1]}gacha`,
     yourName: 'Ismingiz',
     namePh: 'Ism Familiya',
     canCome: 'Kela olasizmi?',
-    yes: 'Ha, albatta boraman!',
+    yes: 'Ha, albatta boraman',
     no: 'Afsuski, kela olmayman',
     guests: 'Necha kishi bo‘lasiz?',
     person: 'kishi',
     wish: 'Tug‘ilgan kun egasiga tilak',
     wishPh: 'Bir-ikki iliq so‘z…',
-    send: 'Ro‘yxatga yozilish',
+    send: 'Javobni yuborish',
     sending: 'Yuborilmoqda…',
-    approved: 'Ro‘yxatda',
-    declined: 'Afsus!',
-    thanksYes: (x) => `${x}, siz mehmonlar ro‘yxatidasiz! Bazmda ko‘rishguncha 🎉`,
+    thanksYes: (x) => `Rahmat, ${x}! Sizni bazmda kutib qolaman.`,
     thanksNo: (x) => `Rahmat, ${x}, xabar berganingiz uchun! Sizni sog‘inamiz.`,
     change: 'Javobni o‘zgartirish',
     closed: 'Javoblar qabul qilish muddati tugagan. Rahmat!',
@@ -165,11 +147,10 @@ export function plastinkaTexts(c, d, lang = 'uz') {
     error: 'Xatolik yuz berdi. Qayta urinib ko‘ring.',
     offline: 'Internet aloqasini tekshirib, qayta urinib ko‘ring.',
     preview: 'Ko‘rinish rejimi — javob yuborilmaydi.',
-    wishes: 'Tilaklar',
-    wishesSub: 'Shout-outs',
+    wishes: 'Mehmonlar tilaklari',
     contacts: 'Savollar bo‘lsa',
     call: 'Qo‘ng‘iroq qilish',
-    rights: `℗ ${d.year} ${n} Records · Barcha huquqlar himoyalangan 😉`,
+    thanks: 'Hurmat va ehtirom bilan',
     cta: 'Taklifnomangizni buyurtma bering',
   };
 }

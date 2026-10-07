@@ -82,11 +82,11 @@ export const TEMPLATES = [
   },
   // Bazmga taklifnoma (party: manzil, dastur, javob formasi va mehmonlar tilaklari bilan)
   {
-    id: 'plastinka',
+    id: 'klassik',
     kind: 'birthday',
     party: true,
-    title: 'Tug‘ilgan kun: oltin plastinka',
-    description: '🎂 Yigitning tug‘ilgan kun bazmiga taklifnoma — musiqa albomi uslubida: muqovadan plastinka chiqib proigryvatelga tushadi, kuchaytirgichdagi sanoq, treklar ro‘yxati (dastur), konsert chiptasi (manzil), backstage karta (javob) va tilaklar',
+    title: 'Tug‘ilgan kun: klassik',
+    description: '🎂 Yigitning tug‘ilgan kun bazmiga taklifnoma — yorug‘ fonda sokin klassik uslub: monogrammali kirish kartasi, sana va taqvim, sanoq, kecha dasturi, manzil, kiyinish uslubi, javob formasi va tilaklar',
     features: ['program', 'dressCode', 'contacts', 'photos', 'rsvp', 'wishes'],
   },
 ];

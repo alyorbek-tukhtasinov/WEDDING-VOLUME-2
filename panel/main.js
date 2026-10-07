@@ -968,7 +968,7 @@ function secVenue() {
     'venue',
     'Manzil va xarita',
     html`
-      ${isBday(c) ? field('Bazm joyi nomi', 'venue.name', { placeholder: '“Black Vinyl” lounge' }) : field('To‘yxona nomi', 'venue.name', { placeholder: '“Zumrad” to‘yxonasi' })}
+      ${isBday(c) ? field('Bazm joyi nomi', 'venue.name', { placeholder: '“Grand Classic” restorani' }) : field('To‘yxona nomi', 'venue.name', { placeholder: '“Zumrad” to‘yxonasi' })}
       ${field('Manzil', 'venue.address', { placeholder: 'Navoiy viloyati, Qiziltepa tumani…' })}
       <label class="f">
         <span>Xarita: mijoz yuborgan havola, &lt;iframe&gt; kodi yoki koordinata</span>
@@ -1115,7 +1115,7 @@ function secProgram() {
   const on = (c.program || []).length > 0;
   return section(
     'program',
-    isBday(c) ? 'Bazm dasturi (treklar ro‘yxati)' : 'To‘y dasturi',
+    isBday(c) ? 'Bazm dasturi' : 'To‘y dasturi',
     html`
       <div class="actions-row">
         <select id="program-preset">
@@ -1542,7 +1542,7 @@ function secMusicRsvp() {
 function secRsvp() {
   const c = state.ed.config;
   const on = c.rsvp?.enabled !== false;
-  const wishes = c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4', 'volume5', 'plastinka'].includes(c.template);
+  const wishes = c.template === 'volume2' || !c.template || ['kitob', 'bulut', 'volume3', 'volume4', 'volume5', 'klassik'].includes(c.template);
   return section(
     'rsvp',
     'Tashrifni tasdiqlash va tilaklar',
@@ -1563,7 +1563,7 @@ function secEffects() {
   if (state.ed.config.template === 'suzani') {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq (kashta gardishlari)', 'effects.countdown', true)}</div>`);
   }
-  if (['volume3', 'volume4', 'volume5', 'plastinka'].includes(state.ed.config.template)) {
+  if (['volume3', 'volume4', 'volume5', 'klassik'].includes(state.ed.config.template)) {
     return section('effects', 'Effektlar', html`<div class="toggle-row">${check('To‘yga qadar sanoq', 'effects.countdown', true)}</div>`);
   }
   if (state.ed.config.template === 'bulut') {

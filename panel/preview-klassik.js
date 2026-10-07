@@ -1,5 +1,5 @@
-// "Oltin plastinka" (yigitning tug'ilgan kun bazmi) shablonining jonli ko'rinishi: saytning o'z kodi bilan chiziladi.
-import { mountPlastinka } from '../templates/plastinka/app.js';
+// "Klassik" (yigitning tug'ilgan kun bazmi) shablonining jonli ko'rinishi: saytning o'z kodi bilan chiziladi.
+import { mountKlassik } from '../templates/klassik/app.js';
 
 let pending = null;
 let busy = false;
@@ -13,7 +13,7 @@ async function render(data) {
     pending = null;
     globalThis.__TAKLIFNOMA_MEDIA__ = (name) => media?.[name] || `${mediaBase || '/media/'}${name}`;
     try {
-      await mountPlastinka(config, { preview: true });
+      await mountKlassik(config, { preview: true });
     } catch {
       document.getElementById('app').innerHTML =
         '<p style="padding:2rem;font-family:serif;text-align:center">Ko‘rinish uchun ism va sanani kiriting.</p>';
@@ -26,4 +26,4 @@ window.addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data?.config) return;
   render(e.data);
 });
-parent.postMessage({ previewReady: 'plastinka' }, location.origin);
+parent.postMessage({ previewReady: 'klassik' }, location.origin);

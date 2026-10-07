@@ -1,4 +1,4 @@
-// Boshqaruv paneli: tug'ilgan kun saytlari (tort, sevgi, yulduz, plastinka) uchun yordamchilar —
+// Boshqaruv paneli: tug'ilgan kun saytlari (tort, sevgi, yulduz, klassik) uchun yordamchilar —
 // shablon maydonlari, boshlang'ich config, jonli ko'rinish uchun to'ldirish va saqlashdan oldin tozalash.
 import { findTemplate } from '../src/lib/templates.js';
 import { isValidDate, ageOf } from '../src/lib/config.js';
@@ -6,7 +6,7 @@ import { tortTexts, ROMANTIC_WISHES } from '../templates/tort/texts.js';
 import { sevgiTexts } from '../templates/sevgi/texts.js';
 import { yulduzTexts } from '../templates/yulduz/texts.js';
 import { birthFacts } from '../templates/yulduz/facts.js';
-import { plastinkaTexts, PARTY_PROGRAM } from '../templates/plastinka/texts.js';
+import { klassikTexts, PARTY_PROGRAM } from '../templates/klassik/texts.js';
 
 export { ROMANTIC_WISHES };
 export const isBday = (c) => findTemplate(c?.template)?.kind === 'birthday';
@@ -82,12 +82,12 @@ export const BDAY = {
     memoriesHint: '5-sahifa — “Bizning yo‘limiz”: har bir qadam surat, sarlavha va qisqa matn bilan (2–6 ta).',
     maxMemories: 8,
   },
-  plastinka: {
+  klassik: {
     photos: [
-      ['cover', 'Albom muqovasi (tug‘ilgan kun egasining surati)'],
-      ['venue', 'Bazm joyi surati (chipta ustida)'],
+      ['cover', 'Tug‘ilgan kun egasining surati (bosh qismda, ravoq shaklida)'],
+      ['venue', 'Bazm joyi surati (manzil kartasida)'],
     ],
-    photosHint: 'Muqova surati yuklanmasa — tilla nurli muqovada katta raqam bilan yoshi chiqadi.',
+    photosHint: 'Surat yuklanmasa — bosh qismda ismning bosh harfi bilan tilla monogramma chiqadi.',
     texts: [
       ['inviteTitle', 'Taklif sarlavhasi', 1],
       ['invitation', 'Taklif matni (tug‘ilgan kun egasi nomidan)', 4],
@@ -100,7 +100,7 @@ const dOf = (c) => ({ name: c.person?.name?.trim() || 'Ism', age: ageOf(c), part
 export function defaultTexts(c) {
   const base = { ...c, texts: {} };
   if (c.template === 'yulduz') return yulduzTexts(base, dOf(c), birthFacts(base));
-  if (c.template === 'plastinka') return plastinkaTexts(base, { ...dOf(c), year: Number(String(c.event?.date || '').slice(0, 4)) || new Date().getFullYear() });
+  if (c.template === 'klassik') return klassikTexts(base, dOf(c));
   return c.template === 'sevgi' ? sevgiTexts(base, dOf(c)) : tortTexts(base, dOf(c));
 }
 
@@ -118,7 +118,7 @@ export function birthdayConfig(template) {
       photos: {},
       venue: { name: '', address: '', googleMaps: '', yandexMaps: '' },
       program: PARTY_PROGRAM.map((p) => ({ ...p })),
-      dressCode: { text: 'Black & Gold: qora va tilla ranglar, klassik yoki smart-casual.', colors: ['#111111', '#d4a24c', '#f2ece1', '#6b4a2b'] },
+      dressCode: { text: 'Klassik uslub: to‘q ko‘k, kulrang yoki bej ranglardagi kostyum, ayollar uchun — oqshom libosi.', colors: ['#1f2a37', '#8a8f98', '#e8dcc6', '#9c7a3c'] },
       musicTrack: 'musiqa-16',
       rsvp: { enabled: true, deadline: addDays(date, -2), maxGuests: 4, showWishes: true },
       contacts: [],

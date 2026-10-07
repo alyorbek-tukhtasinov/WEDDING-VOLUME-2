@@ -1,7 +1,7 @@
-// Sayt (Oltin plastinka): config (va admin sahifasidagi o'zgarishlar) bilan sahifani chizish
+// Sayt (Klassik): config (va admin sahifasidagi o'zgarishlar) bilan sahifani chizish
 import config from '@wedding-config';
 import { applyOverrides } from '../../src/lib/config.js';
-import { mountPlastinka } from './app.js';
+import { mountKlassik } from './app.js';
 
 async function loadOverrides() {
   try {
@@ -15,4 +15,4 @@ async function loadOverrides() {
   }
 }
 
-loadOverrides().then((s) => mountPlastinka(applyOverrides(config, s)));
+loadOverrides().then((s) => mountKlassik(applyOverrides(config, s)));

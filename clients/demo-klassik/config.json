@@ -1,5 +1,5 @@
 {
-  "template": "plastinka",
+  "template": "klassik",
   "autoScroll": "auto",
   "languages": ["uz", "ru"],
   "person": {
@@ -13,7 +13,7 @@
     "durationHours": 5
   },
   "venue": {
-    "name": "“Black Vinyl” lounge",
+    "name": "“Grand Classic” restorani",
     "address": "Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi",
     "googleMaps": "https://www.google.com/maps/search/?api=1&query=41.300000%2C69.280000",
     "yandexMaps": "https://yandex.uz/maps/?pt=69.280000,41.300000&z=16"
@@ -26,12 +26,12 @@
     { "time": "22:00", "title": "Raqslar va jonli musiqa" }
   ],
   "dressCode": {
-    "text": "Black & Gold: qora va tilla ranglar, klassik yoki smart-casual.",
-    "colors": ["#111111", "#d4a24c", "#f2ece1", "#6b4a2b"]
+    "text": "Klassik uslub: to‘q ko‘k, kulrang yoki bej ranglardagi kostyum, ayollar uchun — oqshom libosi.",
+    "colors": ["#1f2a37", "#8a8f98", "#e8dcc6", "#9c7a3c"]
   },
   "gift": {
     "title": "Sovg‘a",
-    "text": "Eng katta sovg‘a — sizning tashrifingiz. Baribir nimadir sovg‘a qilmoqchi bo‘lsangiz, orzuimdagi gitara uchun hissa qo‘shishingiz mumkin 🎸"
+    "text": "Eng katta sovg‘a — sizning tashrifingiz. Baribir nimadir sovg‘a qilmoqchi bo‘lsangiz, sovg‘angizni o‘zingiz tanlang — har biri men uchun qadrli."
   },
   "musicTrack": "musiqa-16",
   "rsvp": {
