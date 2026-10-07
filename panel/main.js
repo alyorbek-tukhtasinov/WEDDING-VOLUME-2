@@ -13,6 +13,8 @@ import { autoScrollMode } from '../src/lib/autoscroll.js';
 import { prepareAudio, toBase64 } from './audio-convert.js';
 import { defaultConfig } from '../src/lib/starter.js';
 import { NAME_FONT_LIST, nameFontsHref, nameFontStyle } from '../src/lib/fonts.js';
+import { ageOf } from '../src/lib/config.js';
+import { BDAY, isBday, defaultTexts, birthdayConfig, birthdayPreview, cleanBirthday, ROMANTIC_WISHES } from './birthday.js';
 
 const AUTOSCROLL_SPEED = [
   { v: 0.75, title: 'Tezlik: sekinroq' },
@@ -131,7 +133,9 @@ function autoInvitation(c) {
   return eventTexts(c.eventType, groomArg(c), c.couple?.bride, 'uz', voiceOfC(c)).invitation;
 }
 /** Sayt manzili ismlardan: kuyov ismi yashirilgan bo'lsa — "kelin-qiz-uzatish". */
-const slugBase = (c) => (soloC(c) ? toSlug(c.couple?.bride, 'qiz-uzatish') : toSlug(c.couple?.groom, c.couple?.bride));
+const slugBase = (c) => (isBday(c) ? toSlug(c.person?.name || '') : soloC(c) ? toSlug(c.couple?.bride, 'qiz-uzatish') : toSlug(c.couple?.groom, c.couple?.bride));
+/** Tahrir sahifasi sarlavhasi va ro'yxat uchun ismlar. */
+const namesOfC = (c) => (isBday(c) ? `🎂 ${c.person?.name || ''}` : `${c.couple?.groom} & ${c.couple?.bride}`);
 
 // Avvalgi (marosim turlari qo'shilishidan oldingi) avtomatik matnlar — ular ham "qo'lda yozilmagan" hisoblanadi
 const LEGACY_TEXTS = {
@@ -243,6 +247,7 @@ function autoSolo(c, touched) {
 }
 
 function previewConfig(c) {
+  if (isBday(c)) return birthdayPreview(c);
   const p = clone(c);
   autoSolo(p, state.ed?.invitationTouched);
   p.couple = { ...p.couple, groom: p.couple?.groom?.trim() || 'Kuyov', bride: p.couple?.bride?.trim() || 'Kelin' };
@@ -629,13 +634,13 @@ function markResumed(r) {
 /* ------------------------------------------------------------------ */
 /*  Shablon tanlash                                                     */
 /* ------------------------------------------------------------------ */
-const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg', volume3: '/images/og-volume3.jpg', volume4: '/images/og-volume4.jpg', volume5: '/images/og-volume5.jpg' };
+const TEMPLATE_IMAGES = { volume2: '/images/hero-arch.webp', yz: '/images/yz/wedding1.jpg', osmon: '/images/og-osmon.jpg', suzani: '/images/og-suzani.jpg', kitob: '/images/og-kitob.jpg', bulut: '/images/og-bulut.jpg', volume3: '/images/og-volume3.jpg', volume4: '/images/og-volume4.jpg', volume5: '/images/og-volume5.jpg', tort: '/images/og-tort.jpg', sevgi: '/images/og-sevgi.jpg' };
 
 function showTemplatePicker() {
   root.innerHTML = html`
     ${topbar()}
     <div class="wrap">
-      <div class="list-head"><h1>Yangi to‘y — shablonni tanlang</h1></div>
+      <div class="list-head"><h1>Yangi sayt — shablonni tanlang</h1></div>
       <div class="templates">
         ${TEMPLATES.filter((t) => t.panel !== false).map(
           (t) => html`
@@ -652,7 +657,16 @@ function showTemplatePicker() {
       <p class="hint" style="margin-top:1rem">Namunalar: <a href="${siteUrl('demo')}" target="_blank" rel="noopener">Volume 2</a> · <a href="${siteUrl('demo-yz')}" target="_blank" rel="noopener">Yusuf & Zulayho</a></p>
     </div>
   `;
-  $$('[data-template]').forEach((b) => b.addEventListener('click', () => showEventPicker(b.dataset.template)));
+  $$('[data-template]').forEach((b) =>
+    b.addEventListener('click', () => {
+      // Tug'ilgan kun saytlarida marosim turi yo'q — darhol muharrir
+      if (findTemplate(b.dataset.template)?.kind === 'birthday') {
+        state.ed = newEditor({ isNew: true, config: birthdayConfig(b.dataset.template) });
+        return showEditor();
+      }
+      showEventPicker(b.dataset.template);
+    }),
+  );
 }
 
 /** 2-qadam: marosim turi — vaqt, dastur, dress-kod va taklif matnlari shunga moslab tayyorlanadi. */
@@ -1577,6 +1591,198 @@ function secSeo() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Tug'ilgan kun saytlari (tort, sevgi): yigit sevgan qiziga tabrik     */
+/* ------------------------------------------------------------------ */
+function secBdayMain() {
+  const ed = state.ed;
+  const c = ed.config;
+  const slugTaken = ed.isNew && !!slugTakenWhy(ed.slug);
+  const age = ageOf(c);
+  return section(
+    'main',
+    'Asosiy ma’lumotlar',
+    html`
+      <div class="watermark-row ${c.watermark ? 'is-on' : ''}" id="watermark-row">
+        ${check('“NAMUNA” belgisini qo‘shish', 'watermark')}
+        <small class="hint">To‘lovdan keyin galochkani olib tashlab saqlang</small>
+      </div>
+      <div class="grid2">
+        ${field('Qizning ismi', 'person.name', { placeholder: 'Madina' })}
+        ${field('Kimdan (imzo)', 'from', { placeholder: 'Sevgilingdan', hint: 'Maktub va oxirida chiqadi' })}
+      </div>
+      <div class="grid3">
+        <label class="f" data-field="person.birthDate"><span>Tug‘ilgan sanasi</span>
+          <input type="date" data-path="person.birthDate" value="${c.person?.birthDate || ''}" />
+          <small class="hint" id="age-hint">${age ? `Yoshi: ${age}` : 'Yosh avtomatik hisoblanadi'}</small>
+        </label>
+        ${field('Tabrik kuni', 'event.date', { type: 'date', hint: 'Odatda — tug‘ilgan kuni' })}
+        ${field('Tanishgan kuningiz', 'together', { type: 'date', hint: 'Ixtiyoriy: “Biz birgamiz — N kun”' })}
+      </div>
+      ${c.template === 'tort'
+        ? html`<label class="f" data-field="voice"><span>Murojaat</span>
+            <select data-path="voice">
+              <option value="sen" ${c.voice !== 'siz' ? 'selected' : ''}>💞 “Sen” — yaqin, romantik</option>
+              <option value="siz" ${c.voice === 'siz' ? 'selected' : ''}>🤝 “Siz” — hurmat bilan</option>
+            </select></label>`
+        : ''}
+      <div class="toggle-row">${check('Demo (namuna) sayt — ro‘yxatda alohida turadi, daromad hisobiga kirmaydi', 'demo', /^demo(-|$)/.test(ed.slug || ''))}</div>
+      <label class="f" data-field="autoScroll"><span>Avto-aylantirish</span>
+        <select data-path="autoScroll">
+          ${AUTOSCROLL.map((o) => html`<option value="${o.id}" ${autoScrollMode(c) === o.id ? 'selected' : ''}>${o.title}</option>`)}
+        </select>
+      </label>
+      ${ed.isNew
+        ? html`
+            <label class="f ${slugTaken ? 'f--bad' : ''}">
+              <span>Sayt manzili</span>
+              <input id="slug" value="${ed.slug}" placeholder="madina" />
+              <small class="hint ${slugTaken ? '' : 'hint--ok'}" id="slug-hint">${slugHintText(ed.slug)}</small>
+            </label>
+          `
+        : html`<p class="hint">Sayt: <a href="${siteUrl(ed.slug)}" target="_blank" rel="noopener">${siteUrl(ed.slug)}</a></p>`}
+    `,
+    { open: true },
+  );
+}
+
+function secBdayTexts() {
+  const c = state.ed.config;
+  const def = defaultTexts(c);
+  return section(
+    'texts',
+    'Matnlar (romantik so‘zlar)',
+    html`<small class="hint">Bo‘sh qoldirilsa — kulrang namunadagi matn chiqadi. O‘zingizning so‘zlaringiz bilan yozsangiz, sayt yanada samimiy bo‘ladi.</small>
+      ${(BDAY[c.template]?.texts || []).map(([k, label, rows]) => area(label, `texts.${k}`, { rows, placeholder: def[k] || '' }))}`,
+  );
+}
+
+function memRows() {
+  const c = state.ed.config;
+  const list = c.memories || [];
+  const yearLabel = c.template === 'sevgi' ? 'Sana / yil' : 'Yil';
+  return html`
+    ${list.map(
+      (m, i) => html`<div class="mem-row">
+        <button class="mem-row__img" type="button" data-mem-photo="${i}" title="Suratni almashtirish">${m.photo ? html`<img src="${mediaSrc(m.photo)}" alt="" />` : html`<span>+ Surat</span>`}</button>
+        <div class="mem-row__fields">
+          <div class="grid2">
+            <input data-mem="${i}" data-key="title" value="${m.title || ''}" placeholder="Sarlavha (masalan: Ilk ko‘rishuv)" />
+            <input data-mem="${i}" data-key="year" value="${m.year || ''}" placeholder="${yearLabel} (ixtiyoriy)" />
+          </div>
+          <textarea data-mem="${i}" data-key="text" rows="2" placeholder="Qisqa izoh (ixtiyoriy)">${m.text || ''}</textarea>
+        </div>
+        <div class="mem-row__tools">
+          ${i > 0 ? html`<button class="link" type="button" data-mem-up="${i}" aria-label="Yuqoriga">↑</button>` : ''}
+          <button class="link" type="button" data-mem-del="${i}" aria-label="O‘chirish">✕</button>
+        </div>
+      </div>`,
+    )}
+    ${list.length < (BDAY[c.template]?.maxMemories || 12) ? html`<button class="upload" type="button" data-action="mem-add">+ Birgalikdagi suratlar qo‘shish</button>` : ''}
+  `;
+}
+
+function secBdayMemories() {
+  const c = state.ed.config;
+  return section(
+    'memories',
+    c.template === 'sevgi' ? 'Bizning yo‘limiz (suratli xotiralar)' : 'Birgalikdagi suratlar',
+    html`<small class="hint">${BDAY[c.template]?.memoriesHint || ''} Bir nechta suratni birdaniga tanlash mumkin — telefonda o‘zi siqiladi.</small>
+      <div class="mem-rows" id="mem-rows">${memRows()}</div>`,
+    { open: true },
+  );
+}
+
+function wishRows() {
+  const list = state.ed.config.wishes || [];
+  return html`
+    ${list.map(
+      (w, i) => html`<div class="row-inline">
+        <input data-wish="${i}" value="${w}" placeholder="Tilak" maxlength="160" />
+        <button class="link" type="button" data-wish-del="${i}" aria-label="O‘chirish">✕</button>
+      </div>`,
+    )}
+    <div class="actions-row">
+      ${list.length < 12 ? html`<button class="btn btn--small" type="button" data-action="wish-add">+ Tilak qo‘shish</button>` : ''}
+      <button class="btn btn--small btn--ghost" type="button" data-action="wish-preset">✨ Tayyor romantik tilaklar</button>
+    </div>
+  `;
+}
+
+function secBdayWishes() {
+  const c = state.ed.config;
+  return section(
+    'wishes',
+    'Tilaklar',
+    html`<small class="hint">${c.template === 'tort' ? 'Har bir tilak — sharning ichida: qiz sharni bosib yoradi va tilakni o‘qiydi.' : 'Tilaklar sahifasida yurakchalar bilan birin-ketin chiqadi.'} 3–6 ta tavsiya etiladi.</small>
+      <div id="wish-rows">${wishRows()}</div>`,
+  );
+}
+
+function bdayPhotosHtml() {
+  const c = state.ed.config;
+  const photos = c.photos || {};
+  return html`
+    ${(BDAY[c.template]?.photos || []).map(([key, label]) => {
+      const own = photos[key];
+      return html`
+        <div class="thumb">
+          ${own ? html`<img src="${mediaSrc(own)}" alt="" />` : html`<span class="thumb__empty" aria-hidden="true">📷</span>`}
+          <span>${label}</span>
+          <div class="actions-row" style="justify-content:center">
+            <button class="link" type="button" data-photo-set="${key}">${own ? 'Almashtirish' : 'Yuklash'}</button>
+            ${own ? html`<button class="link" type="button" data-photo-reset="${key}">O‘chirish</button>` : ''}
+          </div>
+        </div>
+      `;
+    })}
+  `;
+}
+
+function secBdayPhotos() {
+  const c = state.ed.config;
+  return section(
+    'photos',
+    c.template === 'sevgi' ? 'Sahifalar suratlari' : 'Qo‘shimcha suratlar',
+    html`<small class="hint">${c.template === 'sevgi' ? 'Har bir sahifa foni — alohida surat (vertikal suratlar yaxshi chiqadi). Yuklanmagan sahifaga “Birgalikdagi suratlar”dan biri qo‘yiladi.' : 'Ixtiyoriy.'}</small>
+      <div class="thumbs" id="yz-photos">${bdayPhotosHtml()}</div>`,
+  );
+}
+
+function secBdayGift() {
+  const c = state.ed.config;
+  const on = !!c.gift;
+  return section(
+    'gift',
+    'Sovg‘a',
+    html`
+      <small class="hint">Qiz sovg‘a qutisini ochadi — ichidan shu yozuv chiqadi. Karta raqami yoki to‘lov havolasi (Payme, Click) ixtiyoriy.</small>
+      ${field('Sarlavha', 'gift.title', { placeholder: 'Sovg‘ang tayyor 🎁' })}
+      ${area('Matn', 'gift.text', { rows: 3, placeholder: 'Uzoqda bo‘lsam ham, senga kichik bir sovg‘a tayyorladim…' })}
+      <div class="grid3">
+        ${field('Karta raqami', 'gift.card', { placeholder: '8600 …', attrs: 'inputmode="numeric"' })}
+        ${field('Karta egasi', 'gift.holder', { placeholder: 'Ism Familiya' })}
+        ${field('Bank', 'gift.bank', { placeholder: 'Uzcard / Humo' })}
+      </div>
+      <div class="grid2">
+        ${field('To‘lov havolasi', 'gift.link', { placeholder: 'https://payme.uz/…' })}
+        ${field('Tugma yozuvi', 'gift.linkLabel', { placeholder: 'Sovg‘ani olish' })}
+      </div>
+    `,
+    { toggle: { on, label: 'Saytda sovg‘a qutisini ko‘rsatish' } },
+  );
+}
+
+function secBdayReply() {
+  const on = state.ed.config.rsvp?.enabled !== false;
+  return section(
+    'rsvp',
+    'Javob maktubi',
+    html`<p class="hint">Sayt oxirida qiz sizga javob yozishi mumkin. Maktublar hech kimga ko‘rinmaydi — faqat sayt manzilidagi <b>/admin</b> sahifasida (parol bilan) o‘qiladi.</p>`,
+    { toggle: { on, label: '“Menga bir so‘z yoz 💌” formasini ko‘rsatish' } },
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Tahrirlash sahifasi                                                 */
 /* ------------------------------------------------------------------ */
 /* ------------------------------------------------------------------ */
@@ -1926,10 +2132,22 @@ async function openExisting(slug, { copy = false } = {}) {
     if (l?.ok) state.clients = l.clients;
   }
   const config = r.config;
-  // Tug'ilgan kun shablonlari (tort, sevgi) hozircha faqat config.json orqali tahrirlanadi —
-  // to'y formasi ularning maydonlarini (person, memories, gift) buzib qo'ymasin
-  if (findTemplate(config.template)?.kind === 'birthday') {
-    root.innerHTML = html`${topbar()}<div class="wrap"><p class="empty">🎂 "${slug}" — tug‘ilgan kun sayti (${findTemplate(config.template).title}). U <b>clients/${slug}/config.json</b> orqali tahrirlanadi: sayt manzili — <a href="https://${slug}.${location.hostname.split('.').slice(1).join('.')}" target="_blank" rel="noopener">ochish</a>.</p></div>`;
+  if (copy && isBday(config)) {
+    // Tug'ilgan kun: matnlar va sozlamalar qoladi, ism va suratlar yangidan kiritiladi
+    const c = clone(config);
+    delete c.paused;
+    c.person = { name: '', birthDate: '' };
+    c.together = '';
+    c.photos = {};
+    c.memories = [];
+    if (c.music) {
+      c.music = '';
+      c.musicTrack ||= 'musiqa-16';
+    }
+    c.watermark = true;
+    state.ed = newEditor({ isNew: true, config: c });
+    showEditor();
+    toast('Nusxa olindi: ism va suratlarni kiriting');
     return;
   }
   if (copy) {
@@ -1970,7 +2188,10 @@ function showEditor() {
   const bulut = c.template === 'bulut';
   const volume3 = c.template === 'volume3' || c.template === 'volume4';
   const volume5 = c.template === 'volume5';
-  const sections = yz
+  const bday = isBday(c);
+  const sections = bday
+    ? [secBdayMain(), secBdayTexts(), secBdayMemories(), secBdayWishes(), secBdayPhotos(), secBdayGift(), secBdayReply(), secMusicRsvp(), secSeo()]
+    : yz
     ? [secMain(), secVenue(), secYzPhotos(), secYzCard(), secMusicRsvp(), secRsvp(), secYzRu(), secYzTexts(), secSeo()]
     : volume5
       ? [secMain(), secTexts(), secVenue(), secProgram(), secDress(), secGiftNote(), secContacts(), secYzPhotos(), secMusicRsvp(), secRsvp(), secEffects(), secSeo()]
@@ -1985,7 +2206,7 @@ function showEditor() {
     <div class="wrap">
       <div class="list-head">
         <a class="btn btn--small btn--ghost" href="#/">← Ro‘yxat</a>
-        <h1>${ed.isNew ? 'Yangi to‘y' : `${c.couple.groom} & ${c.couple.bride}`}</h1>
+        <h1>${ed.isNew ? (bday ? 'Yangi tug‘ilgan kun sayti' : 'Yangi to‘y') : namesOfC(c)}</h1>
         <span class="top__spacer"></span>
         ${ed.isNew ? '' : html`<button class="btn btn--small" type="button" data-action="password">🔑 Mijoz uchun /admin parol</button>`}
         <button class="btn btn--small preview-toggle" type="button" data-action="preview-open">📱 Ko‘rinish</button>
@@ -2003,7 +2224,7 @@ function showEditor() {
           </div>
         </form>
         <aside class="preview" id="preview">
-          <div class="phone"><iframe id="preview-frame" title="Jonli ko‘rinish" src="${yz ? '/preview-yz.html' : osmon ? '/preview-osmon.html' : suzani ? '/preview-suzani.html' : kitob ? '/preview-kitob.html' : bulut ? '/preview-bulut.html' : volume3 ? '/preview-volume3.html' : volume5 ? '/preview-volume5.html' : '/preview-v2.html'}"></iframe></div>
+          <div class="phone"><iframe id="preview-frame" title="Jonli ko‘rinish" src="${bday ? `/preview-${c.template}.html` : yz ? '/preview-yz.html' : osmon ? '/preview-osmon.html' : suzani ? '/preview-suzani.html' : kitob ? '/preview-kitob.html' : bulut ? '/preview-bulut.html' : volume3 ? '/preview-volume3.html' : volume5 ? '/preview-volume5.html' : '/preview-v2.html'}"></iframe></div>
           <p class="preview__note">Jonli ko‘rinish — saqlanmagan o‘zgarishlar ham ko‘rinadi</p>
           <button class="btn btn--small preview-toggle" type="button" data-action="preview-close">Yopish</button>
         </aside>
@@ -2057,7 +2278,7 @@ function uniqueSlug(base, c) {
   if (!base || !slugTakenWhy(base)) return base;
   const date = isValidDate(c.event?.date) ? c.event.date : '';
   const month = date ? MONTHS[Number(date.slice(5, 7)) - 1] : '';
-  const ev = EVENT_SLUG[c.eventType] || 'nikoh';
+  const ev = isBday(c) ? 'tugilgan-kun' : EVENT_SLUG[c.eventType] || 'nikoh';
   const cands = [`${base}-${ev}`, month && `${base}-${month}`, month && `${base}-${ev}-${month}`, date && `${base}-${date.slice(0, 4)}`, date && `${base}-${month}-${date.slice(0, 4)}`]
     .filter(Boolean)
     .map((x) => toSlug(x));
@@ -2180,6 +2401,10 @@ function setToggle(id, on) {
     rerender('#gallery-thumbs', galleryHtml);
   }
   if (id === 'rsvp') c.rsvp = { ...(c.rsvp || {}), enabled: on };
+  if (id === 'gift') {
+    if (on) c.gift = { title: '', text: '', ...(c.gift || {}) };
+    else delete c.gift;
+  }
   if (id === 'background' && !on) {
     delete c.backgroundImage;
     delete c.backgroundOverlay;
@@ -2269,6 +2494,12 @@ function bindEditor() {
       if (path === 'watermark') $('#watermark-row')?.classList.toggle('is-on', v);
       if (path === 'backgroundOverlay') $('#veil-val').textContent = `${Math.round(v * 100)}%`;
       if (path.startsWith('sky.') || path.startsWith('venue.')) updateSkyStatus();
+      if (path === 'person.name') updateSlugFromNames();
+      if (path === 'person.birthDate' || path === 'event.date') {
+        const a = ageOf(c);
+        const h = $('#age-hint');
+        if (h) h.textContent = a ? `Yoshi: ${a}` : 'Yosh avtomatik hisoblanadi';
+      }
       if (path === 'couple.groom' || path === 'couple.bride') {
         updateSlugFromNames();
         if (!yzTemplate() && !ed.invitationTouched) {
@@ -2290,6 +2521,16 @@ function bindEditor() {
         const dl = $('[data-path="rsvp.deadline"]');
         if (dl) dl.value = c.rsvp.deadline;
       }
+      markDirty();
+      return;
+    }
+    if (t.dataset.mem != null) {
+      c.memories[Number(t.dataset.mem)][t.dataset.key] = t.value;
+      markDirty();
+      return;
+    }
+    if (t.dataset.wish != null) {
+      c.wishes[Number(t.dataset.wish)] = t.value;
       markDirty();
       return;
     }
@@ -2421,13 +2662,56 @@ function bindEditor() {
       const [file] = await pickFiles();
       if (!file) return;
       (c.photos ||= {})[b.dataset.photoSet] = await addUpload(b.dataset.photoSet, file, 1600);
-      rerender('#yz-photos', yzPhotosHtml);
+      rerender('#yz-photos', isBday(c) ? bdayPhotosHtml : yzPhotosHtml);
       markDirty();
     }
     if (b.dataset.photoReset) {
       e.preventDefault();
       delete c.photos[b.dataset.photoReset];
-      rerender('#yz-photos', yzPhotosHtml);
+      rerender('#yz-photos', isBday(c) ? bdayPhotosHtml : yzPhotosHtml);
+      markDirty();
+    }
+    // Tug'ilgan kun: birgalikdagi suratlar va tilaklar
+    if (a === 'mem-add') {
+      const max = BDAY[c.template]?.maxMemories || 12;
+      const files = (await pickFiles({ multiple: true })).slice(0, Math.max(0, max - (c.memories || []).length));
+      for (const f of files) (c.memories ||= []).push({ photo: await addUpload('surat', f, 1600), title: '', text: '' });
+      if (!files.length && (c.memories || []).length >= max) toast(`Ko‘pi bilan ${max} ta surat`);
+      rerender('#mem-rows', memRows);
+      markDirty();
+    }
+    if (b.dataset.memPhoto != null) {
+      const [file] = await pickFiles();
+      if (!file) return;
+      c.memories[Number(b.dataset.memPhoto)].photo = await addUpload('surat', file, 1600);
+      rerender('#mem-rows', memRows);
+      markDirty();
+    }
+    if (b.dataset.memDel != null) {
+      c.memories.splice(Number(b.dataset.memDel), 1);
+      rerender('#mem-rows', memRows);
+      markDirty();
+    }
+    if (b.dataset.memUp != null) {
+      const i = Number(b.dataset.memUp);
+      if (i > 0) [c.memories[i - 1], c.memories[i]] = [c.memories[i], c.memories[i - 1]];
+      rerender('#mem-rows', memRows);
+      markDirty();
+    }
+    if (a === 'wish-add') {
+      (c.wishes ||= []).push('');
+      rerender('#wish-rows', wishRows);
+      $$('[data-wish]').at(-1)?.focus();
+      markDirty();
+    }
+    if (a === 'wish-preset') {
+      c.wishes = [...ROMANTIC_WISHES];
+      rerender('#wish-rows', wishRows);
+      markDirty();
+    }
+    if (b.dataset.wishDel != null) {
+      c.wishes.splice(Number(b.dataset.wishDel), 1);
+      rerender('#wish-rows', wishRows);
       markDirty();
     }
     if (a === 'invitation-auto') {
@@ -2483,6 +2767,12 @@ function playMusic(btn) {
 // Saqlashdan oldin: bo'sh ixtiyoriy qismlar tozalanadi
 function cleanConfig(c0) {
   const c = clone(c0);
+  if (isBday(c)) {
+    cleanBirthday(c);
+    if (c.demo === false && !/^demo(-|$)/.test(state.ed?.slug || '')) delete c.demo;
+    if (c.watermark !== true) delete c.watermark;
+    return c;
+  }
   c.couple.groom = c.couple.groom.trim();
   c.couple.bride = c.couple.bride.trim();
   if (Array.isArray(c.program)) c.program = c.program.filter((p) => p.time || p.title?.trim());
@@ -2566,11 +2856,11 @@ async function save() {
     ed.config = c;
     ed.dirty = false;
     if (wasNew) {
-      state.clients.push({ slug: ed.slug, template: c.template, groom: c.couple.groom, bride: c.couple.bride, date: c.event.date, time: c.event.time, venue: c.venue.name, rsvp: null });
+      state.clients.push({ slug: ed.slug, template: c.template, groom: isBday(c) ? '' : c.couple.groom, bride: isBday(c) ? c.person.name : c.couple.bride, date: c.event.date, time: c.event.time || '', venue: c.venue?.name || '', rsvp: null });
       history.replaceState(null, '', `#/tahrir/${ed.slug}`);
       currentHash = location.hash;
       // Endi mavjud to'y: sarlavha, manzil maydoni va parol tugmasi yangilanadi
-      $('.list-head h1').textContent = `${c.couple.groom} & ${c.couple.bride}`;
+      $('.list-head h1').textContent = namesOfC(c);
       $('#save-btn').textContent = 'Saqlash va chiqarish';
       const slugField = $('#slug')?.closest('.f');
       if (slugField) slugField.outerHTML = html`<p class="hint">Sayt: <a href="${siteUrl(ed.slug)}" target="_blank" rel="noopener">${siteUrl(ed.slug)}</a></p>`;

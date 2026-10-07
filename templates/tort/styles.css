@@ -678,7 +678,8 @@ button {
 
 .hero__cake {
   position: relative;
-  width: min(92%, 360px);
+  /* Past ekranlarda (iPhone SE, noutbuk) tort kichrayadi — puflash tugmasi ham ko'rinib tursin */
+  width: min(92%, 360px, 41svh);
   margin: 6px auto 0;
 }
 
@@ -2529,6 +2530,44 @@ button {
       radial-gradient(circle at 0 0, var(--c-bg) 13px, transparent 14px) top left / 100% 50% no-repeat,
       radial-gradient(circle at 0 100%, var(--c-bg) 13px, transparent 14px) bottom left / 100% 50% no-repeat,
       #fff3e3;
+  }
+}
+
+/* ------------------------------ Past ekranlar (iPhone SE, noutbuk) ------------------------------ */
+@media (max-height: 720px) {
+  .hero {
+    padding-top: calc(52px + var(--safe-t));
+    padding-bottom: calc(20px + var(--safe-b));
+  }
+
+  .foil-name {
+    font-size: min(70px, calc((var(--col) - 40px) / (var(--n) * 0.66)));
+    margin: 2px 0 0;
+  }
+
+  .hero__top {
+    gap: 6px;
+  }
+
+  .hero__wish {
+    font-size: 17px;
+  }
+
+  .hero__cake {
+    width: min(92%, 360px, 38svh);
+  }
+
+  .blow__btn {
+    width: 70px;
+    height: 70px;
+  }
+
+  .blow__icon {
+    font-size: 28px;
+  }
+
+  .blow {
+    gap: 6px;
   }
 }
 

@@ -399,6 +399,56 @@ Har sahifada qog'ozdan kesilgan pop-up manzara tik turadi (`art.js`), emoji-stik
 Javob sahifasida mehmon tilagiga stiker tanlaydi (xabar boshiga qo'shiladi), tilaklar "Mehmonlar devori"
 sahifasida rangli xatcha bo'lib ko'rinadi. Namuna: `clients/demo-kitob`.
 
+## Tug‘ilgan kun saytlari — yigitdan sevgan qiziga tabrik
+
+Ikki shablon (`kind: 'birthday'`, `src/lib/templates.js`). Bu — taklifnoma emas: yigit sevgan qiziga
+(odatda 16–25 yosh) tug‘ilgan kuni uchun yuboradigan romantik sayt. Kelin-kuyov va to‘yxona o‘rniga
+`person` (qizning ismi va tug‘ilgan sanasi); birgalikdagi suratlar panelda yuklanadi.
+
+| Shablon | Nima bor | Namuna |
+|---|---|---|
+| **Sehrli tort** (`tort`) | Qorong‘i xona → “Shamlarni yoqish” (musiqa shu bilan) → yosh raqamli shamlar yonadi → qiz tilak tilab, tugmani bosib turib (yoki mikrofonga) puflaydi → chiroqlar yonadi, yurakchali konfetti, sharlar uchadi. So‘ng: folga sharlardagi ism, “bu dunyoni N kundan beri yoritib kelyapsan” jonli hisoblagichi, “Biz birgamiz — N kun”, muhrli konvertdagi maktub, ipga osilgan polaroid suratlar, ichida tilak bor sharlar (bosilsa yoriladi), sovg‘a qutisi (karta yoki Payme/Click havolasi), javob maktubi, salyutli yakun | `clients/demo-tort` |
+| **Sevgi kundaligi** (`sevgi`) | b-day loyihasining professional versiyasi: muhrli maktub → har bir sahifa to‘liq ekranli birgalikdagi surat ustida (Ken Burns harakati): muqova (ism, “18 bahorni qarshi olgan farishtam”, gul yaproqlari), ilk uchrashuv, kulgili lahza, minnatdorlik, “Bizning yo‘limiz” (suratli xotiralar), tilaklar, sovg‘a qutisi, javob maktubi, “Seni sevaman” | `clients/demo-sevgi` |
+
+**Panelda:** “Yangi sayt” → “Tug‘ilgan kun: sehrli tort” yoki “Sevgi kundaligi” → qizning ismi, tug‘ilgan
+sanasi, tabrik kuni, tanishgan kuningiz (ixtiyoriy), kimdan (“Sevgilingdan”) → **Birgalikdagi suratlar**
+(bir nechta suratni birdaniga tanlash mumkin; har biriga sarlavha, yil va izoh) → tilaklar (“✨ Tayyor
+romantik tilaklar”) → matnlar (bo‘sh qolsa — namunadagi romantik matn) → sovg‘a → musiqa. O‘ngda jonli ko‘rinish.
+Sayt manzili ismdan tuziladi: `madina.documen.uz`.
+
+**Javob maktubi:** qiz sayt oxirida yigitga maktub yozishi mumkin (`attending: 'wish'`). Maktublar ochiq
+`/api/wishes` da chiqmaydi — faqat `/admin` sahifasida (parol bilan) “Tabrik” belgisi bilan ko‘rinadi.
+
+**Havola ulashilganda** (Telegram, Instagram) juftlikning o‘z surati chiqadi (muqova / maktub surati yoki
+birinchi xotira); surat bo‘lmasa — `public/images/og-tort.jpg` / `og-sevgi.jpg`.
+
+Config maydonlari (`config.json`):
+
+```json
+{
+  "template": "tort",
+  "person": { "name": "Madina", "birthDate": "2008-10-12" },
+  "event": { "date": "2026-10-12", "timezone": "+05:00" },
+  "from": "Sevgilingdan",
+  "together": "2024-03-08",
+  "voice": "siz",
+  "texts": { "letter": "…", "finaleTitle": "…" },
+  "photos": { "letter": "gullar.webp", "gift": "qalb.webp" },
+  "memories": [{ "photo": "kecha.webp", "title": "Ilk ko‘rishuv", "year": "2024", "text": "…" }],
+  "wishes": ["…", "…"],
+  "gift": { "title": "…", "text": "…", "card": "8600…", "holder": "…", "bank": "Uzcard", "link": "https://payme.uz/…", "linkLabel": "Sovg‘ani olish" },
+  "musicTrack": "musiqa-16",
+  "rsvp": { "enabled": true }
+}
+```
+
+- `voice` — faqat `tort`: yozilmasa “sen” (romantik), `"siz"` — hurmat bilan.
+- `photos` kalitlari: `tort` — `letter`, `gift`; `sevgi` — `cover`, `first`, `funny`, `gratitude`, `journey`,
+  `wishes`, `gift` (yuklanmagan sahifaga birgalikdagi suratlardan biri qo‘yiladi).
+- `texts` kalitlari — `templates/tort/texts.js` va `templates/sevgi/texts.js` (panel ham shu ro‘yxatni ko‘rsatadi).
+- Yosh `person.birthDate` va `event.date` dan hisoblanadi (raqamli shamlar, “18 bahor”).
+- `musiqa-16` — “Happy Birthday” musiqa qutisi (kuy jamoat mulki, sintez qilingan).
+
 ### Demo saytlar va o‘chirish
 
 Nomi `demo` bilan boshlanadigan saytlar (yoki tahrirda “Demo (namuna) sayt” belgilanganlar) ro‘yxatda

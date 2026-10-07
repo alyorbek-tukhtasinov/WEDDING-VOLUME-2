@@ -84,9 +84,13 @@ function weddingPlugin(client, template) {
       const base = siteUrl();
       const abs = (p) => (base ? base + p : p);
       // yz shablonida alohida rasm tanlanmagan bo'lsa — bosh sahifadagi surat
+      // Tug'ilgan kun saytlarida — juftlikning o'z surati (muqova, maktub yoki birinchi xotira)
+      const bdayPhoto = ['tort', 'sevgi'].includes(template) && (config.photos?.cover || config.photos?.letter || (config.memories || []).find((m) => m?.photo)?.photo);
       const ogImage = config.seo?.ogImage
         ? `/media/${config.seo.ogImage}`
-        : template === 'yz'
+        : bdayPhoto
+          ? `/media/${bdayPhoto}`
+          : template === 'yz'
           ? config.photos?.hero ? `/media/${config.photos.hero}` : '/images/yz/wedding1.jpg'
           : ['osmon', 'suzani', 'kitob', 'bulut', 'volume3', 'volume4', 'volume5', 'tort', 'sevgi'].includes(template)
             ? `/images/og-${template}.jpg`

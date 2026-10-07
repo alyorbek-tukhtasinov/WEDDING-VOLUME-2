@@ -1,0 +1,69 @@
+{
+  "template": "sevgi",
+  "demo": true,
+  "autoScroll": "button",
+  "person": {
+    "name": "Madinaxon",
+    "birthDate": "2008-07-12"
+  },
+  "from": "Sevgilingdan",
+  "together": "2024-03-08",
+  "event": {
+    "date": "2026-07-12",
+    "timezone": "+05:00"
+  },
+  "texts": {
+    "badge": "18 bahorni qarshi olgan farishtam",
+    "coverText": "Dunyoga kelgan kuning muborak bo‘lsin, ko‘zimning nuri, qalbimning quyoshi."
+  },
+  "photos": {
+    "cover": "gullar.webp",
+    "first": "kecha.webp",
+    "funny": "dalada.webp",
+    "gratitude": "quyosh.webp",
+    "wishes": "shom.webp",
+    "gift": "qalb.webp"
+  },
+  "memories": [
+    {
+      "photo": "kecha.webp",
+      "title": "Ilk ko‘rishuv",
+      "text": "Yo‘llarimiz ilk bor kesishgan, taqdir bizni tanishtirgan kun"
+    },
+    {
+      "photo": "shom.webp",
+      "title": "Tun bo‘yi dildan suhbat",
+      "text": "Tongni bilmay qolgan, yuraklar ochilgan ilk kechalar"
+    },
+    {
+      "photo": "dalada.webp",
+      "title": "Muhabbatim izhori",
+      "text": "Qalbim sir tutgan so‘zlar nihoyat baralla yangradi"
+    },
+    {
+      "photo": "quyosh.webp",
+      "title": "Masofalar ham qo‘rqadi bizdan",
+      "text": "Uzoqlik sevgimizni sinamadi — aksincha, mustahkamladi"
+    },
+    {
+      "photo": "gullar.webp",
+      "title": "Bugungi baxtimiz",
+      "text": "Har kunimiz avvalgisidan ham shirinroq"
+    }
+  ],
+  "wishes": [
+    "Yuzingdan gullardek nafis tabassuming hech qachon arimasin",
+    "Yuragingdagi eng ezgu va shirin orzularing hammasi ushalsin",
+    "Sog‘liging mustahkam, ko‘ngling doimo tinch va xotirjam bo‘lsin",
+    "Yoningda bo‘lmasam ham, sevgim seni doim o‘rab tursin",
+    "Ushbu yil sening eng porloq, eng baxtli yiling bo‘lsin"
+  ],
+  "gift": {
+    "title": "Sovg‘ang tayyor 🎁",
+    "text": "Uzoqda bo‘lsam ham, senga kichik bir sovg‘a tayyorladim. Uni yaqin kunlarda qo‘lingda ushlaysan — hozircha bu sir 🤫"
+  },
+  "musicTrack": "musiqa-11",
+  "rsvp": {
+    "enabled": true
+  }
+}

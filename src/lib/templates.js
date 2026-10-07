@@ -57,22 +57,20 @@ export const TEMPLATES = [
     description: 'Zaytun-bej “Our Story”: konvert ochilish videosi, raqsga tushayotgan juftlik, to‘lqinli to‘y dasturi, 3 kunlik taqvim, anketa va tilaklar',
     features: ['program', 'dressCode', 'contacts', 'giftNote', 'photos', 'rsvp', 'wishes'],
   },
-  // Tug'ilgan kun shablonlari (kind: 'birthday'): kelin-kuyov o'rniga `person`, to'yxona ixtiyoriy.
-  // Hozircha config.json orqali yaratiladi — panelning "Yangi to'y" ro'yxatida chiqmaydi (panel: false).
+  // Tug'ilgan kun shablonlari (kind: 'birthday'): yigit sevgan qiziga yuboradigan romantik tabrik.
+  // Kelin-kuyov o'rniga `person` (qizning ismi, tug'ilgan sanasi), suratlar panelda yuklanadi (panel/birthday.js).
   {
     id: 'tort',
     kind: 'birthday',
-    panel: false,
     title: 'Tug‘ilgan kun: sehrli tort',
-    description: 'Qorong‘i xonada shamlar yonadi, tilak tilab shamlarni puflaysiz; folga sharlardagi ism, yashalgan kunlar hisoblagichi, polaroid xotiralar, yoriladigan tilak sharlari, sovg‘a qutisi va mehmonlar tilaklari',
+    description: '🎂 Tug‘ilgan kun (sevgan qizga): qorong‘i xonada shamlar yonadi, qiz tilak tilab shamlarni puflaydi — konfetti va sharlar; folga sharlardagi ism, “biz birgamiz N kun”, maktub, polaroid suratlar, yoriladigan tilak sharlari, sovg‘a qutisi va javob maktubi',
     features: ['photos', 'rsvp', 'wishes', 'giftNote'],
   },
   {
     id: 'sevgi',
     kind: 'birthday',
-    panel: false,
     title: 'Sevgi kundaligi',
-    description: 'Qora-tilla kinematik tug‘ilgan kun tabrigi: har sahifada surat, xotiralar, yo‘limiz, tilaklar va sovg‘a',
+    description: '🎂 Tug‘ilgan kun (sevgan qizga): qora-tilla kinematik “sevgi kundaligi” — har sahifa birgalikdagi surat ustida: ilk uchrashuv, kulgili lahza, minnatdorlik, bizning yo‘limiz, tilaklar va sovg‘a',
     features: ['photos', 'giftNote'],
   },
 ];
