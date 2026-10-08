@@ -7,6 +7,7 @@ export const PHOTO_SLOTS = {
   volume2: [
     { ...BACKGROUND, hint: 'Butun sahifa ortida, ustida och parda bilan — matn o‘qilishi uchun' },
     { field: 'venue.image', title: 'To‘yxona surati', hint: 'Manzil bo‘limida chiqadi' },
+    { field: 'venue.image2', title: 'To‘yxona surati (2)', hint: 'Ixtiyoriy — birinchi surat yonida chiqadi' },
     { field: 'gallery', title: 'Galereya', hint: 'Sizning suratlaringiz (6 tagacha)', multi: 6 },
   ],
   volume3: [{ ...BACKGROUND, hint: 'Gullar o‘rnida sizning suratingiz yoki fon rasmingiz' }],

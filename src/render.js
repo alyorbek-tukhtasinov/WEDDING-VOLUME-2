@@ -138,12 +138,16 @@ function giftNote(g) {
 function venue(c) {
   const v = c.venue;
   const image = v.image ? mediaUrl(v.image) : img('building.webp');
+  // Ikkinchi surat berilsa — ikkalasi yonma-yon (tik suratlar uchun)
+  const photos = [v.image, v.image2].filter(Boolean);
   return html`
     <section class="section venue" id="venue">
       <h2 class="title" data-reveal>${T.where}</h2>
       ${c.giftNote?.title
         ? giftNote(c.giftNote)
-        : html`<img class="venue__img ${v.image ? 'venue__img--photo' : ''}" src="${image}" alt="${v.name}" loading="lazy" data-reveal />`}
+        : photos.length > 1
+          ? html`<div class="venue__photos" data-reveal>${photos.map((p) => html`<img class="venue__img venue__img--photo" src="${mediaUrl(p)}" alt="${v.name}" loading="lazy" />`)}</div>`
+          : html`<img class="venue__img ${v.image ? 'venue__img--photo' : ''}" src="${image}" alt="${v.name}" loading="lazy" data-reveal />`}
       <p class="venue__name" data-reveal>${v.name}</p>
       <p class="venue__address" data-reveal>${v.address}</p>
       <div class="actions" data-reveal>

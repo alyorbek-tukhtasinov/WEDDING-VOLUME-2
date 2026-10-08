@@ -821,6 +821,19 @@ a {
     0 0 0 7px var(--gold-soft);
 }
 
+.venue__photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 380px;
+  margin: 0 auto 1.5rem;
+  padding: 0 7px;
+}
+.venue__photos .venue__img {
+  margin: 0;
+  aspect-ratio: 3 / 4;
+}
+
 .venue__name {
   font-family: var(--f-serif);
   font-weight: 600;

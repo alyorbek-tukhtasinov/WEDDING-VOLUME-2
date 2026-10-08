@@ -2172,7 +2172,10 @@ async function openExisting(slug, { copy = false } = {}) {
     delete c.backgroundImage;
     c.gallery = [];
     c.photos = {};
-    if (c.venue) c.venue.image = '';
+    if (c.venue) {
+      c.venue.image = '';
+      delete c.venue.image2;
+    }
     if (c.seo) c.seo.ogImage = '';
     if (c.music) {
       c.music = '';

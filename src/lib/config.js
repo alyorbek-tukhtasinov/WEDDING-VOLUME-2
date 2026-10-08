@@ -86,6 +86,7 @@ export function validateConfig(c, mediaFiles = null) {
     need(!v || isUrl(v), `venue.${key} to'g'ri havola emas: "${v}"`);
   }
   checkMedia(c.venue?.image, 'venue.image');
+  checkMedia(c.venue?.image2, 'venue.image2');
   checkMedia(c.music, 'music');
   checkMedia(c.introVideo, 'introVideo');
   need(!c.introVideo || /\.mp4$/i.test(c.introVideo), 'introVideo: faqat .mp4 fayl bo\'lishi mumkin');
