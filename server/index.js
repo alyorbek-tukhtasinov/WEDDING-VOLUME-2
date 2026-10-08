@@ -19,6 +19,7 @@ import settings from '../api/settings.js';
 import admin from '../api/admin.js';
 import { panelHandler, PANEL_SLUG } from './panel.js';
 import { appHandler } from './app-api.js';
+import { instagramHandler, startInstagram } from './instagram.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITES_DIR = path.resolve(process.env.SITES_DIR || path.join(ROOT, 'sites'));
@@ -49,6 +50,13 @@ export const server = http.createServer((req, res) => {
     if (app) {
       return appHandler(req, res, app[1]).catch((err) => {
         console.error('Mini App:', err);
+        if (!res.headersSent) fail(res, 500, 'server_error');
+      });
+    }
+    // Instagram Direct webhook'i (Meta chaqiradi; imzo instagram.js da tekshiriladi)
+    if (pathname === '/api/panel/instagram') {
+      return instagramHandler(req, res).catch((err) => {
+        console.error('Instagram:', err);
         if (!res.headersSent) fail(res, 500, 'server_error');
       });
     }
@@ -101,6 +109,7 @@ if (process.argv[1] && isMain()) {
     for (const slug of sites) {
       if (!process.env[passwordVar(slug)]) console.log(`  ! ${slug}: ${passwordVar(slug)} berilmagan — /admin ochilmaydi`);
     }
+    startInstagram();
   });
   const stop = () => server.close(() => process.exit(0));
   process.on('SIGTERM', stop);

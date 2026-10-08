@@ -471,6 +471,16 @@ Panelda **💰 Daromad** — barcha saytlar ro‘yxati; har biriga qanchaga soti
 summalar. Ma’lumot Redis’da `taklifnoma:boshqaruv:finance` kalitida saqlanadi — GitHub’ga (ochiq repo)
 va mijoz saytlariga chiqmaydi.
 
+### Instagram Direct AI yordamchi
+
+Instagram'ga yozgan mijozlarga Claude sahifa nomidan javob beradi (rasmiy Instagram API, `server/instagram.js`).
+Bot nimani biladi — `server/instagram-knowledge.md` (narxlar `PRICE`/`VIDEO_PRICE` dan, demo havolalar
+avtomatik). Buyurtma ma'lumotlari yig'ilsa yoki savolga egasi javob berishi kerak bo'lsa — egasiga Telegram'da
+xabar keladi (mavjud `BOT_TOKEN`/`ADMIN_TG_IDS`). Egasi Instagram'da o'zi yozsa, bot o'sha mijoz bilan
+`IG_PAUSE_HOURS` soat jim turadi. Sozlash: `deploy/env.example` dagi `ANTHROPIC_API_KEY`, `IG_*` o'zgaruvchilari,
+Meta webhook manzili — `https://boshqaruv.<domen>/api/panel/instagram`, maydon: `messages`.
+Suhbatlar `<DATA_DIR>/instagram.json` da saqlanadi.
+
 ## Javoblarni saqlash (RSVP)
 
 Mehmon javoblari **Upstash Redis** bazasida saqlanadi. Baza bepul va Vercel ichidan
