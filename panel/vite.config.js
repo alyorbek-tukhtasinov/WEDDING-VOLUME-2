@@ -39,6 +39,8 @@ export default defineConfig({
         'preview-sevgi': path.join(root, 'panel', 'preview-sevgi.html'),
         'preview-klassik': path.join(root, 'panel', 'preview-klassik.html'),
         'preview-yulduz': path.join(root, 'panel', 'preview-yulduz.html'),
+        // Maxfiylik siyosati (Meta ilovasi uchun) — boshqaruv.<domen>/privacy
+        privacy: path.join(root, 'panel', 'privacy.html'),
       },
     },
   },
