@@ -109,5 +109,5 @@ export const adminIds = () =>
     .filter((x) => /^-?\d+$/.test(x));
 export const isAdmin = (id) => adminIds().includes(String(id));
 
-export const PRICE = () => Number(env('PRICE', '75000').replace(/\D/g, '')) || 75000;
+export const PRICE = () => Number(env('PRICE', '70000').replace(/\D/g, '')) || 70000;
 export const fmtSum = (n) => `${String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} so‘m`;

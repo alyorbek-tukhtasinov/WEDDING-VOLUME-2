@@ -16,7 +16,7 @@
 //                        Instagram login — "Instagram app secret"
 //   IG_VERIFY_TOKEN    — webhook'ni ulashda o'zingiz o'ylab topgan so'z (Meta'ga ham shuni yozasiz)
 //   IG_ACCESS_TOKEN    — sahifa tokeni (Facebook login) yoki Instagram tokeni (Instagram login)
-//   IG_MODEL           — (ixtiyoriy) Claude modeli, standart claude-opus-5-5
+//   IG_MODEL           — (ixtiyoriy) Claude modeli, standart claude-haiku-5-5 (arzon); sifat kerak bo'lsa claude-sonnet-5-5
 //   IG_PAUSE_HOURS     — (ixtiyoriy) egasi yozgandan keyin bot necha soat jim turadi, standart 12
 //   IG_ENABLED         — (ixtiyoriy) "0" bo'lsa bot faqat tinglaydi, javob yozmaydi
 //   BOT_TOKEN, ADMIN_TG_IDS — mavjud Telegram bot: egasiga xabarlar shu orqali keladi
@@ -34,7 +34,7 @@ const igLogin = () => /^IG/.test(token());
 // IG_GRAPH_URL — faqat sinov uchun (soxta server)
 const GRAPH_BASE = () => env('IG_GRAPH_URL', igLogin() ? 'https://graph.instagram.com' : 'https://graph.facebook.com');
 const GRAPH = () => `${GRAPH_BASE()}/v23.0`;
-const MODEL = () => env('IG_MODEL', 'claude-opus-5-5');
+const MODEL = () => env('IG_MODEL', 'claude-haiku-5-5');
 const PAUSE_MS = () => (Number(env('IG_PAUSE_HOURS', '12')) || 12) * 3600e3;
 const HISTORY_MAX = 30; // har suhbatda saqlanadigan oxirgi xabarlar
 const DEBOUNCE_MS = 6000; // mijoz ketma-ket bir nechta xabar yozsa — hammasiga bitta javob
@@ -300,17 +300,19 @@ async function reply(customer) {
   try {
     const sys = await system();
     const today = new Date().toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'long', year: 'numeric' });
-    // Bugungi sana — tarix oxirida operator xabari sifatida (tizim prompti keshda o'zgarmasdan qoladi)
-    messages.push({ role: 'system', content: `Bugungi sana (Toshkent): ${today}.` });
+    // Bugungi sana — oxirgi mijoz xabariga izoh sifatida (tizim prompti keshda o'zgarmasdan qoladi)
+    const last = messages.at(-1);
+    last.content = `${last.content}\n\n[Bugungi sana (Toshkent): ${today}]`;
     let text = '';
     for (let step = 0; step < 4; step++) {
       // Xavfsizlik filtri rad etsa — server o'zi mos zaxira modelda qayta urinadi (Haiku'da bu imkoniyat yo'q)
-      const fallback = /opus-5|fable-5|sonnet-5-5/.test(MODEL()) ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {};
+      const big = /opus-5|fable-5|sonnet-5-5/.test(MODEL());
+      const fallback = big ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {};
       const res = await claude().beta.messages.create({
         model: MODEL(),
         max_tokens: 8000,
         ...fallback,
-        output_config: { effort: 'low' }, // oddiy suhbat — tez va arzon
+        ...(big ? { output_config: { effort: 'low' } } : {}), // oddiy suhbat — tez va arzon
         system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
         tools: TOOLS,
         messages,
