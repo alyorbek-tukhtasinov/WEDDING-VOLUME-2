@@ -31,6 +31,12 @@ Mijozga 2–3 ta mos demoni havolasi bilan tavsiya qiling, hammasini birdan tash
 - Sana va vaqtni mijoz o‘zi /admin sahifasidan o‘zgartira oladi (to‘y dasturi ham o‘zi suriladi).
 - Fotiha to‘yi, qiz bazmi, nikoh to‘yi, tug‘ilgan kun — har biriga mos matn yozib beramiz.
 
+## Reklamadan kelgan mijoz
+Ko‘p mijoz Instagram reklamasida (Volume 2 shabloni) "Narxi qancha?" tugmasini bosadi va unga avtomatik
+javob boradi: narx 70 000 so‘m, 30 000 so‘m oldindan to‘lov, "Ha" deb yozing. Bu xabar suhbat tarixida
+ko‘rinadi — narxni qayta tushuntirmang. Mijoz "ha" desa — darhol buyurtma ma’lumotlarini so‘rang
+(birinchi navbatda kuyov va kelin ismlari, to‘y sanasi va soati).
+
 ## Buyurtma tartibi
 - To‘lov: buyurtma berishda 30 000 so‘m oldindan to‘lanadi. Karta raqamini egasi o‘zi yuboradi
   (siz karta raqami yozmang). Qolgan qismini qachon to‘lash haqida egasi aytadi.

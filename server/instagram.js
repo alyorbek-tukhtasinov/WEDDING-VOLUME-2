@@ -294,8 +294,17 @@ async function reply(customer) {
   if (busy.has(customer)) return schedule(customer); // oldingi javob hali yozilmoqda
   const t = thread(customer);
   if (Date.now() < t.pausedUntil) return;
+  // Instagram'dagi haqiqiy suhbat: reklamaning avto-javobi va egasining avvalgi xabarlari ham ko'rinadi
+  const real = await conversation(customer).catch((err) => {
+    console.error('Instagram: suhbat tarixini o‘qib bo‘lmadi:', err.message);
+    return null;
+  });
+  if (real?.length) {
+    t.history = real.slice(-HISTORY_MAX);
+    save();
+  }
   const messages = toMessages(t.history);
-  if (!messages.length || messages.at(-1).role !== 'user') return;
+  if (!messages.length || messages.at(-1).role !== 'user') return console.log(`Instagram: javob kerak emas (…${customer.slice(-4)}, oxirgi xabar bizniki)`);
   busy.add(customer);
   try {
     const sys = await system();
@@ -312,7 +321,7 @@ async function reply(customer) {
         model: MODEL(),
         max_tokens: 8000,
         ...fallback,
-        ...(big ? { output_config: { effort: 'low' } } : {}), // oddiy suhbat — tez va arzon
+        output_config: { effort: 'low' }, // oddiy suhbat — tez va arzon
         system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
         tools: TOOLS,
         messages,
@@ -353,6 +362,32 @@ async function notifyOwner(customer, input) {
     }
   }
   return sent ? 'Egasiga xabar yuborildi.' : 'Egasiga xabar yuborib bo‘lmadi. Mijozga egasi tez orada yozishini ayting.';
+}
+
+/* ------------------------------ Instagram o'qish ------------------------------ */
+export async function graphGet(pathAndQuery) {
+  const url = pathAndQuery.startsWith('http') ? pathAndQuery : `${GRAPH()}/${pathAndQuery}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token()}` }, signal: AbortSignal.timeout(20e3) });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.error) throw new Error(`HTTP ${res.status} ${JSON.stringify(json.error || json).slice(0, 300)}`);
+  return json;
+}
+
+export const MSG_FIELDS = 'messages.limit(25){id,created_time,from,message}';
+
+/** Graph API xabarlari (yangisi birinchi) → tarix (eskisi birinchi). Mijozniki — user, qolgani (bot, egasi, avto-javob) — assistant. */
+export function toHistory(msgs, customer) {
+  return [...(msgs || [])]
+    .reverse()
+    .map((m) => ({ role: m.from?.id === customer ? 'user' : 'assistant', text: (m.message || '').trim() || '[rasm, ovozli xabar yoki post]', at: Date.parse(m.created_time) || Date.now() }));
+}
+
+/** Mijoz bilan suhbatning oxirgi xabarlari. Mijoz id'si mos kelmasa — null (o'zimizdagi tarix ishlatiladi). */
+async function conversation(customer) {
+  const list = await graphGet(`me/conversations?platform=instagram&user_id=${encodeURIComponent(customer)}&fields=${encodeURIComponent(MSG_FIELDS)}`);
+  const msgs = list.data?.[0]?.messages?.data;
+  if (!msgs?.some((m) => m.from?.id === customer)) return null;
+  return toHistory(msgs, customer);
 }
 
 /* ------------------------------ Instagram yuborish ------------------------------ */
