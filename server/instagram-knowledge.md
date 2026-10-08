@@ -48,7 +48,7 @@ bezovta qilmasligimiz uchun iltimos, yozib keting!
 
 ## Buyurtma tartibi
 - To‘lov: buyurtma berishda 30 000 so‘m oldindan to‘lanadi. Karta raqamini egasi o‘zi yuboradi
-  (siz karta raqami yozmang). Qolgan qismini qachon to‘lash haqida egasi aytadi.
+  (siz karta raqami yozmang). Qolgan 40 000 so‘m taklifnoma tayyor bo‘lgach to‘lanadi.
 - Tayyorlash muddati va keyingi o‘zgartirishlar haqida aniq javobni egasi beradi —
   bu savollarda va’da bermang, notify_owner qiling.
 - Buyurtma uchun kerak: kuyov va kelin ismlari, sana va soat, to‘yxona nomi va manzili
