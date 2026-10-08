@@ -1,4 +1,9 @@
-// Instagram Direct uchun AI yordamchi (rasmiy "Instagram API with Instagram Login" + Claude).
+// Instagram Direct uchun AI yordamchi (rasmiy Instagram API + Claude). Ikki ulanish turi ishlaydi —
+// token turiga qarab o'zi aniqlanadi:
+//   • "API setup with Facebook login": Facebook sahifa tokeni (EAA…), xabarlar graph.facebook.com orqali;
+//     Instagram akkaunt Facebook sahifaga ulangan bo'lishi kerak. Sahifa tokeni muddatsiz.
+//   • "API setup with Instagram login": Instagram tokeni (IG…), graph.instagram.com; 60 kunlik,
+//     server o'zi yangilab turadi.
 //
 // Oqim: mijoz Instagram'da yozadi → Meta webhook'i shu yerga keladi (boshqaruv.<domen>/api/panel/instagram)
 // → Claude javob yozadi → sahifa nomidan yuboriladi. Buyurtma ma'lumotlari yig'ilsa yoki savolga
@@ -7,9 +12,10 @@
 //
 // Muhit o'zgaruvchilari (/etc/taklifnoma/env):
 //   ANTHROPIC_API_KEY  — Claude API kaliti
-//   IG_APP_SECRET      — Meta ilovasining "Instagram app secret" (webhook imzosini tekshirish)
+//   IG_APP_SECRET      — webhook imzosini tekshirish uchun: Facebook login — App settings → Basic → "App secret";
+//                        Instagram login — "Instagram app secret"
 //   IG_VERIFY_TOKEN    — webhook'ni ulashda o'zingiz o'ylab topgan so'z (Meta'ga ham shuni yozasiz)
-//   IG_ACCESS_TOKEN    — Instagram akkaunt tokeni (60 kunlik; server o'zi yangilab turadi)
+//   IG_ACCESS_TOKEN    — sahifa tokeni (Facebook login) yoki Instagram tokeni (Instagram login)
 //   IG_MODEL           — (ixtiyoriy) Claude modeli, standart claude-opus-5-5
 //   IG_PAUSE_HOURS     — (ixtiyoriy) egasi yozgandan keyin bot necha soat jim turadi, standart 12
 //   IG_ENABLED         — (ixtiyoriy) "0" bo'lsa bot faqat tinglaydi, javob yozmaydi
@@ -23,8 +29,10 @@ import { tg, adminIds, PRICE, VIDEO_PRICE, fmtSum, siteDomain } from './telegram
 import { TEMPLATES, isBirthday } from '../src/lib/templates.js';
 
 const env = (k, d = '') => (process.env[k] || d).trim();
+// Instagram login tokeni "IG…" bilan boshlanadi, Facebook sahifa tokeni — "EAA…"
+const igLogin = () => /^IG/.test(token());
 // IG_GRAPH_URL — faqat sinov uchun (soxta server)
-const GRAPH_BASE = () => env('IG_GRAPH_URL', 'https://graph.instagram.com');
+const GRAPH_BASE = () => env('IG_GRAPH_URL', igLogin() ? 'https://graph.instagram.com' : 'https://graph.facebook.com');
 const GRAPH = () => `${GRAPH_BASE()}/v23.0`;
 const MODEL = () => env('IG_MODEL', 'claude-opus-5-5');
 const PAUSE_MS = () => (Number(env('IG_PAUSE_HOURS', '12')) || 12) * 3600e3;
@@ -369,10 +377,11 @@ async function sendText(customer, text) {
   }
 }
 
-// Uzoq muddatli token 60 kun amal qiladi — har kuni tekshirib, 7 kundan ko'p o'tgan bo'lsa yangilanadi
+// Instagram login tokeni 60 kun amal qiladi — har kuni tekshirib, 7 kundan ko'p o'tgan bo'lsa yangilanadi.
+// Facebook sahifa tokeni muddatsiz — yangilash kerak emas.
 async function refreshToken() {
   const s = load();
-  if (!token() || (s.tokenRefreshedAt && Date.now() - s.tokenRefreshedAt < 7 * 86400e3)) return;
+  if (!token() || !igLogin() || (s.tokenRefreshedAt && Date.now() - s.tokenRefreshedAt < 7 * 86400e3)) return;
   try {
     const res = await fetch(`${GRAPH_BASE()}/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(token())}`, { signal: AbortSignal.timeout(15e3) });
     const json = await res.json().catch(() => ({}));
@@ -392,5 +401,5 @@ export function startInstagram() {
   if (!env('IG_APP_SECRET')) console.log('  ! Instagram: IG_APP_SECRET berilmagan — webhook xabarlari rad etiladi');
   refreshToken();
   setInterval(refreshToken, 86400e3).unref();
-  console.log(`Instagram AI yordamchi: yoqilgan (${MODEL()})`);
+  console.log(`Instagram AI yordamchi: yoqilgan (${MODEL()}, ${igLogin() ? 'Instagram login' : 'Facebook login'})`);
 }

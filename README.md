@@ -473,7 +473,8 @@ va mijoz saytlariga chiqmaydi.
 
 ### Instagram Direct AI yordamchi
 
-Instagram'ga yozgan mijozlarga Claude sahifa nomidan javob beradi (rasmiy Instagram API, `server/instagram.js`).
+Instagram'ga yozgan mijozlarga Claude sahifa nomidan javob beradi (rasmiy Instagram API, `server/instagram.js`;
+"API setup with Facebook login" — sahifa tokeni, yoki "Instagram login" — token turi o'zi aniqlanadi).
 Bot nimani biladi — `server/instagram-knowledge.md` (narxlar `PRICE`/`VIDEO_PRICE` dan, demo havolalar
 avtomatik). Buyurtma ma'lumotlari yig'ilsa yoki savolga egasi javob berishi kerak bo'lsa — egasiga Telegram'da
 xabar keladi (mavjud `BOT_TOKEN`/`ADMIN_TG_IDS`). Egasi Instagram'da o'zi yozsa, bot o'sha mijoz bilan
