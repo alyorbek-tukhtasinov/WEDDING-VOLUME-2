@@ -7,7 +7,7 @@
   },
   "event": {
     "date": "2026-10-13",
-    "time": "18:00",
+    "time": "16:00",
     "timezone": "+05:00",
     "durationHours": 4
   },
@@ -27,19 +27,19 @@
   },
   "program": [
     {
-      "time": "18:00",
+      "time": "16:00",
       "title": "Mehmonlarni kutib olish"
     },
     {
-      "time": "18:30",
+      "time": "16:30",
       "title": "Dasturxon atrofida ziyofat"
     },
     {
-      "time": "20:00",
+      "time": "18:00",
       "title": "Kuyov va uning yaqinlarining kirib kelishi"
     },
     {
-      "time": "20:30",
+      "time": "18:30",
       "title": "Kelinni kuyov xonadoniga kuzatish",
       "description": "Duolar va oq yo‘l tilaklari bilan"
     }
