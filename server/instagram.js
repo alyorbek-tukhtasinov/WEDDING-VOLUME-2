@@ -160,6 +160,11 @@ function onEvent(ev, accountId) {
     if (!customer) return;
     if (fresh(botSent, msg.mid, 600e3) || fresh(botSent, `t:${customer}:${text}`, 600e3)) return;
     const t = thread(customer);
+    // Avtomatik xabarlar (reklamaning salomlashuvi, Instagram'ning tezkor javoblari) botni to'xtatmasin:
+    // mijoz hali yozmagan bo'lsa yoki uning xabaridan 5 soniya ham o'tmagan bo'lsa — buni inson yozmagan
+    const lastUser = [...t.history].reverse().find((h) => h.role === 'user');
+    // Avtomatik xabar tarixga ham yozilmaydi — aks holda bot "oxirgi xabar bizniki" deb mijozga javob bermay qolardi
+    if (!lastUser || Date.now() - lastUser.at < 5000) return;
     t.pausedUntil = Date.now() + PAUSE_MS();
     if (text) remember(t, 'assistant', text);
     else save();
