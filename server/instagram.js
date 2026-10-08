@@ -136,6 +136,8 @@ export async function instagramHandler(req, res) {
   } catch {
     return;
   }
+  const count = (body.entry || []).reduce((n, e) => n + (e.messaging?.length || 0), 0);
+  console.log(`Instagram: webhook keldi (${body.object || '?'}, ${count} ta xabar)`);
   for (const entry of body.entry || []) {
     for (const ev of entry.messaging || []) {
       try {
@@ -326,6 +328,7 @@ async function reply(customer) {
     if (!text || Date.now() < thread(customer).pausedUntil) return;
     await sendText(customer, text);
     remember(t, 'assistant', text);
+    console.log(`Instagram: javob yuborildi (…${customer.slice(-4)}, ${text.length} belgi)`);
   } finally {
     busy.delete(customer);
   }
@@ -342,6 +345,7 @@ async function notifyOwner(customer, input) {
     try {
       await tg('sendMessage', { chat_id: id, text: msg, disable_web_page_preview: true }, { timeoutMs: 10e3 });
       sent++;
+      console.log(`Instagram: egasiga Telegram xabari (${input?.kind})`);
     } catch (err) {
       console.error('Instagram: Telegram xabari ketmadi:', err.message);
     }
