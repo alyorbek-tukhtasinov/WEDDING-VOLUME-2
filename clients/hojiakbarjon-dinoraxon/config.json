@@ -21,8 +21,8 @@
   "venue": {
     "name": "“Mumtoz” to‘yxonasi",
     "address": "Farg‘ona viloyati, Buvayda tumani, Yangiqo‘rg‘on shaharchasi",
-    "googleMaps": "https://www.google.com/maps/search/?api=1&query=Mumtoz%20to%27yxonasi%20Yangiqo%27rg%27on%20Buvayda",
-    "yandexMaps": "https://yandex.uz/maps/?text=Mumtoz%20to%27yxonasi%20Yangiqo%27rg%27on%20Buvayda",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=40.55246%2C71.129351",
+    "yandexMaps": "https://yandex.uz/maps/?pt=71.129351,40.55246&z=17&l=map",
     "image": ""
   },
   "program": [
