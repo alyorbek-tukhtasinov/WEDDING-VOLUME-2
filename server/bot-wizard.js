@@ -513,7 +513,11 @@ export async function showSummary(chatId, user, slug, title = '') {
       ];
   const errors = validateConfig(c);
   if (errors.length && !paid) lines.push('', `⚠️ To‘ldirilmagan: ${esc(errors[0])}`);
-  if (!paid) lines.push('', `💰 Narxi: <b>${fmtSum(s.meta.price || PRICE())}</b> — avval ko‘rib chiqing, yoqsa to‘lov qilasiz.`);
+  const disc = Math.max(0, Number(String(process.env.CHANNEL_DISCOUNT ?? '5000').replace(/\D/g, '')) || 0);
+  if (!paid) {
+    lines.push('', `💰 Narxi: <b>${fmtSum(s.meta.price || PRICE())}</b> — avval ko‘rib chiqing, yoqsa to‘lov qilasiz.`);
+    if (disc) lines.push(`🎁 Kanalimizga obuna bo‘lsangiz — <b>${fmtSum((s.meta.price || PRICE()) - disc)}</b>`);
+  }
   const view = paid ? siteUrlOf(slug) : previewUrl(slug);
   const rows = [];
   if (view) rows.push([{ text: paid ? '🌐 Saytni ochish' : '👀 Ko‘rib chiqish', url: view }]);

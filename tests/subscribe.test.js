@@ -32,7 +32,7 @@ before(async () => {
     BOT_TOKEN: '123:TEST',
     ADMIN_TG_IDS: '900',
     SITE_DOMAIN: 'documen.uz',
-    REQUIRE_SUB: '1',
+    REQUIRE_SUB: '1', // ixtiyoriy rejim (standart — o'chiq)
   });
 });
 after(() => srv?.close());
@@ -79,4 +79,46 @@ test('Majburiy obuna: avval kanal, keyin reklamadagi dizayn; manba yo‘qolmaydi
   writeSite('ali-vali-x', { config: { template: 'volume2' }, meta: { owner: { id: 702 }, status: STATUS.paid } });
   await onUpdate(msg(client, '/demos'));
   assert.match(lastTo(702).text, /Namunalar/);
+});
+
+test('To‘lov: kanalga obuna — 5 000 so‘m chegirma; chek adminga chegirma izohi bilan boradi', async () => {
+  const { onUpdate } = await import('../server/bot.js');
+  const { writeSite, readSite, STATUS } = await import('../server/data.js');
+  const { defaultConfig } = await import('../src/lib/starter.js');
+  const P = { id: 901, first_name: 'Shahzoda', username: 'shahzoda' };
+  const c = defaultConfig('volume2', 'nikoh');
+  Object.assign(c, { couple: { groom: 'Bek', bride: 'Gul', initials: '' }, event: { ...c.event, date: '2027-11-20', time: '18:00' }, venue: { name: 'Bahor', address: 'Toshkent' } });
+  writeSite('bek-gul', { config: c, meta: { owner: { id: P.id, name: 'Shahzoda', username: 'shahzoda' }, status: STATUS.draft, price: 70000 } });
+
+  // Obuna emas: to'liq narx + chegirma taklifi
+  await onUpdate(cb(P, 'pay:bek-gul'));
+  let m = lastTo(P.id);
+  assert.match(m.text, /Summa: <b>70 000 so‘m<\/b>/);
+  assert.match(m.text, /5 000 so‘m chegirma oling/);
+  assert.match(m.text, /65 000 so‘m/);
+  assert.ok(JSON.stringify(m.reply_markup).includes('paysub:bek-gul'));
+  assert.equal(readSite('bek-gul').meta.status, STATUS.awaiting);
+
+  // Obuna bo'lmay "Obuna bo'ldim"
+  await onUpdate(cb(P, 'paysub:bek-gul'));
+  assert.equal(calls.at(-1).body.show_alert, true);
+  assert.equal(readSite('bek-gul').meta.discount, undefined);
+
+  // Obuna bo'ldi → 65 000
+  members.add(P.id);
+  await onUpdate(cb(P, 'paysub:bek-gul'));
+  m = lastTo(P.id);
+  assert.match(m.text, /chegirma: <b>−5 000 so‘m<\/b>/);
+  assert.match(m.text, /Summa: <b>65 000 so‘m<\/b>/);
+  assert.equal(readSite('bek-gul').meta.discount.amount, 5000);
+
+  // Chek → adminga 65 000 va izoh
+  await onUpdate({ update_id: ++upd, message: { message_id: 77, chat: { id: P.id, type: 'private' }, from: P, photo: [{ file_id: 'chek1' }] } });
+  const toAdmin = calls.filter((x) => x.method === 'sendPhoto' && String(x.body.chat_id) === '900').at(-1).body;
+  assert.match(toAdmin.caption, /💰 65 000 so‘m/);
+  assert.match(toAdmin.caption, /Kanalga obuna bo‘lgani uchun <b>5 000 so‘m<\/b> chegirma berilgan \(to‘liq narx: 70 000 so‘m\)/);
+
+  // Admin tasdiqlaydi
+  await onUpdate(cb({ id: 900, first_name: 'Admin' }, 'ok:bek-gul'));
+  assert.equal(readSite('bek-gul').meta.status, STATUS.paid);
 });

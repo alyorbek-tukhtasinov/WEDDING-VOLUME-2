@@ -262,7 +262,8 @@ async function approveBot(body) {
   if (storeConfigured()) {
     await withFinanceStore(async () => {
       const cur = (await getFinance())?.items || {};
-      const items = { ...cur, [slug]: { ...(cur[slug] || {}), amount: s.meta.price || 0, paid: true, note: cur[slug]?.note || 'Telegram bot' } };
+      const amount = (s.meta.price || 0) - (s.meta.discount?.amount || 0); // kanalga obuna chegirmasi
+      const items = { ...cur, [slug]: { ...(cur[slug] || {}), amount, paid: true, note: cur[slug]?.note || (s.meta.discount?.amount ? `Telegram bot (kanal chegirmasi −${s.meta.discount.amount})` : 'Telegram bot') } };
       await setFinance({ items, updatedAt: new Date().toISOString() });
     }).catch((err) => console.error('Daromad yozilmadi:', err.message));
   }

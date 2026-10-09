@@ -124,9 +124,10 @@ function templateOfPayload(p) {
 }
 
 /* ------------------------------------ Majburiy obuna ------------------------------------ */
-// Yangi foydalanuvchi (hali taklifnomasi yo'q) botdan foydalanishdan oldin MAIN_CHANNEL ga obuna bo'ladi.
+// O'chirilgan (standart): REQUIRE_SUB=1 qo'yilsa, yangi foydalanuvchi botdan oldin MAIN_CHANNEL ga obuna bo'ladi.
 // Mijozlar (taklifnomasi bor) va adminlar tekshirilmaydi; tekshirib bo'lmasa (bot kanalda admin emas) — o'tkaziladi.
-const REQUIRE_SUB = () => env('REQUIRE_SUB', '1') !== '0';
+// O'rniga — to'lov sahifasida kanalga obuna uchun chegirma (CHANNEL_DISCOUNT, payInstructions).
+const REQUIRE_SUB = () => env('REQUIRE_SUB', '0') === '1';
 const subOk = new Map(); // userId → shu vaqtgacha obuna deb hisoblanadi (har xabarda Telegram'dan so'ramaslik uchun)
 const pendingStart = new Map(); // obunagacha bosilgan /start <manba> — obunadan keyin davom ettiriladi
 
@@ -153,6 +154,17 @@ async function askSub(chatId) {
       `Obuna bo‘lgach, <b>«✅ Obuna bo‘ldim»</b> tugmasini bosing.`,
     { reply_markup: { inline_keyboard: [[{ text: '📢 Kanalga o‘tish', url: channelUrl(MAIN_CHANNEL()) }], [{ text: '✅ Obuna bo‘ldim', callback_data: 'sub:check' }]] } },
   );
+}
+
+/** Kanal a'zoligi: true / false; tekshirib bo'lmasa (bot kanalda admin emas) — null */
+async function channelMember(userId) {
+  try {
+    const m = await tg('getChatMember', { chat_id: MAIN_CHANNEL(), user_id: Number(userId) });
+    return ['member', 'administrator', 'creator'].includes(m?.status) || (m?.status === 'restricted' && !!m.is_member);
+  } catch (err) {
+    log(`! a'zolikni tekshirib bo'lmadi (${MAIN_CHANNEL()}): ${err.message}`);
+    return null;
+  }
 }
 
 async function start(msg) {
@@ -248,28 +260,54 @@ async function mine(msg) {
 }
 
 /* ------------------------------------ To'lov ------------------------------------ */
+// Kanalga obuna uchun chegirma (so'm); 0 — o'chirilgan
+const CHANNEL_DISCOUNT = () => Math.max(0, Number(env('CHANNEL_DISCOUNT', '5000').replace(/\D/g, '')) || 0);
+/** To'lanadigan summa: sayt + (video) − chegirma */
+const siteTotal = (s) =>
+  (s.meta.price || PRICE()) + (s.meta.video?.status === 'with-site' ? s.meta.video.price || VIDEO_PRICE() : 0) - (s.meta.discount?.amount || 0);
+
 async function payInstructions(chatId, slug) {
-  const s = readSite(slug);
+  let s = readSite(slug);
   if (!s) return;
   if (s.meta.status === STATUS.paid) return send(chatId, `Bu taklifnoma allaqachon faol ✅\n🔗 ${siteUrlOf(slug)}`);
   if (s.meta.status !== STATUS.receipt) updateMeta(slug, (m) => ({ ...m, status: STATUS.awaiting, awaitingAt: new Date().toISOString() }));
+  // Kanalga obuna bo'lsa — chegirma; obunani bekor qilgan bo'lsa — olib tashlanadi (chek yuborilgach o'zgarmaydi)
+  let member = null;
+  if (CHANNEL_DISCOUNT() && s.meta.status !== STATUS.receipt) {
+    member = await channelMember(s.meta.owner?.id || chatId);
+    if (member === true && !s.meta.discount) updateMeta(slug, (m) => ({ ...m, discount: { amount: CHANNEL_DISCOUNT(), reason: 'kanal', at: new Date().toISOString() } }));
+    if (member === false && s.meta.discount?.reason === 'kanal') updateMeta(slug, (m) => ({ ...m, discount: undefined }));
+    s = readSite(slug);
+  }
   const card = env('PAY_CARD');
   const holder = env('PAY_CARD_HOLDER');
   const note = env('PAY_NOTE');
   const price = s.meta.price || PRICE();
   const withVideo = s.meta.video?.status === 'with-site';
-  const total = price + (withVideo ? s.meta.video.price || VIDEO_PRICE() : 0);
+  const disc = s.meta.discount?.amount || 0;
+  const total = siteTotal(s);
+  const offer = member === false && !disc;
   await send(
     chatId,
     `💳 <b>To‘lov</b> — ${esc(namesOf(s.config))}\n\n` +
-      (withVideo ? `Taklifnoma: ${fmtSum(price)}\n🎬 Instagram video: ${fmtSum(s.meta.video.price || VIDEO_PRICE())}\n` : '') +
+      (withVideo || disc ? `Taklifnoma: ${fmtSum(price)}\n` : '') +
+      (withVideo ? `🎬 Instagram video: ${fmtSum(s.meta.video.price || VIDEO_PRICE())}\n` : '') +
+      (disc ? `📢 Kanalimizga obuna bo‘lganingiz uchun chegirma: <b>−${fmtSum(disc)}</b> 🎁\n` : '') +
       `Summa: <b>${fmtSum(total)}</b>\n` +
+      (offer
+        ? `\n🎁 <b>${fmtSum(CHANNEL_DISCOUNT())} chegirma oling!</b> ${esc(MAIN_CHANNEL())} kanalimizga obuna bo‘ling — summa <b>${fmtSum(total - CHANNEL_DISCOUNT())}</b> bo‘ladi. ` +
+          `Obuna bo‘lgach, «✅ Obuna bo‘ldim» tugmasini bosing.\n`
+        : '') +
       (card ? `Karta: <code>${esc(card)}</code>\n` : '') +
       (holder ? `Egasi: ${esc(holder)}\n` : '') +
       (note ? `\n${esc(note)}\n` : '') +
       `\nTo‘lov qilganingizdan keyin <b>chek rasmini (skrinshot) shu chatga yuboring</b> 📸\n` +
       `Tasdiqlangach, saytingiz havolasi darhol shu yerga keladi.`,
-    { reply_markup: mainKeyboard() },
+    {
+      reply_markup: offer
+        ? { inline_keyboard: [[{ text: '📢 Kanalga obuna bo‘lish', url: channelUrl(MAIN_CHANNEL()) }], [{ text: `✅ Obuna bo‘ldim — ${fmtSum(CHANNEL_DISCOUNT())} chegirma`, callback_data: `paysub:${slug}` }]] }
+        : mainKeyboard(),
+    },
   );
 }
 
@@ -321,8 +359,9 @@ async function onReceipt(msg) {
     `🧾 <b>Yangi to‘lov cheki</b>\n\n` +
     `${ev.icon} ${esc(namesOf(s.config))} — ${esc(ev.title)}\n` +
     `📅 ${prettyDate(s.config.event?.date)} · ${esc(s.config.venue?.name || '')}\n` +
-    `💰 ${fmtSum((s.meta.price || PRICE()) + (s.meta.video?.status === 'with-site' ? s.meta.video.price || VIDEO_PRICE() : 0))}` +
+    `💰 ${fmtSum(siteTotal(s))}` +
     (s.meta.video?.status === 'with-site' ? ' (sayt + 🎬 video)' : '') +
+    (s.meta.discount?.amount ? `\n📢 Kanalga obuna bo‘lgani uchun <b>${fmtSum(s.meta.discount.amount)}</b> chegirma berilgan (to‘liq narx: ${fmtSum(siteTotal(s) + s.meta.discount.amount)})` : '') +
     `\n👤 ${esc(owner.name || '')}${owner.username ? ` (@${esc(owner.username)})` : ''} · ID <code>${owner.id}</code>\n` +
     `🔗 ${s.slug}.${siteDomain()}`;
   const keyboard = { inline_keyboard: [[{ text: '✅ Tasdiqlash', callback_data: `ok:${s.slug}` }, { text: '❌ Rad etish', callback_data: `no:${s.slug}` }]] };
@@ -423,7 +462,7 @@ async function onAdminDecision(cb, ok, slug) {
       approvedBy: cb.from.id,
       ...(withVideo ? { video: { ...m.video, status: 'paid', paidAt: new Date().toISOString() } } : {}),
     }));
-    await recordFinance(slug, (s.meta.price || PRICE()) + (withVideo ? s.meta.video.price || VIDEO_PRICE() : 0), withVideo ? '+ video' : '');
+    await recordFinance(slug, siteTotal(s), [withVideo ? '+ video' : '', s.meta.discount?.amount ? `(kanal chegirmasi −${s.meta.discount.amount})` : ''].filter(Boolean).join(' '));
     enqueue({ type: 'build', slug, reason: 'paid', notify: true });
     await mark(`✅ Tasdiqlandi — ${who}`);
     await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Tasdiqlandi — sayt yig‘ilmoqda' });
@@ -907,6 +946,16 @@ async function onUpdate(u) {
       const s = readSite(slug);
       if (!s || String(s.meta.owner?.id) !== String(cb.from.id)) return;
       return kind === 'vget' ? sendVideoTo(cb.from.id, slug) : videoPayInstructions(cb.from.id, slug);
+    }
+    if (kind === 'paysub') {
+      const s = readSite(slug);
+      if (!s || String(s.meta.owner?.id) !== String(cb.from.id)) return tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+      if ((await channelMember(cb.from.id)) === false) {
+        return tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Hali obuna bo‘lmagansiz — avval «📢 Kanalga obuna bo‘lish» ni bosing 🙂', show_alert: true }).catch(() => {});
+      }
+      await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Chegirma qo‘shildi 🎁' }).catch(() => {});
+      if (cb.message) await tg('editMessageReplyMarkup', { chat_id: cb.from.id, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } }).catch(() => {});
+      return payInstructions(cb.from.id, slug);
     }
     if (kind === 'pay') {
       await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
