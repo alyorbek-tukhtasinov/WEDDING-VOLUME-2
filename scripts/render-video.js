@@ -118,6 +118,29 @@ export async function renderVideo(slug, { out, siteDir, onProgress = () => {}, f
       // Sahifada hech qanday CSS animatsiya ishlamay qolsa (masalan, harakatsiz bo'limlar), vaqt to'xtatilgan
       // headless brauzer yangi kadr chizmaydi va captureScreenshot qaytmaydi. Shu 1 pikselli, deyarli
       // ko'rinmas nuqtaning doimiy animatsiyasi kadrlarni uzluksiz ushlab turadi.
+      // CSS animatsiyalar (masalan, tushayotgan gul barglari) Chromium'da alohida oqimda haqiqiy soat bilan
+      // yuradi — virtual vaqtga bo'ysunmaydi: kadr sekin chizilsa (kuchsiz server), ular videoda bir necha
+      // barobar tezlashib ketardi. Shuning uchun har kadrda ular to'xtatilib, vaqti sahifa (virtual) soatidan
+      // qo'lda qo'yiladi; tugaganlari finish() bilan yakunlanadi (animationend / .finished ishlashi uchun).
+      globalThis.__vtSync = () => {
+        const t = performance.now();
+        for (const a of document.getAnimations()) {
+          if (a.__vtDone || a.animationName === '__vt_tick') continue;
+          const rate = a.playbackRate || 1;
+          if (a.__vt === undefined) {
+            if (a.playState === 'paused') continue; // sahifaning o'zi to'xtatgan animatsiya
+            a.__vt = (a.currentTime ?? 0) - t * rate;
+            a.pause();
+          }
+          const ct = a.__vt + t * rate;
+          const end = a.effect?.getComputedTiming?.().endTime;
+          if (Number.isFinite(end) && ct >= end) {
+            a.__vtDone = true;
+            a.play();
+            a.finish();
+          } else a.currentTime = ct;
+        }
+      };
       document.addEventListener('DOMContentLoaded', () => {
         const dot = document.createElement('div');
         dot.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;background:#000;opacity:.01;pointer-events:none;z-index:2147483647;animation:__vt_tick 1s linear infinite';
@@ -141,6 +164,7 @@ export async function renderVideo(slug, { out, siteDir, onProgress = () => {}, f
         cdp.once('Emulation.virtualTimeBudgetExpired', r);
         cdp.send('Emulation.setVirtualTimePolicy', { policy: 'advance', budget: frameMs });
       });
+      await page.evaluate(() => globalThis.__vtSync?.()).catch(() => {});
       const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 90 });
       await writeFrame(Buffer.from(shot.data, 'base64'));
       frames++;
