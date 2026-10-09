@@ -273,8 +273,10 @@ async function payInstructions(chatId, slug) {
   if (s.meta.status !== STATUS.receipt) updateMeta(slug, (m) => ({ ...m, status: STATUS.awaiting, awaitingAt: new Date().toISOString() }));
   // Kanalga obuna bo'lsa — chegirma; obunani bekor qilgan bo'lsa — olib tashlanadi (chek yuborilgach o'zgarmaydi)
   let member = null;
+  if (!CHANNEL_DISCOUNT()) log(`💳 to'lov sahifasi: ${slug} · kanal chegirmasi o'chirilgan (CHANNEL_DISCOUNT=0)`);
   if (CHANNEL_DISCOUNT() && s.meta.status !== STATUS.receipt) {
     member = await channelMember(s.meta.owner?.id || chatId);
+    log(`💳 to'lov sahifasi: ${slug} · kanal a'zoligi (${MAIN_CHANNEL()}): ${member === null ? 'tekshirib bo‘lmadi' : member ? 'a’zo' : 'a’zo emas'}`);
     if (member === true && !s.meta.discount) updateMeta(slug, (m) => ({ ...m, discount: { amount: CHANNEL_DISCOUNT(), reason: 'kanal', at: new Date().toISOString() } }));
     if (member === false && s.meta.discount?.reason === 'kanal') updateMeta(slug, (m) => ({ ...m, discount: undefined }));
     s = readSite(slug);
