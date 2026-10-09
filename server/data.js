@@ -37,6 +37,15 @@ export const STATUS = {
 
 export function ensureDirs() {
   for (const d of [sitesRoot(), builtRoot(), queueDir(), path.join(DATA_DIR(), 'shared')]) fs.mkdirSync(d, { recursive: true });
+  // nginx yig'ilgan saytlarni (built, shared — hardlinklar) o'qishi kerak; mijoz ma'lumotlari va navbat — faqat bizga
+  try {
+    fs.chmodSync(builtRoot(), 0o755);
+    fs.chmodSync(path.join(DATA_DIR(), 'shared'), 0o755);
+    fs.chmodSync(sitesRoot(), 0o700);
+    fs.chmodSync(queueDir(), 0o700);
+  } catch {
+    /* boshqa egasi — o'zgartirib bo'lmaydi */
+  }
 }
 
 function writeAtomic(file, text) {

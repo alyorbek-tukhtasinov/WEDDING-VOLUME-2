@@ -57,7 +57,11 @@ fi
 id "$RUN_USER" >/dev/null 2>&1 || useradd --system --user-group --home-dir "$APP" --shell /usr/sbin/nologin "$RUN_USER"
 install -d -o "$RUN_USER" -g "$RUN_USER" -m 755 "$APP" "$APP/releases" "$APP/panel-work" "$APP/trigger"
 # Telegram bot orqali mijozlar yaratgan saytlar (GitHub'da emas — faqat serverda; zaxirasini oling!)
-install -d -o "$RUN_USER" -g "$RUN_USER" -m 750 "$APP/data"
+# 711: nginx (www-data) faqat data/built ichidagi yig'ilgan saytlarga kira oladi; papkani ko'ra olmaydi,
+# mijozlar ma'lumotlari (data/sites — cheklar va h.k.) 700 — faqat taklifnoma foydalanuvchisiga
+install -d -o "$RUN_USER" -g "$RUN_USER" -m 711 "$APP/data"
+install -d -o "$RUN_USER" -g "$RUN_USER" -m 755 "$APP/data/built"
+[ -d "$APP/data/sites" ] && chmod 700 "$APP/data/sites"
 install -d -m 755 /var/www/letsencrypt "$LIB" "$LIB/nginx"
 install -d -m 700 /etc/taklifnoma
 
