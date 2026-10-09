@@ -1,15 +1,15 @@
 {
   "template": "yulduz",
   "demo": true,
-  "autoScroll": "button",
+  "autoScroll": "auto",
   "person": {
     "name": "Madina",
-    "birthDate": "2008-10-12"
+    "birthDate": "2004-07-12"
   },
   "from": "Sevgilingdan",
-  "together": "2024-03-08",
+  "together": "2024-01-28",
   "event": {
-    "date": "2026-10-12",
+    "date": "2026-07-12",
     "timezone": "+05:00"
   },
   "texts": {},
@@ -18,7 +18,7 @@
   },
   "memories": [
     {
-      "photo": "kecha.webp",
+      "photo": "surat-mv171mka49m.jpg",
       "year": "2024",
       "title": "Ilk ko‘rishuv",
       "text": "Atrof chiroqlarga to‘la edi — men esa faqat seni ko‘rardim."
