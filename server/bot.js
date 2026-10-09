@@ -123,6 +123,38 @@ function templateOfPayload(p) {
   return ids.find((id) => p === id || p.endsWith(`_${id}`) || p.endsWith(`-${id}`)) || null;
 }
 
+/* ------------------------------------ Majburiy obuna ------------------------------------ */
+// Yangi foydalanuvchi (hali taklifnomasi yo'q) botdan foydalanishdan oldin MAIN_CHANNEL ga obuna bo'ladi.
+// Mijozlar (taklifnomasi bor) va adminlar tekshirilmaydi; tekshirib bo'lmasa (bot kanalda admin emas) — o'tkaziladi.
+const REQUIRE_SUB = () => env('REQUIRE_SUB', '1') !== '0';
+const subOk = new Map(); // userId → shu vaqtgacha obuna deb hisoblanadi (har xabarda Telegram'dan so'ramaslik uchun)
+const pendingStart = new Map(); // obunagacha bosilgan /start <manba> — obunadan keyin davom ettiriladi
+
+async function isSubscribed(userId) {
+  if ((subOk.get(String(userId)) || 0) > Date.now()) return true;
+  try {
+    const m = await tg('getChatMember', { chat_id: MAIN_CHANNEL(), user_id: userId });
+    const ok = ['member', 'administrator', 'creator'].includes(m?.status) || (m?.status === 'restricted' && m.is_member);
+    if (ok) subOk.set(String(userId), Date.now() + 30 * 60e3);
+    return ok;
+  } catch (err) {
+    log(`! obunani tekshirib bo'lmadi (${MAIN_CHANNEL()}): ${err.message}`);
+    return true;
+  }
+}
+async function needsSub(user) {
+  if (!REQUIRE_SUB() || !user?.id || isAdmin(user.id) || sitesOf(user.id).length) return false;
+  return !(await isSubscribed(user.id));
+}
+async function askSub(chatId) {
+  await send(
+    chatId,
+    `👋 Assalomu alaykum!\n\nBotdan foydalanish uchun avval kanalimizga obuna bo‘ling — u yerda barcha dizaynlar, namunalar va mijozlarimiz fikrlari bor 💌\n\n` +
+      `Obuna bo‘lgach, <b>«✅ Obuna bo‘ldim»</b> tugmasini bosing.`,
+    { reply_markup: { inline_keyboard: [[{ text: '📢 Kanalga o‘tish', url: channelUrl(MAIN_CHANNEL()) }], [{ text: '✅ Obuna bo‘ldim', callback_data: 'sub:check' }]] } },
+  );
+}
+
 async function start(msg) {
   const payload = String(msg.text || '').split(/\s+/)[1] || '';
   if (recordLead(msg.from.id, payload) && payload) log(`➕ yangi mijoz: ${msg.from.id} (${payload})`);
@@ -840,6 +872,21 @@ async function onUpdate(u) {
     const cb = u.callback_query;
     if (await onWizardCallback(cb)) return;
     if (await onChannelCallback(cb)) return;
+    if (cb.data === 'sub:check') {
+      subOk.delete(String(cb.from.id));
+      if (!(await isSubscribed(cb.from.id))) {
+        return tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Hali obuna bo‘lmagansiz — avval «📢 Kanalga o‘tish» ni bosing 🙂', show_alert: true }).catch(() => {});
+      }
+      await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Rahmat! 🌸' }).catch(() => {});
+      if (cb.message) await tg('deleteMessage', { chat_id: cb.from.id, message_id: cb.message.message_id }).catch(() => {});
+      const text = pendingStart.get(String(cb.from.id)) || '/start';
+      pendingStart.delete(String(cb.from.id));
+      return start({ chat: { id: cb.from.id }, from: cb.from, text });
+    }
+    if (await needsSub(cb.from)) {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+      return askSub(cb.from.id);
+    }
     const [kind, slug] = String(cb.data || '').split(':');
     if (kind === 'new') {
       await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
@@ -878,6 +925,12 @@ async function onUpdate(u) {
   const msg = u.message;
   if (!msg || msg.chat?.type !== 'private') return;
   const text = (msg.text || '').trim();
+  // Reklama manbasi obunadan oldin ham yoziladi (keyin yo'qolmasin)
+  if (text === '/start' || text.startsWith('/start ')) recordLead(msg.from.id, text.split(/\s+/)[1] || '');
+  if (await needsSub(msg.from)) {
+    if (text.startsWith('/start')) pendingStart.set(String(msg.from.id), text);
+    return askSub(msg.chat.id);
+  }
   // Tug'ilgan kun suratlari (suhbat "suratlar" bosqichida) — aks holda to'lov cheki
   if ((msg.photo || msg.document) && (await onWizardMessage(msg))) return;
   if (msg.photo || msg.document) return onReceipt(msg);

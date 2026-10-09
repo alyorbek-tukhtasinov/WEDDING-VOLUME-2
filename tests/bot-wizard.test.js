@@ -43,6 +43,7 @@ before(async () => {
     BOT_TOKEN: '123:TEST',
     ADMIN_TG_IDS: String(ADMIN),
     SITE_DOMAIN: 'documen.uz',
+    REQUIRE_SUB: '0', // majburiy obuna — tests/subscribe.test.js da
   });
 });
 after(() => tgServer?.close());

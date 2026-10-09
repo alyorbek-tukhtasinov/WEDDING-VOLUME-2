@@ -51,7 +51,7 @@ before(async () => {
 after(() => srv?.close());
 
 const cb = (data) => ({ update_id: ++upd, callback_query: { id: String(upd), from: ADMIN, data, message: { message_id: 1, chat: { id: ADMIN.id }, caption: 'x' } } });
-const toChannel = () => calls.filter((c) => c.body?.chat_id === '@Taklifim_rasmiy' && c.method !== 'pinChatMessage');
+const toChannel = () => calls.filter((c) => c.body?.chat_id === '@Taklifim_rasmiy' && ['sendPhoto', 'sendMessage'].includes(c.method));
 
 test('Kanal: boshlang‘ich postlar admin tasdig‘i bilan joylanadi, tugmalar namuna va botga olib boradi', async () => {
   const { onUpdate } = await import('../server/bot.js');
