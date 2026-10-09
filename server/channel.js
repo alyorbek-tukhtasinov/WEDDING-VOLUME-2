@@ -1,8 +1,8 @@
 // Asosiy Telegram kanal (MAIN_CHANNEL) uchun postlar: bot qoralama tayyorlaydi → adminga "✅ Joylash" tugmasi bilan
 // keladi → bitta bosish bilan kanalga chiqadi. Hech narsa admin tasdig'isiz joylanmaydi.
 //   • Boshlang'ich postlar (SEED) — bo'sh kanalni to'ldirish uchun tayyor matnlar: /kanal
-//   • Muntazam postlar — har CHANNEL_EVERY_DAYS kunda (standart 2) soat ~11:00 da yangi qoralama; matnni Claude
-//     yozadi (ANTHROPIC_API_KEY bo'lsa), bo'lmasa — tayyor matn. Qo'lda: /post
+//   • Yangi post — qo'lda: /post (matnni Claude yozadi, ANTHROPIC_API_KEY bo'lsa; bo'lmasa — tayyor matn).
+//     Avtomatik qoralamalar standart o'chiq; CHANNEL_AUTO=1 — har CHANNEL_EVERY_DAYS kunda (standart 2) ~11:00 da.
 // Holat: <DATA_DIR>/channel.json — { drafts: { id: {...} }, posted: [seedId], lastAuto, rotation }
 import fs from 'node:fs';
 import path from 'node:path';
@@ -334,7 +334,7 @@ export async function onChannelCallback(cb) {
 
 /** Har soatda chaqiriladi: vaqti kelsa (har N kunda, Toshkent 10–13) — yangi qoralama adminlarga */
 export async function maybeAutoDraft() {
-  if (env('CHANNEL_AUTO', '1') === '0' || !adminIds().length) return;
+  if (env('CHANNEL_AUTO', '0') !== '1' || !adminIds().length) return;
   const st = load();
   const h = (new Date().getUTCHours() + 5) % 24;
   if (h < 10 || h >= 13) return;
