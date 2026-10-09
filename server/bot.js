@@ -457,10 +457,15 @@ function linkLive(slug) {
   }
 }
 
-/** Sayt HTTPS'da ochilguncha kutish (sertifikat 1–3 daqiqa) — ko'pi bilan ~5 daqiqa. */
-async function waitLive(url) {
+/**
+ * Sayt HTTPS'da haqiqatan ochilguncha kutish (sertifikat 1–3 daqiqa, deploy ketayotgan bo'lsa ko'proq) —
+ * ko'pi bilan ~12 daqiqa. Har urinishda havola qayta tekshiriladi: shu payt deploy yangi versiyaga
+ * o'tgan bo'lsa, sayt yangi versiya papkasiga qayta ulanadi (aks holda nginx 404 beradi).
+ */
+async function waitLive(url, slug) {
   if (env('BOT_SKIP_WAIT') === '1') return true; // sinovlar uchun
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 48; i++) {
+    if (slug) linkLive(slug);
     try {
       const r = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
       if (r.ok) return true;
@@ -470,6 +475,19 @@ async function waitLive(url) {
     await new Promise((r) => setTimeout(r, 15e3));
   }
   return false;
+}
+
+/** To'langan bot saytlari joriy versiyada ulanganmi — deploy'dan keyin tushib qolganlari qayta ulanadi (har daqiqada). */
+function relinkAll(st) {
+  if (Date.now() - (st.lastRelink || 0) < 60e3) return;
+  st.lastRelink = Date.now();
+  for (const s of listSites()) {
+    if (s.meta.status !== STATUS.paid) continue;
+    if (!fs.existsSync(path.join(DATA_DIR(), 'built', s.slug, 'index.html'))) continue;
+    if (fs.existsSync(path.join(SITES_DIR(), s.slug, 'index.html'))) continue;
+    linkLive(s.slug);
+    log(`↺ ${s.slug} joriy versiyaga qayta ulandi`);
+  }
 }
 
 let busy = false;
@@ -521,16 +539,23 @@ async function handleBuild(evt) {
   if (readSite(evt.slug)?.meta.video?.status === 'paid') queueVideo({ type: 'video', slug: evt.slug, notify: true });
   if (evt.notify) {
     const url = siteUrlOf(evt.slug);
-    // Sertifikat kutilayotganda boshqa xabarlar to'xtab qolmasin
-    waitLive(url).then(() =>
-      send(
+    // Havola faqat sayt haqiqatan ochilgandan keyin yuboriladi (mijozga ham, adminga ham).
+    // Sertifikat kutilayotganda boshqa xabarlar to'xtab qolmasin — alohida kutiladi.
+    await toAdmins(`⏳ ${esc(evt.slug)} yig‘ildi — sayt ochilishi tekshirilmoqda…`);
+    waitLive(url, evt.slug).then(async (live) => {
+      if (!live) {
+        await toAdmins(`⚠️ ${esc(evt.slug)} 12 daqiqada ham ochilmadi: ${url}\nTekshiring: <code>journalctl -u taklifnoma-deploy -n 50</code>`);
+        await send(s.meta.owner.id, 'Saytingiz deyarli tayyor — texnik tekshiruv ketmoqda, havolani tez orada yuboramiz 🙏');
+        return;
+      }
+      await send(
         s.meta.owner.id,
         `🎉 <b>Taklifnomangiz tayyor!</b>\n\n🔗 ${url}\n\nHavolani mehmonlaringizga Telegram yoki WhatsApp orqali yuboring.\n` +
-          `O‘zgartirish kerak bo‘lsa — «✏️ Tahrirlash» tugmasi. Mehmonlar javoblari — «📊 Javoblar».`,
+          `O‘zgartirish kerak bo‘lsa — «${BTN.mine}» → «✏️ O‘zgartirish». Mehmonlar javoblari — «📊 Javoblar».`,
         { reply_markup: siteButtons(readSite(evt.slug) || s) },
-      ),
-    );
-    await toAdmins(`🎉 ${esc(evt.slug)} faollashtirildi: ${url}`);
+      );
+      await toAdmins(`🎉 ${esc(evt.slug)} ochildi: ${url}`);
+    });
   }
 }
 
@@ -946,6 +971,7 @@ async function main() {
       }
       if (updates.length) saveState(st);
       cleanup(st);
+      relinkAll(st);
       await askReviews(st).catch((e) => log('! otziv:', e.message));
     } catch (err) {
       if (stop) break;

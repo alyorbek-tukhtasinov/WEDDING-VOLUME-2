@@ -128,6 +128,8 @@ as_app env NODE_OPTIONS=--max-old-space-size=512 SITE_DOMAIN="$SITE_DOMAIN" \
 
 trap - ERR
 as_app mv "$TMP" "$REL"
+# Yig'ish davomida bot tasdiqlagan saytlar ham yangi versiyada bo'lsin (aks holda ular 404 beradi)
+as_app sh -c "cd '$REL' && node scripts/link-bot-sites.js sites" 2>&1 | tee -a "$BUILD_LOG" || true
 switch_to "$REL"
 
 if ! health; then
