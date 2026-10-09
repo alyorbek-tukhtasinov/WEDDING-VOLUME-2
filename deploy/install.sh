@@ -79,11 +79,12 @@ install -m 755 "$SRC/deploy.sh" "$SRC/web.sh" "$LIB/"
 install -m 644 "$SRC"/nginx/*.conf "$LIB/nginx/"
 
 # --- Instagram video: Chromium (sayt kadrlari shu brauzerda chiziladi). Versiya package.json dagi playwright-core bilan bir xil.
+# Faqat headless_shell (~320 MB) — to'liq Chromium (~600 MB) video uchun kerak emas.
 PW_VER=$("$NODE" -p "require('$SRC/../package.json').dependencies['playwright-core'] || ''" 2>/dev/null || true)
 if [ -n "$PW_VER" ]; then
   install -d -m 755 "$APP/browsers"
   say "video uchun Chromium o'rnatilmoqda (playwright $PW_VER, bir marta ~150 MB)..."
-  PLAYWRIGHT_BROWSERS_PATH="$APP/browsers" PATH="$(dirname "$NODE"):$PATH" npx -y "playwright@$PW_VER" install --with-deps chromium \
+  PLAYWRIGHT_BROWSERS_PATH="$APP/browsers" PATH="$(dirname "$NODE"):$PATH" npx -y "playwright@$PW_VER" install --with-deps --only-shell chromium \
     || echo "! Chromium o'rnatilmadi — video tayyorlash ishlamaydi (saytlar va botga ta'sir qilmaydi)"
   chmod -R a+rX "$APP/browsers" 2>/dev/null || true
 fi
