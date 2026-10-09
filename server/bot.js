@@ -570,7 +570,10 @@ async function processVideos() {
       if (site) updateMeta(evt.slug, (m) => ({ ...m, video: { ...m.video, status: 'done', seconds, doneAt: new Date().toISOString(), fileId: '' } }));
       // Panel'dan (admin) so'ralgan — adminlarga; mijoz buyurtmasi — mijozga
       const targets = evt.admin ? adminIds() : site ? [site.meta.owner.id] : adminIds();
-      for (const chat of targets) await sendVideoTo(chat, evt.slug, { admin: !!evt.admin, file: out });
+      // Fayl bir marta yuklanadi, qolganlarga Telegram'dagi nusxasi; yuborilgach serverdan o'chiriladi (joy tejash)
+      let sentId = '';
+      for (const chat of targets) sentId = (await sendVideoTo(chat, evt.slug, { admin: !!evt.admin, file: out, fileId: sentId })) || sentId;
+      if (sentId) fs.rmSync(out, { force: true });
     }
   } finally {
     videoBusy = false;
@@ -578,21 +581,23 @@ async function processVideos() {
 }
 
 /** Tayyor videoni yuborish: avval yuborilgan bo'lsa — Telegram'dagi nusxasi (file_id), aks holda fayl */
-async function sendVideoTo(chatId, slug, { admin = false, file = path.join(VIDEOS_DIR(), `${slug}.mp4`) } = {}) {
+/** Muvaffaqiyatli yuborilsa — Telegram'dagi file_id (keyingi yuborishlar uchun), aks holda '' */
+async function sendVideoTo(chatId, slug, { admin = false, file = path.join(VIDEOS_DIR(), `${slug}.mp4`), fileId: knownId = '' } = {}) {
   const site = readSite(slug);
   const names = site ? namesOf(site.config) : slug;
   const caption = admin
     ? `🎬 ${esc(names)} — video tayyor (${slug})`
     : `🎬 <b>${esc(names)}</b> — taklifnomangiz videosi tayyor!\n\nInstagram Reels/Stories, Telegram yoki WhatsApp’da ulashing. Havola: ${siteUrlOf(slug)}`;
-  const fileId = admin ? '' : site?.meta.video?.fileId;
+  const fileId = knownId || (admin ? '' : site?.meta.video?.fileId);
   try {
     if (fileId) {
       await tg('sendVideo', { chat_id: chatId, video: fileId, caption, parse_mode: 'HTML', supports_streaming: true });
-      return;
+      return fileId;
     }
     if (!fs.existsSync(file)) {
       if (site && !admin) queueVideo({ type: 'video', slug, notify: true });
-      return send(chatId, '🎬 Video qayta tayyorlanmoqda — biroz kuting.');
+      await send(chatId, '🎬 Video qayta tayyorlanmoqda — biroz kuting.');
+      return '';
     }
     const r = await tgUpload(
       'sendVideo',
@@ -600,9 +605,11 @@ async function sendVideoTo(chatId, slug, { admin = false, file = path.join(VIDEO
       { field: 'video', path: file, name: `${slug}.mp4` },
     );
     if (site && !admin && r?.video?.file_id) updateMeta(slug, (m) => ({ ...m, video: { ...m.video, fileId: r.video.file_id } }));
+    return r?.video?.file_id || '';
   } catch (err) {
     log(`! video yuborilmadi (${chatId}): ${err.message}`);
     await send(chatId, 'Videoni yuborishda xato bo‘ldi — admin tekshiryapti 🙏');
+    return '';
   }
 }
 
@@ -610,12 +617,12 @@ async function sendVideoTo(chatId, slug, { admin = false, file = path.join(VIDEO
 function cleanup(st) {
   if (Date.now() - (st.lastCleanup || 0) < 3600e3) return;
   st.lastCleanup = Date.now();
-  // Video fayllari 30 kundan keyin o'chadi (Telegram'dagi nusxasi orqali qayta yuborish mumkin)
+  // Video yuborilgach darhol o'chiriladi; yuborilmay qolgan fayllar 1 kundan keyin (qayta yuborish — Telegram'dagi nusxasi orqali)
   try {
     for (const f of fs.existsSync(VIDEOS_DIR()) ? fs.readdirSync(VIDEOS_DIR()) : []) {
       const p = path.join(VIDEOS_DIR(), f);
       const stat = fs.statSync(p);
-      if (stat.isFile() && Date.now() - stat.mtimeMs > 30 * 86400e3) fs.rmSync(p, { force: true });
+      if (stat.isFile() && Date.now() - stat.mtimeMs > 86400e3) fs.rmSync(p, { force: true });
     }
   } catch {
     /* keyingi safar */
