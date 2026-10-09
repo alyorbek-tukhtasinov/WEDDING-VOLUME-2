@@ -13,10 +13,10 @@
   },
   "hosts": "Raimovlar oilasi",
   "texts": {
-    "heroCaption": "Qiz bazmiga taklifnoma",
+    "heroCaption": "Nikoh to‘yiga taklifnoma",
     "greeting": "Hurmatli mehmonimiz!",
-    "invitation": "Sizni farzandlarimiz Abdulaziz va Humoraning hayotlaridagi eng quvonchli kunlardan biri — qiz bazmiga taklif etamiz. Qizimizni yangi hayotga kuzatayotgan bu muborak oqshomda duolaringiz va tashrifingiz biz uchun eng katta sovg‘a bo‘ladi.",
-    "closing": "Tashrifingiz biz uchun katta sharaf!"
+    "invitation": "Ikki qalbni bir taqdirga bog‘lagan Yaratganga hamdlar bo‘lsin! Farzandlarimiz Abdulaziz va Humoraning nikoh to‘yi — hayotimizdagi eng nurli kunlardan biri. Shu quvonchli kunda sizni davramizda ko‘rish va duolaringizni olish biz uchun katta baxt.",
+    "closing": "Tashrifingiz — to‘yimizning eng go‘zal bezagi!"
   },
   "venue": {
     "name": "“Bahor” to‘yxonasi",
@@ -32,16 +32,15 @@
     },
     {
       "time": "16:30",
-      "title": "Dasturxon atrofida ziyofat"
+      "title": "Kelin-kuyovning kirib kelishi"
     },
     {
-      "time": "18:00",
-      "title": "Kuyov va uning yaqinlarining kirib kelishi"
+      "time": "17:00",
+      "title": "Tantanali ziyofat"
     },
     {
-      "time": "18:30",
-      "title": "Kelinni kuyov xonadoniga kuzatish",
-      "description": "Duolar va oq yo‘l tilaklari bilan"
+      "time": "19:30",
+      "title": "To‘y tortini kesish"
     }
   ],
   "dressCode": {
