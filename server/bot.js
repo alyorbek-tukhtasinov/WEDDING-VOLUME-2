@@ -527,8 +527,8 @@ function runRender(slug, out) {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let outText = '';
-    p.stdout.on('data', (d) => (outText = (outText + d).slice(-2000)));
-    p.stderr.on('data', (d) => (outText = (outText + d).slice(-2000)));
+    p.stdout.on('data', (d) => (outText = (outText + d).slice(-8000)));
+    p.stderr.on('data', (d) => (outText = (outText + d).slice(-8000)));
     const timer = setTimeout(() => p.kill('SIGKILL'), 60 * 60e3);
     p.on('close', (code) => {
       clearTimeout(timer);
@@ -554,7 +554,11 @@ async function processVideos() {
       const r = await runRender(evt.slug, out);
       if (evt.admin) fs.rmSync(adminPendingFile(evt.slug), { force: true });
       if (!r.ok || !fs.existsSync(out)) {
-        log(`✖ ${evt.slug} video: ${r.out.slice(-400)}`);
+        // Xato matnining o'zi (stack izi emas) — "✖ ..." qatoridan boshlab
+        const i = r.out.lastIndexOf('✖');
+        const why = (i > -1 ? r.out.slice(i) : r.out.slice(-600)).slice(0, 600);
+        r.out = why;
+        log(`✖ ${evt.slug} video: ${why}`);
         if (site) updateMeta(evt.slug, (m) => ({ ...m, video: { ...m.video, status: 'failed' } }));
         await toAdmins(`⚠️ <b>${esc(evt.slug)}</b> videosi tayyorlanmadi:\n<code>${esc(r.out.slice(-600))}</code>`);
         if (site && evt.notify) await send(site.meta.owner.id, 'Videoni tayyorlashda muammo chiqdi — admin tekshiryapti, tez orada yuboramiz 🙏');

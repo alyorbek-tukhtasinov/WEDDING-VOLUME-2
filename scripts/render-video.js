@@ -99,6 +99,8 @@ export async function renderVideo(slug, { out, siteDir, onProgress = () => {}, f
   const enc = spawn(process.env.FFMPEG || 'ffmpeg', [
     '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
     '-c:v', 'libx264', '-preset', process.env.VIDEO_PRESET || 'veryfast', '-crf', '21', '-maxrate', '4500k', '-bufsize', '9000k',
+    // Kam xotira (1 GB RAMli server): bitta oqim, qisqa oldindan ko'rish
+    '-threads', '1', '-x264-params', 'rc-lookahead=8:sync-lookahead=0',
     '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', String(fps), '-an', silent,
   ], { stdio: ['pipe', 'ignore', 'pipe'] });
   let encErr = '';
@@ -120,7 +122,7 @@ export async function renderVideo(slug, { out, siteDir, onProgress = () => {}, f
     await page.addInitScript(() => {
       globalThis.__TAKLIFNOMA_VIDEO__ = true;
       const st = document.createElement('style');
-      st.textContent = '.ascroll,#music-toggle,.fab--music{display:none!important}html{scroll-behavior:auto!important}';
+      st.textContent = '.ascroll,#music-toggle,.fab--music,.lang,.lang-fab,[data-lang],[class$="-langs"]{display:none!important}html{scroll-behavior:auto!important}';
       document.addEventListener('DOMContentLoaded', () => document.head.append(st));
       // Sahifada hech qanday CSS animatsiya ishlamay qolsa (masalan, harakatsiz bo'limlar), vaqt to'xtatilgan
       // headless brauzer yangi kadr chizmaydi va captureScreenshot qaytmaydi. Shu 1 pikselli, deyarli
