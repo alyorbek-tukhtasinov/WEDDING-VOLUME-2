@@ -86,6 +86,9 @@ test('Kanal: boshlang‘ich postlar admin tasdig‘i bilan joylanadi, tugmalar n
   // Qolganlarini birdan
   await onUpdate(cb('ch:seed:all'));
   assert.equal(toChannel().length, total, 'barchasi bir martadan');
+  // Salomlashuv — "hammasini joylash"da birinchi bo'lib chiqadi va tepaga qadaladi
+  assert.match(toChannel()[1].body.caption, /Xush kelibsiz/);
+  assert.ok(calls.some((c) => c.method === 'pinChatMessage' && c.body.chat_id === '@Taklifim_rasmiy'));
   assert.match(calls.at(-1).body.text, new RegExp(`${total - 1} ta post`));
 });
 

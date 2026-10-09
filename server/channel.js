@@ -57,6 +57,24 @@ function seedPosts() {
   const bot = botName ? `@${botName}` : 'botimiz';
   const design = (id, text) => ({ id: `seed-${id}`, design: id, photo: findDesign(id)[3], caption: text });
   return [
+    // Salomlashuv — birinchi post, joylanganda kanal tepasiga qadaladi
+    {
+      id: 'seed-welcome',
+      design: 'volume5',
+      photo: 'images/og-volume5.jpg',
+      caption:
+        `👋 <b>Xush kelibsiz!</b>\n\n` +
+        `To‘y — umrda bir marta. Taklifnomangiz ham shunday esda qolsin 💍\n\n` +
+        `Mehmoningiz havolani ochadi — musiqa yangraydi, konvert ochiladi, ismlaringiz chiroyli yozuvda paydo bo‘ladi. ` +
+        `Sana, to‘y dasturi va xarita — bitta sahifada. «Kelaman» degan har bir mehmonni esa siz telefoningizda ko‘rib turasiz.\n\n` +
+        `✨ <b>Nega aynan onlayn taklifnoma?</b>\n` +
+        `• Bosmaxona, navbat va tarqatish yo‘q — <b>3 daqiqada tayyor</b>\n` +
+        `• Yuzlab nusxa emas — bitta havola, Telegram va WhatsApp’da hammaga\n` +
+        `• Sana yoki to‘yxona o‘zgarsa — bir zumda tuzatasiz, qayta chop etish shart emas\n` +
+        `• Avval o‘z ismlaringiz bilan <b>bepul ko‘rasiz</b> — yoqsagina to‘laysiz\n\n` +
+        `Qog‘oz taklifnoma stol ustida qoladi. Bizniki — har bir mehmonning cho‘ntagida 📲\n\n` +
+        `👇 <b>Hoziroq sinab ko‘ring</b> — o‘z taklifnomangizni 3 daqiqada yarating, bu bepul.`,
+    },
     {
       id: 'seed-intro',
       design: 'volume2',
@@ -231,7 +249,11 @@ export async function channelMenu(chatId) {
 }
 
 async function publish(d) {
-  await sendPost(MAIN_CHANNEL(), d, postButtons(d.design));
+  const msg = await sendPost(MAIN_CHANNEL(), d, postButtons(d.design));
+  // Salomlashuv kanal tepasiga qadaladi (botda "Pin messages" huquqi bo'lmasa — jim o'tkazib yuboriladi)
+  if (d.id === 'seed-welcome' && msg?.message_id) {
+    await tg('pinChatMessage', { chat_id: MAIN_CHANNEL(), message_id: msg.message_id, disable_notification: true }).catch((e) => console.log(`! salomlashuv qadalmadi: ${e.message}`));
+  }
   const st = load();
   if (d.id.startsWith('seed-') && !st.posted.includes(d.id)) st.posted.push(d.id);
   if (st.drafts[d.id]) st.drafts[d.id].status = 'posted';
