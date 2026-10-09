@@ -505,7 +505,15 @@ const VIDEOS_DIR = () => path.join(DATA_DIR(), 'videos');
 const videoQueue = [];
 let videoBusy = false;
 
+// Panel (admin) so'rovlari diskda ham saqlanadi: deploy paytida bot qayta ishga tushsa, video yo'qolmaydi
+const ADMIN_PENDING = () => path.join(VIDEOS_DIR(), 'admin-pending');
+const adminPendingFile = (slug) => path.join(ADMIN_PENDING(), `${slug}.json`);
+
 function queueVideo(evt) {
+  if (evt.admin && /^[a-z0-9-]+$/.test(evt.slug || '')) {
+    fs.mkdirSync(ADMIN_PENDING(), { recursive: true });
+    fs.writeFileSync(adminPendingFile(evt.slug), JSON.stringify({ slug: evt.slug, at: evt.at || new Date().toISOString() }));
+  }
   if (videoQueue.some((e) => e.slug === evt.slug && !!e.admin === !!evt.admin)) return;
   videoQueue.push(evt);
   processVideos();
@@ -542,7 +550,9 @@ async function processVideos() {
       if (site) updateMeta(evt.slug, (m) => ({ ...m, video: { ...(m.video || {}), status: 'rendering', startedAt: new Date().toISOString() } }));
       const t0 = Date.now();
       log(`🎬 ${evt.slug}: video tayyorlanmoqda…`);
+      if (evt.admin) await toAdmins(`🎬 <b>${esc(evt.slug)}</b>: video tayyorlanmoqda (odatda 10–20 daqiqa), tayyor bo‘lgach shu yerga yuboriladi.`).catch(() => {});
       const r = await runRender(evt.slug, out);
+      if (evt.admin) fs.rmSync(adminPendingFile(evt.slug), { force: true });
       if (!r.ok || !fs.existsSync(out)) {
         log(`✖ ${evt.slug} video: ${r.out.slice(-400)}`);
         if (site) updateMeta(evt.slug, (m) => ({ ...m, video: { ...m.video, status: 'failed' } }));
@@ -600,7 +610,8 @@ function cleanup(st) {
   try {
     for (const f of fs.existsSync(VIDEOS_DIR()) ? fs.readdirSync(VIDEOS_DIR()) : []) {
       const p = path.join(VIDEOS_DIR(), f);
-      if (Date.now() - fs.statSync(p).mtimeMs > 30 * 86400e3) fs.rmSync(p, { force: true });
+      const stat = fs.statSync(p);
+      if (stat.isFile() && Date.now() - stat.mtimeMs > 30 * 86400e3) fs.rmSync(p, { force: true });
     }
   } catch {
     /* keyingi safar */
@@ -715,6 +726,10 @@ async function main() {
   for (const s of listSites()) {
     if (s.meta.status === STATUS.paid && !fs.existsSync(path.join(DATA_DIR(), 'built', s.slug, 'index.html'))) enqueue({ type: 'build', slug: s.slug, reason: 'restart' });
     else if (s.meta.status === STATUS.paid && ['paid', 'rendering'].includes(s.meta.video?.status)) enqueue({ type: 'video', slug: s.slug, notify: true });
+  }
+  // Panel'dan so'ralgan, lekin qayta ishga tushish sabab tugamay qolgan videolar — qaytadan
+  if (fs.existsSync(ADMIN_PENDING())) {
+    for (const f of fs.readdirSync(ADMIN_PENDING()).filter((n) => n.endsWith('.json'))) enqueue({ type: 'video', slug: f.slice(0, -5), admin: true });
   }
   fs.rmSync(path.join(DATA_DIR(), 'tmp'), { recursive: true, force: true }); // to'xtab qolgan video qoldiqlari
   const st = loadState();
