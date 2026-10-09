@@ -69,6 +69,5 @@
   },
   "eventType": "nikoh",
   "autoScroll": "auto",
-  "nameFont": "yeseva",
-  "paused": true
+  "nameFont": "yeseva"
 }
