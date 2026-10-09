@@ -17,6 +17,7 @@ import { tg, tgUpload, BOT_TOKEN, adminIds, isAdmin, appUrl, siteUrlOf, siteDoma
 import { DATA_DIR, ensureDirs, listSites, readSite, writeSite, updateMeta, removeSite, takeQueue, sitesOf, STATUS, enqueue, recordLead, readLeads } from './data.js';
 import { startWizard, onWizardCallback, onWizardMessage, cancelWizard, showSummary } from './bot-wizard.js';
 import { validateConfig } from '../src/lib/config.js';
+import { channelMenu, onChannelCallback, maybeAutoDraft, setBotName } from './channel.js';
 import { requestContext } from '../api/_lib/context.js';
 import { storeConfigured, storeReady, getFinance, setFinance, listEntries } from '../api/_lib/store.js';
 import { findEvent } from '../src/lib/events.js';
@@ -838,6 +839,7 @@ async function onUpdate(u) {
   if (u.callback_query) {
     const cb = u.callback_query;
     if (await onWizardCallback(cb)) return;
+    if (await onChannelCallback(cb)) return;
     const [kind, slug] = String(cb.data || '').split(':');
     if (kind === 'new') {
       await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
@@ -897,6 +899,9 @@ async function onUpdate(u) {
   if (text === BTN.demos || text === '/demos') return demos(msg);
   if (text === BTN.help || text === '/help') return help(msg);
   if (text === '/admin' && isAdmin(msg.from.id)) return adminStats(msg);
+  // Asosiy kanal: boshlang'ich postlar va yangi post qoralamasi (faqat admin)
+  if (text === '/kanal' && isAdmin(msg.from.id)) return channelMenu(msg.chat.id);
+  if (text === '/post' && isAdmin(msg.from.id)) return onChannelCallback({ id: '', from: msg.from, data: 'ch:new:-', message: null });
   if (text === BTN.create || text === '/new') return startWizard(msg.chat.id, msg.from);
   // Savollarga javob (taklifnoma yaratish/o'zgartirish suhbati)
   if (await onWizardMessage(msg)) return;
@@ -942,6 +947,7 @@ async function main() {
   const st = loadState();
   const me = await tg('getMe');
   BOT_USERNAME = me.username || '';
+  setBotName(BOT_USERNAME);
   log(`Bot: @${me.username} · ma'lumotlar: ${DATA_DIR()} · adminlar: ${adminIds().join(', ') || '(yo‘q!)'}`);
   await tg('deleteWebhook', {}).catch(() => {});
   await tg('setMyCommands', {
@@ -979,6 +985,10 @@ async function main() {
       if (updates.length) saveState(st);
       cleanup(st);
       relinkAll(st);
+      if (Date.now() - (st.lastChannelCheck || 0) > 3600e3) {
+        st.lastChannelCheck = Date.now();
+        await maybeAutoDraft().catch((e) => log('! kanal:', e.message));
+      }
       await askReviews(st).catch((e) => log('! otziv:', e.message));
     } catch (err) {
       if (stop) break;
