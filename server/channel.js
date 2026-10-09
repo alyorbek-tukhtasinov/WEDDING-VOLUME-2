@@ -15,7 +15,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<'
 export const MAIN_CHANNEL = () => env('MAIN_CHANNEL', '@Taklifim_rasmiy');
 const REVIEWS_CHANNEL = () => env('REVIEWS_CHANNEL', '@taklifimuzotziv');
 const EVERY_DAYS = () => Math.max(1, Number(env('CHANNEL_EVERY_DAYS', '2')) || 2);
-const MODEL = () => env('CHANNEL_MODEL', 'claude-opus-5-5');
+const MODEL = () => env('CHANNEL_MODEL', 'claude-haiku-5-5');
 let botName = '';
 export const setBotName = (n) => (botName = n || '');
 

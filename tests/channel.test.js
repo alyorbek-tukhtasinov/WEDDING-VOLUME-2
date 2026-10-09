@@ -104,9 +104,9 @@ test('Kanal: AI qoralama — Claude yozadi (fallback bilan), ruxsat etilmagan te
   await onUpdate({ update_id: ++upd, message: { message_id: 3, chat: { id: ADMIN.id, type: 'private' }, from: ADMIN, text: '/post' } });
   assert.equal(claudeReqs.length, 1);
   const req = claudeReqs[0];
-  assert.equal(req.body.model, 'claude-opus-5-5');
-  assert.equal(req.body.fallbacks, 'default');
-  assert.match(req.headers['anthropic-beta'], /server-side-fallback-2026-07-01/);
+  assert.equal(req.body.model, 'claude-haiku-5-5');
+  assert.equal(req.body.fallbacks, undefined, 'Haiku — zaxira modelsiz');
+  assert.equal(req.body.output_config.effort, 'low');
   assert.match(req.body.system, /o‘zbek tilida/);
   const offer = calls.filter((c) => c.method === 'sendPhoto' && c.body.chat_id === String(ADMIN.id)).at(-1).body;
   assert.match(offer.caption, /Yulduzli osmon/);
