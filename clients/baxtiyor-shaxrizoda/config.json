@@ -96,5 +96,6 @@
     "title": "",
     "description": "",
     "ogImage": ""
-  }
+  },
+  "paused": true
 }
