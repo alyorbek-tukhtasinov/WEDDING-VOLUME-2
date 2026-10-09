@@ -6,11 +6,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, readSite, STATUS } from './data.js';
-import { tg, previewUrl, siteUrlOf, siteDomain, fmtSum, PRICE } from './telegram.js';
-import { save, APP_TEMPLATES } from './app-api.js';
+import { tg, tgDownload, previewUrl, siteUrlOf, siteDomain, fmtSum, PRICE } from './telegram.js';
+import { save, saveBirthday, saveBotPhoto, APP_TEMPLATES, BDAY_TEMPLATES, BDAY_SLOTS, MAX_BDAY_PHOTOS } from './app-api.js';
 import { EVENTS, findEvent } from '../src/lib/events.js';
 import { parseMapInput, googleLink, yandexLink } from '../src/lib/maps.js';
-import { MONTHS, validateConfig, isValidDate } from '../src/lib/config.js';
+import { MONTHS, validateConfig, isValidDate, ageOf } from '../src/lib/config.js';
 import { todayIso } from '../src/lib/starter.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
@@ -27,7 +27,17 @@ export const DESIGNS = [
   ['kitob', '📖 3D sehrli kitob', 'demo-kitob'],
   ['yz', '🎬 Kino uslubida', 'demo-yz'],
 ].filter(([id]) => APP_TEMPLATES.includes(id));
-const designTitle = (id) => DESIGNS.find(([d]) => d === id)?.[1] || id;
+// Tug'ilgan kun: klassik — bazmga taklif (erkaklar uchun ham); qolganlari — sevgan insonga suratli tabrik
+export const BDESIGNS = [
+  ['klassik', '🎩 Klassik bazm — tug‘ilgan kunga taklif', 'demo-klassik'],
+  ['tort', '🎂 Sehrli tort — suratli tabrik', 'demo-tort'],
+  ['yulduz', '✨ Yulduzlardan yaralgan — qizga tabrik', 'demo-yulduz'],
+  ['sevgi', '💌 Sevgi kundaligi — sevgilingizga', 'demo-sevgi'],
+].filter(([id]) => BDAY_TEMPLATES.includes(id));
+const designTitle = (id) => [...DESIGNS, ...BDESIGNS].find(([d]) => d === id)?.[1] || id;
+const isBdayT = (id) => BDAY_TEMPLATES.includes(id);
+const isParty = (w) => w.data.template === 'klassik';
+const demoLinks = (list) => list.map(([, t, demo]) => (siteDomain() ? `<a href="https://${demo}.${siteDomain()}">${esc(t.split(' — ')[0])}</a>` : esc(t))).join(' · ');
 
 /* ------------------------------------ Holat ------------------------------------ */
 const file = () => path.join(DATA_DIR(), 'wizard.json');
@@ -134,7 +144,9 @@ const STEPS = {
     },
   },
   date: {
-    ask: () => ['📅 <b>Sana</b>\n\nKun.oy.yil ko‘rinishida yozing, masalan: <code>16.11.2026</code>'],
+    ask: (w) => [
+      `📅 <b>${w.data.kind === 'bday' ? (isParty(w) ? 'Bazm sanasi' : 'Tug‘ilgan kun sanasi (yaqinlashayotgan)') : 'Sana'}</b>\n\nKun.oy.yil ko‘rinishida yozing, masalan: <code>16.11.2026</code>`,
+    ],
     text: (w, t) => {
       const d = parseDate(t);
       if (!d) return 'Sana tushunarsiz yoki o‘tib ketgan. Masalan: <code>16.11.2026</code>';
@@ -157,7 +169,10 @@ const STEPS = {
     cb: (w, v) => ((w.data.time = parseTime(`${v.slice(0, 2)}:${v.slice(2)}`) || '18:00'), true),
   },
   venue: {
-    ask: (w) => [`🏛 <b>${w.data.eventType === 'qiz-uzatish' || w.data.eventType === 'kelin-salom' ? 'Marosim joyi' : 'To‘yxona nomi'}</b>\n\nMasalan: <i>Bahor to‘yxonasi</i> yoki <i>Kelin xonadoni</i>`],
+    ask: (w) =>
+      w.data.kind === 'bday'
+        ? ['🏛 <b>Bazm joyi</b>\n\nMasalan: <i>Grand Classic restorani</i>']
+        : [`🏛 <b>${w.data.eventType === 'qiz-uzatish' || w.data.eventType === 'kelin-salom' ? 'Marosim joyi' : 'To‘yxona nomi'}</b>\n\nMasalan: <i>Bahor to‘yxonasi</i> yoki <i>Kelin xonadoni</i>`],
     text: (w, t) => {
       const s = String(t || '').trim();
       if (s.length < 2 || s.length > 120) return 'Nomni qisqaroq yozing (2–120 belgi):';
@@ -255,10 +270,73 @@ Object.assign(STEPS, {
   },
 });
 
+// Boshlanish: to'y yoki tug'ilgan kun
+Object.assign(STEPS, {
+  kind: {
+    ask: () => ['✨ <b>Qanday taklifnoma kerak?</b>', kb([[{ text: '💍 To‘y va marosimlar', callback_data: 'wz:kind:wedding' }], [{ text: '🎂 Tug‘ilgan kun', callback_data: 'wz:kind:bday' }]])],
+    cb: (w, v) => {
+      if (!['wedding', 'bday'].includes(v)) return 'Tugmadan tanlang';
+      w.data.kind = v;
+      return true;
+    },
+  },
+  btemplate: {
+    ask: () => [
+      `🎂 <b>Tug‘ilgan kun dizaynini tanlang</b>\n\nNamunalar: ${demoLinks(BDESIGNS)}\n\n🎩 <b>Klassik</b> — mehmonlarni bazmga chaqirish uchun (joy, vaqt, dastur, javob).\n🎂✨💌 — yaqin insoningizni <b>suratlar bilan tabriklash</b> uchun.`,
+      kb(BDESIGNS.map(([id, t]) => [{ text: t, callback_data: `wz:btemplate:${id}` }])),
+    ],
+    cb: (w, v) => (BDESIGNS.some(([id]) => id === v) ? ((w.data.template = v), true) : 'Tugmadan tanlang'),
+  },
+  name: {
+    ask: (w) => [isParty(w) ? '🎉 <b>Tug‘ilgan kun egasining ismi</b>\n\nMasalan: <i>Jasur</i>' : '💝 <b>Kimni tabriklaymiz?</b> Ismini yozing\n\nMasalan: <i>Madina</i>'],
+    text: (w, t) => {
+      const n = parseName(t);
+      if (!n) return 'Ism 2–40 harf bo‘lsin, raqamsiz. Qaytadan yozing:';
+      w.data.name = n;
+      return true;
+    },
+  },
+  birthDate: {
+    ask: () => ['🎈 <b>Tug‘ilgan sanasi</b> (yoshini ko‘rsatish uchun)\n\nMasalan: <code>14.11.1996</code>', kb([[{ text: SKIP, callback_data: 'wz:birthDate:-' }]])],
+    text: (w, t) => {
+      const s = String(t || '').trim();
+      const m = /^(\d{1,2})[./\-\s](\d{1,2})[./\-\s](\d{4})$/.exec(s);
+      const iso = m && `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      if (!iso || !isValidDate(iso) || iso >= todayIso() || Number(m[3]) < 1900) return 'Sana tushunarsiz. Masalan: <code>14.11.1996</code> (yoki o‘tkazib yuboring)';
+      w.data.birthDate = iso;
+      return true;
+    },
+    cb: (w) => ((w.data.birthDate = ''), true),
+  },
+  from: {
+    ask: () => ['✍️ <b>Kimdan?</b> Tabrik ostida chiqadi\n\nMasalan: <i>Sevgilingdan</i> yoki <i>Doim yoningdagi Jasur</i>', kb([[{ text: SKIP, callback_data: 'wz:from:-' }]])],
+    text: (w, t) => {
+      const v = String(t || '').trim();
+      if (v.length < 2 || v.length > 60) return '2–60 belgi bilan yozing:';
+      w.data.from = v;
+      return true;
+    },
+    cb: (w) => ((w.data.from = ''), true),
+  },
+  photos: {
+    ask: (w) => [
+      `📷 <b>Suratlarni yuboring</b> (1–${MAX_BDAY_PHOTOS} ta)\n\nBirinchisi — asosiy surat${w.data.template === 'yulduz' ? ' (yulduzlardan yig‘iladi — yuzi aniq, yorug‘ surat tanlang)' : ''}. Bir nechtasini birdan (albom) ham yuborsa bo‘ladi.\nTugatgach — «✅ Tayyor».`,
+      kb([[{ text: '✅ Tayyor', callback_data: 'wz:photos:done' }]]),
+    ],
+    text: () => 'Surat yuboring (📎 → Galereya) yoki «✅ Tayyor» tugmasini bosing.',
+    cb: (w) => ((w.data.photos || []).length ? true : 'Kamida 1 ta surat yuboring 📷'),
+  },
+});
+
+// Savollar tartibi: to'y; tug'ilgan kun — bazm (klassik) yoki suratli tabrik
 const ORDER = ['template', 'eventType', 'groom', 'bride', 'date', 'time', 'venue', 'address', 'map', 'voice', 'hosts'];
+const BORDER_PARTY = ['btemplate', 'name', 'birthDate', 'date', 'time', 'venue', 'address', 'map'];
+const BORDER_GIFT = ['btemplate', 'name', 'birthDate', 'date', 'from', 'photos'];
+const orderOf = (w) => (w.data.kind === 'bday' ? (isParty(w) ? BORDER_PARTY : BORDER_GIFT) : ORDER);
 
 /* ------------------------------------ Config ↔ javoblar ------------------------------------ */
 function dataOf(c) {
+  if (isBdayT(c.template)) return bdataOf(c);
   const map = c.venue?.googleMaps || c.venue?.yandexMaps ? { googleMaps: c.venue.googleMaps || '', yandexMaps: c.venue.yandexMaps || '' } : null;
   return {
     template: c.template,
@@ -276,6 +354,40 @@ function dataOf(c) {
     programList: (c.program || []).map((p) => ({ time: p.time, title: p.title })),
   };
 }
+function bdataOf(c) {
+  const map = c.venue?.googleMaps || c.venue?.yandexMaps ? { googleMaps: c.venue.googleMaps || '', yandexMaps: c.venue.yandexMaps || '' } : null;
+  const slots = BDAY_SLOTS[c.template] || [];
+  return {
+    kind: 'bday',
+    template: c.template,
+    name: c.person?.name || '',
+    birthDate: c.person?.birthDate || '',
+    date: c.event?.date || '',
+    time: c.event?.time || '',
+    venue: c.venue?.name || '',
+    address: c.venue?.address || '',
+    map,
+    from: c.from || '',
+    photos: [...slots.map((k) => c.photos?.[k]).filter(Boolean), ...(c.memories || []).map((m) => m.photo).filter(Boolean)],
+    dressText: c.dressCode?.text || '',
+    programList: (c.program || []).map((p) => ({ time: p.time, title: p.title })),
+  };
+}
+function binputOf(d) {
+  const input = { template: d.template, name: d.name, birthDate: d.birthDate || '', date: d.date };
+  if (d.template === 'klassik') {
+    const q = encodeURIComponent([d.venue, d.address].filter(Boolean).join(', '));
+    const map = d.map || { googleMaps: `https://www.google.com/maps/search/?api=1&query=${q}`, yandexMaps: `https://yandex.uz/maps/?text=${q}` };
+    Object.assign(input, { time: d.time, venue: { name: d.venue, address: d.address, googleMaps: map.googleMaps || '', yandexMaps: map.yandexMaps || '' } });
+    if (d.dress !== undefined) input.dressCode = d.dress;
+    if (d.program !== undefined) input.program = d.program;
+  } else {
+    input.from = d.from || '';
+  }
+  if (Array.isArray(d.photos)) input.photos = d.photos;
+  return input;
+}
+
 function inputOf(d) {
   const q = encodeURIComponent([d.venue, d.address].filter(Boolean).join(', '));
   const map = d.map || { googleMaps: `https://www.google.com/maps/search/?api=1&query=${q}`, yandexMaps: `https://yandex.uz/maps/?text=${q}` };
@@ -299,18 +411,21 @@ async function ask(chatId, w) {
   await send(chatId, text, extra);
 }
 function nextStep(w, from) {
-  for (let i = ORDER.indexOf(from) + 1; i < ORDER.length; i++) if (!STEPS[ORDER[i]].skip?.(w)) return ORDER[i];
+  const order = orderOf(w);
+  for (let i = order.indexOf(from) + 1; i < order.length; i++) if (!STEPS[order[i]].skip?.(w)) return order[i];
   return null;
 }
 
 /** Yangi taklifnoma (tanlangan dizayn bilan — reklamadan kelganda) */
 export async function startWizard(chatId, user, template = '') {
   const w = { slug: null, step: 'template', data: {}, edit: false };
-  if (DESIGNS.some(([id]) => id === template)) {
+  if (DESIGNS.some(([id]) => id === template) || BDESIGNS.some(([id]) => id === template)) {
     w.data.template = template;
-    w.step = 'eventType';
+    w.data.kind = isBdayT(template) ? 'bday' : 'wedding';
+    w.step = w.data.kind === 'bday' ? 'name' : 'eventType';
     await send(chatId, `✨ Ajoyib! Dizayn: <b>${esc(designTitle(template))}</b>\nBir necha savolga javob bering — taklifnomangiz tayyor bo‘ladi (2–3 daqiqa).`);
   } else {
+    w.step = 'kind';
     await send(chatId, '✨ Bir necha savolga javob bering — taklifnomangiz tayyor bo‘ladi (2–3 daqiqa).\nIstalgan payt keyinroq o‘zgartirish mumkin.');
   }
   setW(user.id, w);
@@ -320,7 +435,20 @@ export async function startWizard(chatId, user, template = '') {
 async function advance(chatId, user, w, res) {
   if (res !== true) return send(chatId, res);
   // Bitta maydonni o'zgartirish — darhol saqlanadi
-  const next = w.edit ? (w.step === 'voice' && w.data.voice === 'parents' ? 'hosts' : null) : nextStep(w, w.step);
+  let next;
+  if (w.step === 'kind') next = w.data.kind === 'bday' ? 'btemplate' : 'template';
+  else next = w.edit ? (w.step === 'voice' && w.data.voice === 'parents' ? 'hosts' : null) : nextStep(w, w.step);
+  // Suratlar sayt papkasiga yoziladi — undan oldin qoralama yaratiladi
+  if (next === 'photos' && !w.slug) {
+    try {
+      const r = await saveBirthday(user, { input: binputOf({ ...w.data, photos: undefined }) });
+      w.slug = r.slug;
+    } catch (err) {
+      setW(user.id, null);
+      return send(chatId, `⚠️ ${esc(err.message)}`);
+    }
+  }
+  if (next === 'photos') w.data.photos = [];
   if (next) {
     w.step = next;
     setW(user.id, w);
@@ -332,13 +460,16 @@ async function advance(chatId, user, w, res) {
 async function finish(chatId, user, w) {
   let r;
   try {
-    r = await save(user, { ...(w.slug ? { slug: w.slug } : {}), config: inputOf(w.data) });
+    r =
+      w.data.kind === 'bday'
+        ? await saveBirthday(user, { ...(w.slug ? { slug: w.slug } : {}), input: binputOf(w.data) })
+        : await save(user, { ...(w.slug ? { slug: w.slug } : {}), config: inputOf(w.data) });
   } catch (err) {
     setW(user.id, null);
     return send(chatId, `⚠️ ${esc(err.message)}`);
   }
   setW(user.id, null);
-  return showSummary(chatId, user, r.slug, w.slug ? '✅ Saqlandi.' : '🎉 Taklifnomangiz tayyor! Ko‘rib chiqing:');
+  return showSummary(chatId, user, r.slug, w.edit ? '✅ Saqlandi.' : '🎉 Taklifnomangiz tayyor! Ko‘rib chiqing:');
 }
 
 /** Xulosa: ma'lumotlar, ko'rish havolasi va tugmalar */
@@ -349,7 +480,25 @@ export async function showSummary(chatId, user, slug, title = '') {
   const d = dataOf(c);
   const paid = s.meta.status === STATUS.paid;
   const ev = findEvent(c.eventType);
-  const lines = [
+  const age = isBdayT(c.template) ? ageOf(c) : null;
+  const lines = isBdayT(c.template)
+    ? [
+        title,
+        '',
+        `🎨 Dizayn: <b>${esc(designTitle(c.template))}</b>`,
+        `🎂 ${esc(d.name)}${age ? ` — ${age} yosh` : ''}`,
+        `📅 ${prettyDate(d.date)}${d.time && c.template === 'klassik' ? `, soat ${esc(d.time)}` : ''}`,
+        ...(c.template === 'klassik'
+          ? [
+              `🏛 ${esc(d.venue)}`,
+              `📍 ${esc(d.address)}`,
+              `👗 Kiyinish uslubi: ${d.dressText ? esc(d.dressText.length > 60 ? `${d.dressText.slice(0, 60)}…` : d.dressText) : 'yo‘q'}`,
+              `🗓 Dastur: ${d.programList.length ? d.programList.map((p) => `${p.time} ${esc(p.title)}`).join(' · ') : 'yo‘q'}`,
+            ]
+          : [`✍️ Kimdan: ${d.from ? esc(d.from) : '—'}`]),
+        `📷 Suratlar: ${d.photos.length || 'yo‘q'}`,
+      ]
+    : [
     title,
     '',
     `🎨 Dizayn: <b>${esc(designTitle(c.template))}</b>`,
@@ -361,7 +510,7 @@ export async function showSummary(chatId, user, slug, title = '') {
     `💌 ${d.voice === 'couple' ? 'Kelin-kuyov nomidan' : `Ota-ona nomidan${c.hosts ? ` — ${esc(c.hosts)}` : ''}`}`,
     `👗 Kiyinish uslubi: ${d.dressText ? esc(d.dressText.length > 60 ? `${d.dressText.slice(0, 60)}…` : d.dressText) : 'yo‘q'}`,
     `🗓 Dastur: ${d.programList.length ? d.programList.map((p) => `${p.time} ${esc(p.title)}`).join(' · ') : 'yo‘q'}`,
-  ].filter((x) => x !== undefined);
+      ];
   const errors = validateConfig(c);
   if (errors.length && !paid) lines.push('', `⚠️ To‘ldirilmagan: ${esc(errors[0])}`);
   if (!paid) lines.push('', `💰 Narxi: <b>${fmtSum(s.meta.price || PRICE())}</b> — avval ko‘rib chiqing, yoqsa to‘lov qilasiz.`);
@@ -387,12 +536,36 @@ const EDITABLE = [
   ['program', '🗓 To‘y dasturi'],
   ['dress', '👗 Kiyinish uslubi'],
 ];
+const BEDITABLE = {
+  klassik: [
+    ['btemplate', '🎨 Dizayn', true],
+    ['name', '🎉 Ism'],
+    ['birthDate', '🎈 Tug‘ilgan sana'],
+    ['date', '📅 Sana'],
+    ['time', '🕰 Vaqt'],
+    ['venue', '🏛 Bazm joyi'],
+    ['address', '📍 Manzil'],
+    ['map', '🗺 Xarita'],
+    ['program', '🗓 Bazm dasturi'],
+    ['dress', '👗 Kiyinish uslubi'],
+    ['photos', '📷 Surat'],
+  ],
+  gift: [
+    ['btemplate', '🎨 Dizayn', true],
+    ['name', '💝 Ism'],
+    ['birthDate', '🎈 Tug‘ilgan sana'],
+    ['date', '📅 Sana'],
+    ['from', '✍️ Kimdan'],
+    ['photos', '📷 Suratlar'],
+  ],
+};
 async function editMenu(chatId, user, slug) {
   const s = readSite(slug);
   if (!s || String(s.meta.owner?.id) !== String(user.id)) return;
   const paid = s.meta.status === STATUS.paid;
+  const list = isBdayT(s.config.template) ? BEDITABLE[s.config.template === 'klassik' ? 'klassik' : 'gift'] : EDITABLE;
   // To'langan saytda dizayn va marosim turi o'zgarmaydi (sayt boshidan qayta tuziladi)
-  const items = EDITABLE.filter(([, , draftOnly]) => !(draftOnly && paid));
+  const items = list.filter(([, , draftOnly]) => !(draftOnly && paid));
   const rows = [];
   for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2).map(([f, t]) => ({ text: t, callback_data: `wz:edit:${slug}:${f}` })));
   rows.push([{ text: '⬅️ Orqaga', callback_data: `wz:show:${slug}` }]);
@@ -414,6 +587,7 @@ export async function onWizardCallback(cb) {
     const s = readSite(a);
     if (!s || String(s.meta.owner?.id) !== String(user.id) || !STEPS[b]) return true;
     const w = { slug: a, step: b, data: dataOf(s.config), edit: true };
+    if (b === 'photos') w.data.photos = [];
     setW(user.id, w);
     await ask(chatId, w);
     return true;
@@ -437,6 +611,10 @@ export async function onWizardMessage(msg) {
     return false;
   }
   const step = STEPS[w.step];
+  if (msg.photo || (msg.document && /^image\//.test(msg.document.mime_type || ''))) {
+    if (w.step !== 'photos') return false; // boshqa paytda — to'lov cheki bo'lishi mumkin
+    return (await addPhoto(msg, w), true);
+  }
   if (msg.location && step.location) return (await advance(msg.chat.id, msg.from, w, step.location(w, msg.location)), true);
   const text = String(msg.text || '').trim();
   if (!text) return false;
@@ -446,6 +624,33 @@ export async function onWizardMessage(msg) {
   }
   await advance(msg.chat.id, msg.from, w, step.text(w, text));
   return true;
+}
+
+/** Suhbatga yuborilgan surat → sayt media papkasiga */
+async function addPhoto(msg, w) {
+  if ((w.data.photos || []).length >= MAX_BDAY_PHOTOS) {
+    if (!msg.media_group_id || msg.media_group_id !== w.lastGroup) await send(msg.chat.id, `Ko‘pi bilan ${MAX_BDAY_PHOTOS} ta surat. «✅ Tayyor» tugmasini bosing.`, kb([[{ text: '✅ Tayyor', callback_data: 'wz:photos:done' }]]));
+    w.lastGroup = msg.media_group_id || '';
+    setW(msg.from.id, w);
+    return;
+  }
+  try {
+    const id = msg.photo ? msg.photo.at(-1).file_id : msg.document.file_id;
+    const name = saveBotPhoto(w.slug, await tgDownload(id));
+    // Albomdagi suratlar ketma-ket keladi — holat har safar yangidan o'qiladi
+    const cur = getW(msg.from.id) || w;
+    cur.data.photos = [...(cur.data.photos || []), name];
+    const n = cur.data.photos.length;
+    const sameGroup = msg.media_group_id && msg.media_group_id === cur.lastGroup;
+    cur.lastGroup = msg.media_group_id || '';
+    setW(msg.from.id, cur);
+    if (!sameGroup) await send(msg.chat.id, `✅ Surat qabul qilindi. Yana yuboring yoki «✅ Tayyor».`, kb([[{ text: '✅ Tayyor', callback_data: 'wz:photos:done' }]]));
+    else if (n) {
+      /* albom — bitta javob yetarli */
+    }
+  } catch (err) {
+    await send(msg.chat.id, `⚠️ Suratni saqlab bo‘lmadi: ${esc(err.message)}. Boshqa surat yuboring.`);
+  }
 }
 
 export const cancelWizard = (userId) => setW(userId, null);

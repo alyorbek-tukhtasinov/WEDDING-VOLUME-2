@@ -115,3 +115,13 @@ export const fmtSum = (n) => `${String(Math.round(n || 0)).replace(/\B(?=(\d{3})
 /** Qoralama (to'lanmagan) taklifnomani ko'rish havolasi — imzo bilan, boshqalar sayt nomini taxmin qilib ocholmaydi */
 export const draftKey = (slug) => crypto.createHmac('sha256', BOT_TOKEN() || 'x').update(`draft:${slug}`).digest('hex').slice(0, 20);
 export const previewUrl = (slug) => (siteDomain() ? `https://boshqaruv.${siteDomain()}/korinish.html?s=${encodeURIComponent(slug)}&k=${draftKey(slug)}` : '');
+
+/** Telegram'dagi faylni (masalan, mijoz yuborgan surat) yuklab olish → Buffer */
+export async function tgDownload(fileId, { maxBytes = 20e6 } = {}) {
+  const f = await tg('getFile', { file_id: fileId });
+  if (!f?.file_path) throw new Error('fayl topilmadi');
+  if (f.file_size && f.file_size > maxBytes) throw new Error('fayl juda katta');
+  const res = await fetch(`${API_BASE()}/file/bot${BOT_TOKEN()}/${f.file_path}`, { signal: AbortSignal.timeout(60e3) });
+  if (!res.ok) throw new Error(`yuklab bo'lmadi (${res.status})`);
+  return Buffer.from(await res.arrayBuffer());
+}

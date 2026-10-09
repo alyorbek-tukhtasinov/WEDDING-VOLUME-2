@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 
 const calls = [];
 let tgServer;
@@ -17,7 +19,17 @@ before(async () => {
     let b = '';
     req.on('data', (c) => (b += c));
     req.on('end', () => {
+      // Mijoz yuborgan suratni yuklab olish (getFile → /file/bot<token>/<path>)
+      if (req.url.includes('/file/')) {
+        res.setHeader('Content-Type', 'image/jpeg');
+        return res.end(Buffer.concat([Buffer.from('ffd8ffe000104a464946', 'hex'), Buffer.alloc(300, 7)]));
+      }
       const method = req.url.split('/').pop();
+      if (method === 'getFile') {
+        calls.push({ method, body: JSON.parse(b) });
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ ok: true, result: { file_path: `photos/${JSON.parse(b).file_id}.jpg`, file_size: 310 } }));
+      }
       calls.push({ method, body: b ? JSON.parse(b) : {} });
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ ok: true, result: method === 'getMe' ? { username: 'taklifimuz_bot' } : { message_id: calls.length } }));
@@ -169,4 +181,91 @@ test('Sana va vaqtni tushunish', async () => {
   assert.equal(parseTime('18'), '18:00');
   assert.equal(parseTime('17.30'), '17:30');
   assert.equal(parseTime('25:00'), null);
+});
+
+test('Tug‘ilgan kun: klassik bazm (ism, yosh, joy, vaqt — dastur shu vaqtga)', async () => {
+  const { onUpdate } = await import('../server/bot.js');
+  const { sitesOf } = await import('../server/data.js');
+  const { validateConfig, ageOf } = await import('../src/lib/config.js');
+  const U = { id: 601, first_name: 'Sardor' };
+  const m = (text, extra = {}) => ({ update_id: ++upd, message: { message_id: upd, chat: { id: U.id, type: 'private' }, from: U, text, ...extra } });
+  await onUpdate(m('✨ Taklifnoma yaratish'));
+  assert.match(last().text, /Qanday taklifnoma/);
+  await onUpdate(cb('wz:kind:bday', U));
+  assert.match(last().text, /Tug‘ilgan kun dizaynini/);
+  await onUpdate(cb('wz:btemplate:klassik', U));
+  await onUpdate(m('sardor'));
+  await onUpdate(m('14.11.1996'));
+  await onUpdate(m('14.11.2027'));
+  assert.match(last().text, /Boshlanish vaqti/);
+  await onUpdate(cb('wz:time:2000', U));
+  assert.match(last().text, /Bazm joyi/);
+  await onUpdate(m('Grand Classic restorani'));
+  await onUpdate(m('Toshkent, Yunusobod'));
+  await onUpdate(cb('wz:map:-', U));
+  const [s] = sitesOf(U.id);
+  assert.equal(s.config.template, 'klassik');
+  assert.equal(s.config.person.name, 'Sardor');
+  assert.equal(ageOf(s.config), 31);
+  assert.equal(s.config.event.time, '20:00');
+  assert.equal(s.config.program[0].time, '20:00', 'dastur bazm vaqtidan boshlanadi');
+  assert.equal(s.config.venue.name, 'Grand Classic restorani');
+  assert.match(s.config.venue.googleMaps, /Grand%20Classic/);
+  assert.deepEqual(validateConfig(s.config), []);
+  assert.match(last().text, /Sardor — 31 yosh/);
+});
+
+test('Tug‘ilgan kun: sehrli tort — suratlar chatga yuboriladi, ko‘rinishda chiqadi', async () => {
+  const { onUpdate } = await import('../server/bot.js');
+  const { sitesOf, readSite } = await import('../server/data.js');
+  const { validateConfig } = await import('../src/lib/config.js');
+  const { appHandler } = await import('../server/app-api.js');
+  const U = { id: 602, first_name: 'Jasur' };
+  const m = (text, extra = {}) => ({ update_id: ++upd, message: { message_id: upd, chat: { id: U.id, type: 'private' }, from: U, text, ...extra } });
+  await onUpdate(cb('new:tort', U));
+  assert.match(last().text, /Kimni tabriklaymiz/);
+  await onUpdate(m('madina'));
+  await onUpdate(cb('wz:birthDate:-', U));
+  await onUpdate(m('20.03.2027'));
+  await onUpdate(m('Sevgilingdan'));
+  assert.match(last().text, /Suratlarni yuboring/);
+  await onUpdate(cb('wz:photos:done', U));
+  assert.match(last().text, /Kamida 1 ta/);
+  // Albom: 3 ta surat — bitta javob
+  const before = calls.filter((c) => c.method === 'sendMessage').length;
+  for (const id of ['p1', 'p2', 'p3']) await onUpdate(m(undefined, { photo: [{ file_id: `${id}-small` }, { file_id: id }], media_group_id: 'g1' }));
+  assert.equal(calls.filter((c) => c.method === 'sendMessage').length - before, 1, 'albomga bitta javob');
+  assert.deepEqual(calls.filter((c) => c.method === 'getFile').slice(-3).map((c) => c.body.file_id), ['p1', 'p2', 'p3'], 'eng katta o‘lcham');
+  await onUpdate(cb('wz:photos:done', U));
+  const [s] = sitesOf(U.id);
+  assert.equal(s.config.template, 'tort');
+  assert.equal(s.config.person.name, 'Madina');
+  assert.equal(s.config.from, 'Sevgilingdan');
+  assert.deepEqual(Object.keys(s.config.photos), ['hero', 'letter', 'gift']);
+  assert.deepEqual(validateConfig(s.config, (await import('../server/data.js')).mediaFiles(s.slug)), []);
+  assert.match(last().text, /Suratlar: 3/);
+
+  // Ko'rinish sahifasi suratni imzo bilan oladi
+  const view = last().reply_markup.inline_keyboard.flat().find((b) => b.url).url;
+  const res = { headers: {}, setHeader(k, v) { this.headers[k] = v; }, end(b) { this.body = JSON.parse(b); } };
+  await appHandler({ method: 'GET', url: `/api/panel/app/draft${new URL(view).search}`, headers: {} }, res, 'draft');
+  assert.ok(res.body.mediaBase.includes('dmedia'));
+  const img = await new Promise((resolve) => {
+    const chunks = [];
+    const r = new (require('node:stream').Writable)({ write(c, e, cb2) { chunks.push(c); cb2(); } });
+    r.headers = {};
+    r.setHeader = (k, v) => (r.headers[k] = v);
+    r.on('finish', () => resolve({ status: r.statusCode, buf: Buffer.concat(chunks), type: r.headers['Content-Type'] }));
+    appHandler({ method: 'GET', url: `${res.body.mediaBase}${s.config.photos.hero}`, headers: {} }, r, 'dmedia');
+  });
+  assert.equal(img.status, 200);
+  assert.equal(img.type, 'image/jpeg');
+
+  // Suratlarni almashtirish: eskilari o'chadi
+  const old = s.config.photos.hero;
+  await onUpdate(cb(`wz:edit:${s.slug}:photos`, U));
+  await onUpdate(m(undefined, { photo: [{ file_id: 'p9' }] }));
+  await onUpdate(cb('wz:photos:done', U));
+  assert.deepEqual(Object.keys(readSite(s.slug).config.photos), ['hero']);
+  assert.ok(!(await import('../server/data.js')).mediaFiles(s.slug).includes(old), 'eski surat o‘chirildi');
 });

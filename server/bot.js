@@ -35,7 +35,8 @@ const prettyDate = (iso) => {
   const [y, m, d] = String(iso || '').split('-').map(Number);
   return y ? `${d}-${MONTHS[m - 1]} ${y}` : '';
 };
-const namesOf = (c) => (c.couple?.showGroom === false || !c.couple?.groom ? c.couple?.bride || '' : `${c.couple.groom} & ${c.couple.bride}`);
+const namesOf = (c) =>
+  c.person?.name ? `${c.person.name} — tug‘ilgan kun` : c.couple?.showGroom === false || !c.couple?.groom ? c.couple?.bride || '' : `${c.couple.groom} & ${c.couple.bride}`;
 const STATUS_TEXT = {
   draft: '📝 Tayyorlanmoqda',
   awaiting: '💳 To‘lov kutilmoqda',
@@ -84,6 +85,10 @@ const DEMOS = [
   ['bulut', '✈️ Bulutlar ustida', 'demo-bulut'],
   ['kitob', '📖 3D sehrli kitob', 'demo-kitob'],
   ['yz', '🎬 Kino uslubida', 'demo-yz'],
+  ['klassik', '🎩 Tug‘ilgan kun: klassik bazm', 'demo-klassik'],
+  ['tort', '🎂 Tug‘ilgan kun: sehrli tort', 'demo-tort'],
+  ['yulduz', '✨ Tug‘ilgan kun: yulduzlardan', 'demo-yulduz'],
+  ['sevgi', '💌 Tug‘ilgan kun: sevgi kundaligi', 'demo-sevgi'],
 ];
 
 /* ------------------------------------ Holat ------------------------------------ */
@@ -197,7 +202,7 @@ async function mine(msg) {
     });
   }
   for (const s of list) {
-    const ev = findEvent(s.config.eventType);
+    const ev = s.config.person ? { icon: '🎂', title: 'Tug‘ilgan kun' } : findEvent(s.config.eventType);
     await send(
       msg.chat.id,
       `${ev.icon} <b>${esc(namesOf(s.config))}</b>\n${esc(ev.title)} · ${prettyDate(s.config.event?.date)}${s.config.event?.time ? `, ${s.config.event.time}` : ''}\n` +
@@ -277,7 +282,7 @@ async function onReceipt(msg) {
   updateMeta(s.slug, (m) => ({ ...m, status: STATUS.receipt, receipt }));
   await send(msg.chat.id, '🧾 Chek qabul qilindi! Tekshirib, tez orada tasdiqlaymiz. Odatda bu bir necha daqiqa oladi ⏳', { reply_markup: mainKeyboard() });
 
-  const ev = findEvent(s.config.eventType);
+  const ev = s.config.person ? { icon: '🎂', title: 'Tug‘ilgan kun' } : findEvent(s.config.eventType);
   const owner = s.meta.owner || {};
   const caption =
     `🧾 <b>Yangi to‘lov cheki</b>\n\n` +
@@ -734,7 +739,7 @@ async function onReviewDecision(cb, ok, slug) {
   let note = '❌ Joylanmadi';
   if (ok) {
     const owner = String(s.meta.owner?.name || '').split(' ')[0] || 'Mijozimiz';
-    const ev = findEvent(s.config.eventType);
+    const ev = s.config.person ? { icon: '🎂', title: 'Tug‘ilgan kun' } : findEvent(s.config.eventType);
     const text =
       `${'⭐'.repeat(r.rating)}\n\n` +
       (r.text ? `«${esc(r.text)}»\n\n` : '') +
@@ -871,6 +876,8 @@ async function onUpdate(u) {
   const msg = u.message;
   if (!msg || msg.chat?.type !== 'private') return;
   const text = (msg.text || '').trim();
+  // Tug'ilgan kun suratlari (suhbat "suratlar" bosqichida) — aks holda to'lov cheki
+  if ((msg.photo || msg.document) && (await onWizardMessage(msg))) return;
   if (msg.photo || msg.document) return onReceipt(msg);
   // Mini App'dan to'lovga o'tish (Telegram.WebApp.sendData) — zaxira yo'l
   if (msg.web_app_data?.data) {

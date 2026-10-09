@@ -18,6 +18,7 @@ import { EVENT_IDS, eventTexts } from '../src/lib/events.js';
 import { MUSIC_LIBRARY, findTrack } from '../src/lib/music.js';
 import { suggestProgramPreset, buildProgram } from '../src/lib/presets.js';
 import { defaultConfig, addDays } from '../src/lib/starter.js';
+import { birthdayConfig, cleanBirthday } from '../panel/birthday.js';
 import { verifyInitData, BOT_TOKEN, PRICE, VIDEO_PRICE, siteUrlOf, siteDomain, draftKey } from './telegram.js';
 import { readSite, writeSite, sitesOf, removeSite, enqueue, STATUS, mediaFiles, isSlug, leadSource } from './data.js';
 import { takenSlugs } from './panel.js';
@@ -209,6 +210,106 @@ function ownSite(user, slug) {
   return s;
 }
 
+/* ------------------------------- Tug'ilgan kun (bot suhbati) ------------------------------- */
+// klassik — bazmga taklifnoma (joy, vaqt, dastur, javob); tort, yulduz, sevgi — sevgan insonga suratli tabrik
+export const BDAY_TEMPLATES = ['klassik', 'tort', 'yulduz', 'sevgi'];
+// Bot chatiga yuborilgan suratlar tartib bo'yicha shu joylarga, ortganlari — xotiralar (memories) ga
+export const BDAY_SLOTS = { tort: ['hero', 'letter', 'gift', 'finale'], sevgi: ['cover', 'first', 'funny', 'gratitude', 'journey', 'wishes', 'gift'], yulduz: ['portrait'], klassik: ['cover'] };
+export const MAX_BDAY_PHOTOS = 12;
+
+/** Botga yuborilgan surat → sayt media papkasiga ("b-…" — Mini App tozalashi tegmaydi). Fayl nomini qaytaradi. */
+export function saveBotPhoto(slug, buf) {
+  const ext = sniffImage(buf);
+  if (!buf?.length || !ext) throw new UserError('bad_media', 'Faqat JPG, PNG yoki WEBP surat');
+  if (buf.length > MAX_UPLOAD) throw new UserError('too_large', 'Surat juda katta');
+  const name = `b-${Date.now().toString(36)}${crypto.randomBytes(2).toString('hex')}.${ext}`;
+  fs.mkdirSync(mediaDirOf(slug), { recursive: true });
+  fs.writeFileSync(path.join(mediaDirOf(slug), name), buf);
+  return name;
+}
+
+/**
+ * Tug'ilgan kun saytini saqlash. input: { template, name, birthDate, date, time?, venue?, from?, photos?: [fayl],
+ * program?, dressCode? } — faqat berilgan maydonlar o'zgaradi.
+ */
+export async function saveBirthday(user, { slug, input = {} }) {
+  let current;
+  let isNew = false;
+  if (slug) {
+    current = ownSite(user, slug);
+    if (!BDAY_TEMPLATES.includes(current.config.template)) throw new UserError('bad_request', 'Bu tug‘ilgan kun sayti emas');
+    // To'lanmagan qoralamada dizaynni almashtirish mumkin
+    if (input.template && input.template !== current.config.template && BDAY_TEMPLATES.includes(input.template) && current.meta.status !== STATUS.paid) {
+      current = { ...current, config: birthdayConfig(input.template) };
+    }
+  } else {
+    isNew = true;
+    const open = sitesOf(user.id).filter((x) => x.meta.status !== STATUS.paid);
+    if (open.length >= MAX_DRAFTS) throw new UserError('limit', `Bir vaqtda ${MAX_DRAFTS} tadan ortiq tugallanmagan taklifnoma ochib bo‘lmaydi. Avvalgilarini yakunlang yoki o‘chiring.`);
+    current = { config: birthdayConfig(BDAY_TEMPLATES.includes(input.template) ? input.template : 'klassik'), meta: null };
+  }
+  const c = structuredClone(current.config);
+  const party = c.template === 'klassik';
+  const prevTime = c.event?.time;
+  c.person = { ...c.person };
+  c.event = { ...c.event };
+  if ('name' in input) c.person.name = clean(input.name, 40);
+  if ('birthDate' in input) c.person.birthDate = isValidDate(input.birthDate) ? input.birthDate : '';
+  if (isValidDate(input.date)) c.event.date = input.date;
+  if (party) {
+    if (TIME_RE.test(input.time || '')) c.event.time = input.time;
+    if (input.venue && typeof input.venue === 'object') {
+      c.venue = { ...c.venue, name: clean(input.venue.name, 120), address: clean(input.venue.address, 200) };
+      if ('googleMaps' in input.venue) c.venue.googleMaps = cleanUrl(input.venue.googleMaps);
+      if ('yandexMaps' in input.venue) c.venue.yandexMaps = cleanUrl(input.venue.yandexMaps);
+    }
+    if (input.dressCode === null) c.dressCode = { text: '', colors: [] };
+    else if (input.dressCode === 'default') c.dressCode = structuredClone(birthdayConfig(c.template).dressCode);
+    else if (input.dressCode && typeof input.dressCode === 'object' && 'text' in input.dressCode) c.dressCode = { ...(c.dressCode || { colors: [] }), text: clean(input.dressCode.text, 300) };
+    if (input.program === 'default') {
+      delete c.programCustom;
+      c.program = shiftTimes(birthdayConfig(c.template).program, '19:00', c.event.time);
+    } else if (Array.isArray(input.program)) {
+      c.program = input.program.filter((p) => p && TIME_RE.test(p.time || '') && clean(p.title, 100)).slice(0, 15).map((p) => ({ time: p.time, title: clean(p.title, 100) }));
+      c.programCustom = true;
+    } else if (Array.isArray(c.program) && c.program.length && prevTime && c.event.time !== prevTime) {
+      c.program = shiftTimes(c.program, prevTime, c.event.time);
+    }
+    if (c.rsvp && isValidDate(c.event.date)) c.rsvp.deadline = addDays(c.event.date, -1);
+  } else if ('from' in input) {
+    c.from = clean(input.from, 60);
+  }
+  if (Array.isArray(input.photos)) {
+    const files = input.photos.filter((n) => typeof n === 'string' && /^b-[\w.-]+$/.test(n)).slice(0, MAX_BDAY_PHOTOS);
+    const slots = BDAY_SLOTS[c.template] || [];
+    c.photos = {};
+    slots.forEach((k, i) => files[i] && (c.photos[k] = files[i]));
+    if (!party) c.memories = files.slice(slots.length).map((photo) => ({ photo }));
+  }
+  cleanBirthday(c);
+  if (isNew) {
+    const taken = await takenSlugs();
+    const base = toSlug(c.person.name, 'tugilgan-kun') || 'tugilgan-kun';
+    slug = !taken[base] ? base : [`${base}-${c.event.date.slice(0, 4)}`, ...Array.from({ length: 200 }, (_, i) => `${base}-${i + 2}`)].find((x) => !taken[x]) || `${base}-${Date.now().toString(36)}`;
+  }
+  const errors = validateConfig(c, mediaFiles(slug));
+  if (!isNew && current.meta?.status !== STATUS.draft && errors.length) throw new UserError('incomplete', `Saqlab bo‘lmadi: ${errors[0]}`);
+  const meta = current.meta || {
+    owner: { id: user.id, name: [user.first_name, user.last_name].filter(Boolean).join(' '), username: user.username || '' },
+    status: STATUS.draft,
+    createdAt: new Date().toISOString(),
+    price: PRICE(),
+    source: leadSource(user.id) || 'organik',
+  };
+  writeSite(slug, { config: c, meta });
+  // Endi ishlatilmayotgan bot suratlari o'chiriladi
+  const used = new Set([...Object.values(c.photos || {}), ...(c.memories || []).map((m) => m.photo)]);
+  const dir = mediaDirOf(slug);
+  for (const n of fs.existsSync(dir) ? fs.readdirSync(dir) : []) if (n.startsWith('b-') && !used.has(n) && !(input.keepFiles || []).includes(n)) fs.rmSync(path.join(dir, n), { force: true });
+  if (meta.status === STATUS.paid) enqueue({ type: 'build', slug, reason: 'edit' });
+  return { slug, status: meta.status, errors };
+}
+
 /** Saqlash (Mini App va bot suhbati — bir xil qoidalar). */
 export async function save(user, body) {
   const input = body?.config;
@@ -377,11 +478,34 @@ function draftPreview(url) {
   // To'lanmagan bo'lsa — "NAMUNA" belgisi bilan
   const config = { ...s.config, watermark: s.meta.status !== STATUS.paid };
   delete config.paused;
-  return { slug, template: config.template || 'volume2', config, paid: s.meta.status === STATUS.paid, url: s.meta.status === STATUS.paid ? siteUrlOf(slug) : '' };
+  const mediaBase = `/api/panel/app/dmedia?s=${encodeURIComponent(slug)}&k=${draftKey(slug)}&f=`;
+  return { slug, template: config.template || 'volume2', config, mediaBase, paid: s.meta.status === STATUS.paid, url: s.meta.status === STATUS.paid ? siteUrlOf(slug) : '' };
+}
+
+/** Ko'rinish sahifasi uchun qoralama suratlari (o'sha imzo bilan) */
+function draftMedia(url, res) {
+  const slug = url.searchParams.get('s') || '';
+  const key = url.searchParams.get('k') || '';
+  const name = url.searchParams.get('f') || '';
+  const want = isSlug(slug) ? draftKey(slug) : '';
+  if (!want || key.length !== want.length || !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(want)) || !/^[\w.-]{1,120}$/.test(name)) throw new UserError('not_found', 'Topilmadi');
+  const file = path.join(mediaDirOf(slug), name);
+  if (!fs.existsSync(file)) throw new UserError('not_found', 'Topilmadi');
+  res.statusCode = 200;
+  res.setHeader('Content-Type', IMG[path.extname(name).slice(1)] || 'application/octet-stream');
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  fs.createReadStream(file).pipe(res);
 }
 
 export async function appHandler(req, res, name) {
   if (!BOT_TOKEN()) return send(res, 503, { ok: false, error: 'no_bot', message: 'Bot sozlanmagan' });
+  if (req.method === 'GET' && name === 'dmedia') {
+    try {
+      return draftMedia(new URL(req.url, 'http://localhost'), res);
+    } catch (err) {
+      return send(res, 404, { ok: false, error: 'not_found', message: err.message });
+    }
+  }
   if (req.method === 'GET' && name === 'draft') {
     try {
       return send(res, 200, { ok: true, ...draftPreview(new URL(req.url, 'http://localhost')) });
