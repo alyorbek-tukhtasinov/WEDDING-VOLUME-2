@@ -2190,6 +2190,7 @@ async function openExisting(slug, { copy = false } = {}) {
   }
   state.ed = newEditor({ slug, isNew: false, config, media: r.media, source: r.source });
   showEditor();
+  if (r.liveOverride) toast('Sana/vaqt mijoz tomonidan sayt /admin sahifasida o‘zgartirilgan — shu qiymat ko‘rsatildi. Saqlasangiz, paneldagisi asosiy bo‘ladi.');
 }
 
 function showEditor() {

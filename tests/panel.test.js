@@ -289,3 +289,55 @@ test('Daromad: faqat egasi saqlaydi va o‘qiydi, noto‘g‘ri summa rad etilad
   const noStore = await api('finance');
   assert.equal(noStore.json.error, 'store');
 });
+
+test('Mijoz /admin’da vaqtni o‘zgartirgan bo‘lsa: panel saytdagi qiymatni ko‘rsatadi, saqlanganda paneldagisi asosiy bo‘ladi', async () => {
+  const http = await import('node:http');
+  const mem = new Map();
+  const fake = http.createServer((req, res) => {
+    let b = '';
+    req.on('data', (c) => (b += c));
+    req.on('end', () => {
+      const [cmd, key, val] = JSON.parse(b);
+      let result = null;
+      if (cmd === 'GET') result = mem.get(key) ?? null;
+      if (cmd === 'SET') {
+        mem.set(key, val);
+        result = 'OK';
+      }
+      if (cmd === 'DEL') result = mem.delete(key) ? 1 : 0;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ result }));
+    });
+  });
+  await new Promise((r) => fake.listen(0, '127.0.0.1', r));
+  process.env.KV_REST_API_URL = `http://127.0.0.1:${fake.address().port}`;
+  process.env.KV_REST_API_TOKEN = 'soxta-token';
+  try {
+    const cfg = newConfig({ program: [{ time: '18:00', title: 'Kutib olish' }, { time: '19:00', title: 'Ziyofat' }] });
+    assert.equal((await api('save', { method: 'POST', body: { slug: 'vaqt-sinov', isNew: true, config: cfg } })).status, 200);
+    // Mijoz saytning /admin sahifasida vaqtni 19:00 qildi (musiqani ham tanladi)
+    mem.set('taklifnoma:vaqt-sinov:settings', JSON.stringify({ time: '19:00', music: 'musiqa-1' }));
+
+    const { json } = await api('client', { query: '?slug=vaqt-sinov' });
+    assert.deepEqual(json.liveOverride, { time: '19:00' });
+    assert.equal(json.config.event.time, '19:00');
+    assert.deepEqual(json.config.program.map((p) => p.time), ['19:00', '20:00']);
+    assert.equal(json.config.event.originalDate, undefined);
+
+    // Egasi panelda 16:00 qilib saqlaydi → config'ga yoziladi, /admin'dagi vaqt o'chadi, musiqa qoladi
+    const c = json.config;
+    c.event.time = '16:00';
+    c.program = [{ time: '16:00', title: 'Kutib olish' }, { time: '17:00', title: 'Ziyofat' }];
+    assert.equal((await api('save', { method: 'POST', body: { slug: 'vaqt-sinov', config: c } })).status, 200);
+    const st = JSON.parse(mem.get('taklifnoma:vaqt-sinov:settings'));
+    assert.equal(st.time, undefined);
+    assert.equal(st.music, 'musiqa-1');
+    const after = await api('client', { query: '?slug=vaqt-sinov' });
+    assert.equal(after.json.liveOverride, null);
+    assert.equal(after.json.config.event.time, '16:00');
+  } finally {
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+    fake.close();
+  }
+});

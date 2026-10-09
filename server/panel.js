@@ -23,9 +23,9 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { requestContext } from '../api/_lib/context.js';
 import { safeEqual, hashPassword } from '../api/_lib/http.js';
-import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance, slugsWithData, getSettings } from '../api/_lib/store.js';
+import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance, slugsWithData, getSettings, saveSettings } from '../api/_lib/store.js';
 import { SLUG_RE } from '../api/_lib/slug.js';
-import { validateConfig } from '../src/lib/config.js';
+import { validateConfig, applyOverrides } from '../src/lib/config.js';
 import { listSites as listDataSites, readSite as readDataSite, writeSite as writeDataSite, removeSite as removeDataSite, enqueue, STATUS as BOT_STATUS, siteDir as dataSiteDir, mediaFiles as dataMediaFiles } from './data.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -357,6 +357,34 @@ export async function takenSlugs() {
     }
   }
   return taken;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Saytning /admin sahifasida o'zgartirilgan sana/vaqt                 */
+/* ------------------------------------------------------------------ */
+// Mijoz /admin'da sana yoki vaqtni o'zgartirsa, saytda shu ko'rinadi (config'dan ustun, dastur ham suriladi).
+// Panel tahrirda saytdagi haqiqiy qiymatni ko'rsatadi; saqlanganda u config'ga yoziladi va /admin'dagisi o'chiriladi
+// (aks holda paneldagi o'zgarish saytda ko'rinmay qoladi).
+async function liveDateTime(slug) {
+  if (!storeConfigured()) return null;
+  const st = await requestContext.run({ slug, adminPassword: '' }, () => getSettings()).catch(() => null);
+  return st && (st.date || st.time) ? st : null;
+}
+function withLive(config, st) {
+  if (!st || !config?.event) return config;
+  const c = applyOverrides(config, { date: st.date, time: st.time });
+  if (c.event?.originalDate) {
+    const { originalDate, ...event } = c.event;
+    return { ...c, event };
+  }
+  return c;
+}
+async function clearLiveDateTime(slug) {
+  const st = await liveDateTime(slug);
+  if (!st) return;
+  const { date, time, updatedAt, ...rest } = st;
+  const next = Object.keys(rest).length ? { ...rest, updatedAt: new Date().toISOString() } : null;
+  await requestContext.run({ slug, adminPassword: '' }, () => saveSettings(next));
 }
 
 async function save(body) {
@@ -773,13 +801,23 @@ export async function panelHandler(req, res, name) {
       const r = await readConfig(slug);
       if (!r) {
         const bs = readDataSite(slug);
-        if (bs) return send(res, 200, { ok: true, slug, source: 'bot', config: bs.config, media: dataMediaFiles(slug), bot: { status: bs.meta.status, owner: bs.meta.owner || {} } });
+        if (bs) {
+          const st = await liveDateTime(slug);
+          return send(res, 200, { ok: true, slug, source: 'bot', config: withLive(bs.config, st), liveOverride: st ? { date: st.date, time: st.time } : null, media: dataMediaFiles(slug), bot: { status: bs.meta.status, owner: bs.meta.owner || {} } });
+        }
         throw new UserError('not_found', `"${slug}" topilmadi`);
       }
-      return send(res, 200, { ok: true, slug, ...r, media: mediaFiles(slug) });
+      const st = await liveDateTime(slug);
+      return send(res, 200, { ok: true, slug, ...r, config: withLive(r.config, st), liveOverride: st ? { date: st.date, time: st.time } : null, media: mediaFiles(slug) });
     }
     if (req.method === 'GET' && name === 'status') return send(res, 200, { ok: true, ...status() });
-    if (req.method === 'POST' && name === 'save') return send(res, 200, { ok: true, ...(await save(await readJson(req))) });
+    if (req.method === 'POST' && name === 'save') {
+      const body = await readJson(req);
+      const out = await save(body);
+      // Paneldagi sana/vaqt endi asosiy — /admin'dagi eski o'zgartirish saytni chalg'itmasin
+      if (!body?.isNew) await clearLiveDateTime(body.slug).catch((err) => console.error('Sozlamani tozalash xatosi:', err));
+      return send(res, 200, { ok: true, ...out });
+    }
     if (req.method === 'GET' && name === 'slugs') return send(res, 200, { ok: true, taken: await takenSlugs() });
     if (req.method === 'GET' && name === 'finance') return send(res, 200, { ok: true, ...(await loadFinance()) });
     if (req.method === 'POST' && name === 'finance') return send(res, 200, { ok: true, ...(await saveFinance(await readJson(req))) });
