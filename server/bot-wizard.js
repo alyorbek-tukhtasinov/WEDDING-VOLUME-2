@@ -209,6 +209,52 @@ const STEPS = {
     cb: (w) => ((w.data.hosts = ''), true),
   },
 };
+// Faqat "✏️ O'zgartirish" orqali (yaratishda so'ralmaydi — standart qiymat qo'yiladi)
+Object.assign(STEPS, {
+  dress: {
+    ask: (w) => {
+      const cur = w.data.dressText;
+      return [
+        `👗 <b>Kiyinish uslubi</b>\n\nHozir: ${cur ? `<i>${esc(cur)}</i>` : '— (ko‘rsatilmaydi)'}\n\nYangi matnni yozing yoki tugmani tanlang:`,
+        kb([[{ text: '❌ Olib tashlash', callback_data: 'wz:dress:-' }], [{ text: '↩️ Standart matn', callback_data: 'wz:dress:def' }]]),
+      ];
+    },
+    text: (w, t) => {
+      const v = String(t || '').trim();
+      if (v.length < 3 || v.length > 300) return 'Matn 3–300 belgi bo‘lsin:';
+      w.data.dress = { text: v };
+      return true;
+    },
+    cb: (w, v) => ((w.data.dress = v === '-' ? null : 'default'), true),
+  },
+  program: {
+    ask: (w) => {
+      const cur = w.data.programList || [];
+      return [
+        `🗓 <b>To‘y dasturi</b>\n\nHozir:\n${cur.length ? cur.map((p) => `${p.time} — ${esc(p.title)}`).join('\n') : '— (ko‘rsatilmaydi)'}\n\n` +
+          `Yangi dasturni yuboring — <b>har qatorda vaqt va nima bo‘lishi</b>:\n<code>18:00 Mehmonlarni kutib olish\n18:30 Kelin-kuyovning kirib kelishi\n19:00 Tantanali ziyofat</code>\n\nYoki tugmani tanlang:`,
+        kb([[{ text: '❌ Dasturni olib tashlash', callback_data: 'wz:program:-' }], [{ text: '↩️ Standart dastur', callback_data: 'wz:program:def' }]]),
+      ];
+    },
+    text: (w, t) => {
+      const items = [];
+      const bad = [];
+      for (const line of String(t || '').split('\n').map((l) => l.trim()).filter(Boolean)) {
+        const m = /^(\d{1,2})[:.](\d{2})\s*[-—–:.)]?\s*(.{2,100})$/.exec(line);
+        const time = m && parseTime(`${m[1]}:${m[2]}`);
+        if (time) items.push({ time, title: m[3].trim() });
+        else bad.push(line);
+      }
+      if (!items.length || bad.length) {
+        return `Tushunmadim${bad.length ? `: <i>${esc(bad[0].slice(0, 60))}</i>` : ''}\nHar qatorni vaqt bilan boshlang, masalan:\n<code>18:00 Mehmonlarni kutib olish</code>`;
+      }
+      w.data.program = items.sort((a, b) => (a.time < b.time ? -1 : 1));
+      return true;
+    },
+    cb: (w, v) => ((w.data.program = v === '-' ? [] : 'default'), true),
+  },
+});
+
 const ORDER = ['template', 'eventType', 'groom', 'bride', 'date', 'time', 'venue', 'address', 'map', 'voice', 'hosts'];
 
 /* ------------------------------------ Config ↔ javoblar ------------------------------------ */
@@ -226,6 +272,8 @@ function dataOf(c) {
     map,
     voice: c.invitedBy === 'couple' ? 'couple' : 'parents',
     hosts: c.hosts || '',
+    dressText: c.dressCode?.text || '',
+    programList: (c.program || []).map((p) => ({ time: p.time, title: p.title })),
   };
 }
 function inputOf(d) {
@@ -239,6 +287,9 @@ function inputOf(d) {
     venue: { name: d.venue, address: d.address, googleMaps: map.googleMaps || '', yandexMaps: map.yandexMaps || '', ...(map.lat != null ? { lat: map.lat, lng: map.lng } : {}) },
     invitedBy: d.voice,
     hosts: d.voice === 'couple' ? [d.groom, d.bride].filter(Boolean).join(' va ') : d.hosts || '',
+    // Faqat shu bandlar o'zgartirilganda yuboriladi
+    ...(d.dress !== undefined ? { dressCode: d.dress } : {}),
+    ...(d.program !== undefined ? { program: d.program } : {}),
   };
 }
 
@@ -308,6 +359,8 @@ export async function showSummary(chatId, user, slug, title = '') {
     `🏛 ${esc(d.venue)}`,
     `📍 ${esc(d.address)}`,
     `💌 ${d.voice === 'couple' ? 'Kelin-kuyov nomidan' : `Ota-ona nomidan${c.hosts ? ` — ${esc(c.hosts)}` : ''}`}`,
+    `👗 Kiyinish uslubi: ${d.dressText ? esc(d.dressText.length > 60 ? `${d.dressText.slice(0, 60)}…` : d.dressText) : 'yo‘q'}`,
+    `🗓 Dastur: ${d.programList.length ? d.programList.map((p) => `${p.time} ${esc(p.title)}`).join(' · ') : 'yo‘q'}`,
   ].filter((x) => x !== undefined);
   const errors = validateConfig(c);
   if (errors.length && !paid) lines.push('', `⚠️ To‘ldirilmagan: ${esc(errors[0])}`);
@@ -331,6 +384,8 @@ const EDITABLE = [
   ['address', '📍 Manzil'],
   ['map', '🗺 Xarita'],
   ['voice', '💌 Kimning nomidan'],
+  ['program', '🗓 To‘y dasturi'],
+  ['dress', '👗 Kiyinish uslubi'],
 ];
 async function editMenu(chatId, user, slug) {
   const s = readSite(slug);

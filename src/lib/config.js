@@ -299,7 +299,7 @@ const fromMin = (m) => {
   return `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
 };
 /** Dastur bandlarini vaqt farqiga surish (yarim tundan o'tsa — keyingi kun soati). */
-function shiftTimes(program, from, to) {
+export function shiftTimes(program, from, to) {
   if (!TIME_RE.test(from || '') || !TIME_RE.test(to || '')) return program;
   const delta = toMin(to) - toMin(from);
   return program.map((p) => (p && TIME_RE.test(p.time || '') ? { ...p, time: fromMin(toMin(p.time) + delta) } : p));

@@ -108,6 +108,33 @@ test('Reklama havolasi → dizayn → savollar → ko‘rinish → to‘lov → 
   assert.equal(readSite(s.slug).config.program[0].time, '17:30');
   assert.match(last().text, /Saqlandi/);
 
+  // 4b) Kiyinish uslubini olib tashlash, o'z dasturini yozish; vaqt o'zgarsa — o'z dasturi suriladi
+  await onUpdate(cb(`wz:edit:${s.slug}:dress`));
+  assert.match(last().text, /Kiyinish uslubi/);
+  await onUpdate(cb('wz:dress:-'));
+  assert.equal(readSite(s.slug).config.dressCode.text, '');
+  assert.match(last().text, /Kiyinish uslubi: yo‘q/);
+  await onUpdate(cb(`wz:edit:${s.slug}:program`));
+  await onUpdate(msg('salom'));
+  assert.match(last().text, /Tushunmadim/);
+  await onUpdate(msg('17:30 Kutib olish\n18.00 - Kelin-kuyov kirib kelishi\n21:00 Tort'));
+  assert.deepEqual(readSite(s.slug).config.program, [
+    { time: '17:30', title: 'Kutib olish' },
+    { time: '18:00', title: 'Kelin-kuyov kirib kelishi' },
+    { time: '21:00', title: 'Tort' },
+  ]);
+  await onUpdate(cb(`wz:edit:${s.slug}:time`));
+  await onUpdate(msg('18:00'));
+  assert.deepEqual(readSite(s.slug).config.program.map((p) => p.time), ['18:00', '18:30', '21:30']);
+  assert.equal(readSite(s.slug).config.program[2].title, 'Tort', 'o‘z dasturi o‘chmaydi');
+  await onUpdate(cb(`wz:edit:${s.slug}:dress`));
+  await onUpdate(cb('wz:dress:def'));
+  assert.ok(readSite(s.slug).config.dressCode.text.length > 5, 'standart matn qaytdi');
+  await onUpdate(cb(`wz:edit:${s.slug}:program`));
+  await onUpdate(cb('wz:program:-'));
+  assert.deepEqual(readSite(s.slug).config.program, []);
+  assert.deepEqual(validateConfig(readSite(s.slug).config), []);
+
   // 5) To'lov
   await onUpdate(cb(`pay:${s.slug}`));
   assert.match(last().text, /To‘lov/);

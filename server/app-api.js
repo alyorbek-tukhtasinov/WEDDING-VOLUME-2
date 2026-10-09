@@ -13,7 +13,7 @@
 //
 // Mijozdan kelgan sozlamalar ruxsat etilgan maydonlar bo'yicha qabul qilinadi (demo, paused, musicUrl kabi
 // ichki maydonlarni o'zgartira olmaydi).
-import { validateConfig, isValidDate, TIME_RE } from '../src/lib/config.js';
+import { validateConfig, isValidDate, TIME_RE, shiftTimes } from '../src/lib/config.js';
 import { EVENT_IDS, eventTexts } from '../src/lib/events.js';
 import { MUSIC_LIBRARY, findTrack } from '../src/lib/music.js';
 import { suggestProgramPreset, buildProgram } from '../src/lib/presets.js';
@@ -129,6 +129,23 @@ export function applyInput(base, input, { isNew }) {
 
   if (c.texts && c.template !== 'yz' && wasAuto && !String(i.texts?.invitation || '').trim()) c.texts.invitation = autoOf(c);
 
+  // Kiyinish uslubi: null — olib tashlash, 'default' — marosimning standart matni, { text } — o'z matni
+  if (i.dressCode === null) c.dressCode = { text: '', colors: [] };
+  else if (i.dressCode === 'default') c.dressCode = structuredClone(defaultConfig(c.template, c.eventType).dressCode || { text: '', colors: [] });
+  else if (i.dressCode && typeof i.dressCode === 'object' && 'text' in i.dressCode) c.dressCode = { ...(c.dressCode || { colors: [] }), text: clean(i.dressCode.text, 300) };
+
+  // To'y dasturi: [] — olib tashlash, 'default' — standart, [{ time, title }] — mijozning o'z dasturi
+  if (i.program === 'default') {
+    delete c.programCustom;
+    c.program = buildProgram(suggestProgramPreset(c.event.time, c.eventType), c.event.time);
+  } else if (Array.isArray(i.program)) {
+    c.program = i.program
+      .filter((p) => p && TIME_RE.test(p.time || '') && clean(p.title, 100))
+      .slice(0, 15)
+      .map((p) => ({ time: p.time, title: clean(p.title, 100) }));
+    c.programCustom = true;
+  }
+
   if (i.musicTrack === 'none' || findTrack(i.musicTrack)) c.musicTrack = i.musicTrack;
   if (['off', 'button', 'auto'].includes(i.autoScroll)) c.autoScroll = i.autoScroll;
 
@@ -140,8 +157,9 @@ export function applyInput(base, input, { isNew }) {
   if (c.rsvp && isValidDate(c.event.date)) c.rsvp.deadline = addDays(c.event.date, -1);
 
   // Vaqt o'zgarsa — dastur ham shu vaqtdan boshlanadi
-  if (Array.isArray(c.program) && c.program.length && c.event.time !== prevTime && TIME_RE.test(c.event.time)) {
-    c.program = buildProgram(suggestProgramPreset(c.event.time, c.eventType), c.event.time);
+  // (mijoz o'zi yozgan dastur — o'chirilmaydi, shuncha vaqtga suriladi)
+  if (Array.isArray(c.program) && c.program.length && c.event.time !== prevTime && TIME_RE.test(c.event.time) && !Array.isArray(i.program)) {
+    c.program = c.programCustom ? shiftTimes(c.program, prevTime, c.event.time) : buildProgram(suggestProgramPreset(c.event.time, c.eventType), c.event.time);
   }
   if (isNew) c.autoScroll ||= 'auto';
   return c;
