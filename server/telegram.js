@@ -111,3 +111,7 @@ export const isAdmin = (id) => adminIds().includes(String(id));
 
 export const PRICE = () => Number(env('PRICE', '70000').replace(/\D/g, '')) || 70000;
 export const fmtSum = (n) => `${String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} so‘m`;
+
+/** Qoralama (to'lanmagan) taklifnomani ko'rish havolasi — imzo bilan, boshqalar sayt nomini taxmin qilib ocholmaydi */
+export const draftKey = (slug) => crypto.createHmac('sha256', BOT_TOKEN() || 'x').update(`draft:${slug}`).digest('hex').slice(0, 20);
+export const previewUrl = (slug) => (siteDomain() ? `https://boshqaruv.${siteDomain()}/korinish.html?s=${encodeURIComponent(slug)}&k=${draftKey(slug)}` : '');

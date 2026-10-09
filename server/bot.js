@@ -5,13 +5,18 @@
 // webhook/nginx sozlamasi kerak emas. API bilan DATA_DIR orqali gaplashadi (server/data.js navbati).
 //
 // Muhit o'zgaruvchilari (/etc/taklifnoma/env): BOT_TOKEN, ADMIN_TG_IDS, PAY_CARD, PAY_CARD_HOLDER, PRICE,
-// SUPPORT_CONTACT, (ixtiyoriy) PAY_NOTE, BOT_APP_URL, DRAFT_DAYS.
+// SUPPORT_CONTACT, (ixtiyoriy) PAY_NOTE, BOT_APP_URL, DRAFT_DAYS, MAIN_CHANNEL, REVIEWS_CHANNEL.
+//
+// Reklama havolalari: t.me/<bot>?start=<manba> — masalan ?start=ig_volume2 (manba + dizayn). Manba /admin'da
+// statistikada ko'rinadi; oxiri shablon nomi bo'lsa (…_volume2), mijozga darhol shu dizayn ko'rsatiladi.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { tg, tgUpload, BOT_TOKEN, adminIds, isAdmin, appUrl, siteUrlOf, siteDomain, PRICE, VIDEO_PRICE, fmtSum } from './telegram.js';
-import { DATA_DIR, ensureDirs, listSites, readSite, writeSite, updateMeta, removeSite, takeQueue, sitesOf, STATUS, enqueue } from './data.js';
+import { DATA_DIR, ensureDirs, listSites, readSite, writeSite, updateMeta, removeSite, takeQueue, sitesOf, STATUS, enqueue, recordLead, readLeads } from './data.js';
+import { startWizard, onWizardCallback, onWizardMessage, cancelWizard, showSummary } from './bot-wizard.js';
+import { validateConfig } from '../src/lib/config.js';
 import { requestContext } from '../api/_lib/context.js';
 import { storeConfigured, storeReady, getFinance, setFinance, listEntries } from '../api/_lib/store.js';
 import { findEvent } from '../src/lib/events.js';
@@ -50,6 +55,12 @@ const VIDEO_TEXT = {
   rejected: 'chek tasdiqlanmadi',
 };
 
+// Telegram kanallar: asosiy va otzivlar (bot ikkalasida ham admin bo'lishi kerak — otzivlarni o'zi joylaydi)
+const MAIN_CHANNEL = () => env('MAIN_CHANNEL', '@Taklifim_rasmiy');
+const REVIEWS_CHANNEL = () => env('REVIEWS_CHANNEL', '@taklifimuzotziv');
+const channelUrl = (c) => `https://t.me/${String(c).replace(/^@/, '')}`;
+let BOT_USERNAME = '';
+
 const BTN = {
   create: '✨ Taklifnoma yaratish',
   mine: '📂 Mening taklifnomalarim',
@@ -57,11 +68,11 @@ const BTN = {
   help: '💬 Yordam',
 };
 const mainKeyboard = () => ({
-  keyboard: [[appUrl() ? { text: BTN.create, web_app: { url: appUrl() } } : { text: BTN.create }], [{ text: BTN.mine }, { text: BTN.demos }], [{ text: BTN.help }]],
+  // Taklifnoma oddiy suhbat orqali yaratiladi (Mini App mijozlarga tushunarsiz edi) — server/bot-wizard.js
+  keyboard: [[{ text: BTN.create }], [{ text: BTN.mine }, { text: BTN.demos }], [{ text: BTN.help }]],
   resize_keyboard: true,
   is_persistent: true,
 });
-const appButton = (text, query = '') => ({ text, web_app: { url: `${appUrl()}${query}` } });
 
 const DEMOS = [
   ['volume5', '💃 Our Story (raqsdagi juftlik)', 'demo-volume5'],
@@ -99,19 +110,43 @@ async function send(chatId, text, extra = {}) {
 const toAdmins = (text, extra) => Promise.all(adminIds().map((id) => send(id, text, extra)));
 
 /* ------------------------------------ Bo'limlar ------------------------------------ */
+// "/start ig_volume2" → manba yoziladi; oxiri shablon nomi bo'lsa — o'sha dizayn
+function templateOfPayload(p) {
+  if (!p) return null;
+  const ids = DEMOS.map(([id]) => id);
+  return ids.find((id) => p === id || p.endsWith(`_${id}`) || p.endsWith(`-${id}`)) || null;
+}
+
 async function start(msg) {
+  const payload = String(msg.text || '').split(/\s+/)[1] || '';
+  if (recordLead(msg.from.id, payload) && payload) log(`➕ yangi mijoz: ${msg.from.id} (${payload})`);
   const name = esc(msg.from?.first_name || '');
   await send(
     msg.chat.id,
     `Assalomu alaykum${name ? `, ${name}` : ''}! 🌸\n\n` +
       `Bu yerda <b>to‘y taklifnomangizni o‘zingiz 5 daqiqada</b> yaratasiz — chiroyli sayt ko‘rinishida, musiqa, sana, xarita va mehmonlar javobi bilan.\n\n` +
       `1️⃣ <b>«${BTN.create}»</b> tugmasini bosing\n` +
-      `2️⃣ Dizayn, ismlar, sana va to‘yxonani kiriting — natijani darhol ko‘rasiz\n` +
+      `2️⃣ Savollarga javob bering: dizayn, ismlar, sana, to‘yxona — <b>bepul ko‘rib chiqasiz</b>\n` +
       `3️⃣ Yoqsa, to‘lov qilib chekni yuborasiz — sayt havolasi shu yerga keladi\n\n` +
       `💰 Narxi: <b>${fmtSum(PRICE())}</b>\n\n` +
-      `Avval ${BTN.demos.toLowerCase()} bilan tanishib chiqishingiz mumkin 👇`,
+      `Avval ${BTN.demos.toLowerCase()} bilan tanishib chiqishingiz mumkin 👇\n\n` +
+      `📢 Kanalimiz: ${MAIN_CHANNEL()}\n⭐ Mijozlar fikri: ${REVIEWS_CHANNEL()}`,
     { reply_markup: mainKeyboard() },
   );
+  const t = templateOfPayload(payload.toLowerCase());
+  if (t) await showDesign(msg.chat.id, t);
+}
+
+/** Reklamada ko'rgan dizayn: namunani ochish va shu dizaynda bepul yaratish */
+async function showDesign(chatId, id) {
+  const demo = DEMOS.find(([d]) => d === id);
+  const d = siteDomain();
+  if (!demo) return;
+  const rows = [[{ text: '👀 Namunani ochish', url: d ? `https://${demo[2]}.${d}` : 'https://t.me' }]];
+  rows.push([{ text: '✨ Shu dizaynda bepul yaratish', callback_data: `new:${id}` }]);
+  await send(chatId, `Siz ko‘rgan dizayn: <b>${esc(demo[1])}</b>\n\nAvval namunani ochib ko‘ring. Ismlar, sana va to‘yxonangizni kiritsangiz — o‘z taklifnomangizni <b>bepul ko‘rib chiqasiz</b>, yoqsa to‘laysiz.`, {
+    reply_markup: { inline_keyboard: rows },
+  });
 }
 
 async function demos(msg) {
@@ -120,7 +155,7 @@ async function demos(msg) {
     reply_markup: {
       inline_keyboard: [
         ...DEMOS.map(([, title, slug]) => [{ text: title, url: d ? `https://${slug}.${d}` : 'https://t.me' }]),
-        ...(appUrl() ? [[appButton(BTN.create)]] : []),
+        [{ text: BTN.create, callback_data: 'new:' }],
       ],
     },
   });
@@ -132,7 +167,7 @@ async function help(msg) {
     msg.chat.id,
     `💬 <b>Yordam</b>\n\n` +
       `• Taklifnoma yaratish: «${BTN.create}» tugmasi\n` +
-      `• Tayyor taklifnomani o‘zgartirish: «${BTN.mine}» → «✏️ Tahrirlash» — o‘zgarishlar 1 daqiqada saytda bo‘ladi\n` +
+      `• Tayyor taklifnomani o‘zgartirish: «${BTN.mine}» → «✏️ O‘zgartirish» — o‘zgarishlar 1 daqiqada saytda bo‘ladi\n` +
       `• Mehmonlar javoblari: «${BTN.mine}» → «📊 Javoblar»\n\n` +
       (contact ? `Savol bo‘lsa, yozing: ${esc(contact)}` : 'Savol bo‘lsa, shu yerga yozing — javob beramiz.'),
     { reply_markup: mainKeyboard() },
@@ -142,13 +177,13 @@ async function help(msg) {
 function siteButtons(s) {
   const rows = [];
   if (s.meta.status === STATUS.paid) {
-    rows.push([{ text: '🌐 Ochish', url: siteUrlOf(s.slug) }, ...(appUrl() ? [appButton('✏️ Tahrirlash', `?slug=${s.slug}`)] : [])]);
+    rows.push([{ text: '🌐 Ochish', url: siteUrlOf(s.slug) }, { text: '✏️ O‘zgartirish', callback_data: `wz:menu:${s.slug}` }]);
     rows.push([{ text: '📊 Javoblar', callback_data: `rsvp:${s.slug}` }]);
     const v = s.meta.video?.status;
     if (v === 'done') rows.push([{ text: '🎬 Videoni olish', callback_data: `vget:${s.slug}` }]);
     else if (!['paid', 'rendering', 'receipt'].includes(v) && !s.config.paused) rows.push([{ text: `🎬 Instagram uchun video — ${fmtSum(VIDEO_PRICE())}`, callback_data: `vbuy:${s.slug}` }]);
   } else {
-    if (appUrl()) rows.push([appButton('✏️ Davom ettirish', `?slug=${s.slug}`)]);
+    rows.push([{ text: '👀 Ko‘rish / ✏️ Davom ettirish', callback_data: `wz:show:${s.slug}` }]);
     if (s.meta.status !== STATUS.receipt) rows.push([{ text: '💳 To‘lov qilish', callback_data: `pay:${s.slug}` }]);
   }
   return { inline_keyboard: rows };
@@ -158,7 +193,7 @@ async function mine(msg) {
   const list = sitesOf(msg.from.id).sort((a, b) => (a.meta.createdAt < b.meta.createdAt ? 1 : -1));
   if (!list.length) {
     return send(msg.chat.id, 'Sizda hali taklifnoma yo‘q. Keling, birinchisini yaratamiz! 👇', {
-      reply_markup: appUrl() ? { inline_keyboard: [[appButton(BTN.create)]] } : mainKeyboard(),
+      reply_markup: { inline_keyboard: [[{ text: BTN.create, callback_data: 'new:' }]] },
     });
   }
   for (const s of list) {
@@ -613,6 +648,88 @@ async function sendVideoTo(chatId, slug, { admin = false, file = path.join(VIDEO
   }
 }
 
+/* ------------------------------------ Otzivlar ------------------------------------ */
+// To'ydan 1–7 kun o'tib (soat 10–20 da) egasidan baho va fikr so'raladi → admin ✅ bosadi → otzivlar kanaliga.
+const tashkentHour = () => (new Date().getUTCHours() + 5) % 24;
+const daysSince = (iso) => Math.floor((Date.now() - new Date(`${iso}T00:00:00+05:00`).getTime()) / 86400e3);
+
+async function askReviews(st, { anyHour = false } = {}) {
+  if (Date.now() - (st.lastReviewAsk || 0) < 3600e3) return;
+  st.lastReviewAsk = Date.now();
+  const h = tashkentHour();
+  if (!anyHour && (h < 10 || h >= 20)) return;
+  for (const s of listSites()) {
+    if (s.meta.status !== STATUS.paid || s.meta.review || !s.meta.owner?.id) continue;
+    const days = daysSince(s.config.event?.date || '');
+    if (!(days >= 1 && days <= 7)) continue;
+    updateMeta(s.slug, (m) => ({ ...m, review: { status: 'asked', askedAt: new Date().toISOString() } }));
+    await send(
+      s.meta.owner.id,
+      `🎉 <b>${esc(namesOf(s.config))}</b> — muborak bo‘lsin! Baxtli bo‘ling 🤍\n\nTaklifnomamiz sizga yoqdimi? Iltimos, baholang:`,
+      { reply_markup: { inline_keyboard: [[1, 2, 3, 4, 5].map((n) => ({ text: `${n}⭐`, callback_data: `rv:${s.slug}:${n}` }))] } },
+    );
+  }
+}
+
+async function onReviewRating(cb, slug, n) {
+  await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Rahmat!' }).catch(() => {});
+  const s = readSite(slug);
+  const rating = Math.min(5, Math.max(1, Number(n) || 0));
+  if (!s || String(s.meta.owner?.id) !== String(cb.from.id) || !rating || !['asked', 'rated'].includes(s.meta.review?.status)) return;
+  updateMeta(slug, (m) => ({ ...m, review: { ...m.review, status: 'rated', rating } }));
+  if (cb.message) await tg('editMessageReplyMarkup', { chat_id: cb.from.id, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } }).catch(() => {});
+  await send(
+    cb.from.id,
+    `${'⭐'.repeat(rating)} — rahmat!\n\nBir-ikki so‘z bilan fikringizni yozing: mehmonlarga yoqdimi, nimasi esda qoldi? ` +
+      (rating >= 4 ? 'Fikringiz ismingiz bilan otzivlar kanalimizda chiqishi mumkin.' : 'Nimani yaxshilashimiz kerak — shuni ham yozing, albatta inobatga olamiz.'),
+    { reply_markup: { inline_keyboard: [[{ text: '⏭ Yozmayman', callback_data: `rvskip:${slug}` }]] } },
+  );
+}
+
+/** Egasi fikr yozdi (yoki o'tkazib yubordi) → adminlarga tasdiqlash uchun */
+async function submitReview(userId, slug, text = '') {
+  const s = readSite(slug);
+  if (!s || s.meta.review?.status !== 'rated') return;
+  const r = { ...s.meta.review, text: String(text).slice(0, 700), status: 'pending', at: new Date().toISOString() };
+  updateMeta(slug, (m) => ({ ...m, review: r }));
+  await send(userId, 'Rahmat! Fikringiz biz uchun juda qadrli 🌸', { reply_markup: mainKeyboard() });
+  const head = `⭐ <b>Otziv</b> — ${esc(namesOf(s.config))} (${esc(s.meta.owner?.name || '')})\n${'⭐'.repeat(r.rating)}${r.text ? `\n\n«${esc(r.text)}»` : ''}`;
+  if (r.rating >= 4) {
+    await toAdmins(head, { reply_markup: { inline_keyboard: [[{ text: '✅ Kanalga joylash', callback_data: `rvok:${slug}` }, { text: '❌ Joylamaslik', callback_data: `rvno:${slug}` }]] } });
+  } else {
+    updateMeta(slug, (m) => ({ ...m, review: { ...m.review, status: 'private' } }));
+    await toAdmins(`${head}\n\n⚠️ Past baho — kanalga chiqmaydi. Mijoz bilan bog‘laning: <code>${s.meta.owner?.id}</code>`);
+  }
+}
+
+async function onReviewDecision(cb, ok, slug) {
+  const s = readSite(slug);
+  const r = s?.meta.review;
+  if (!r || r.status !== 'pending') return tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Allaqachon hal qilingan' }).catch(() => {});
+  let note = '❌ Joylanmadi';
+  if (ok) {
+    const owner = String(s.meta.owner?.name || '').split(' ')[0] || 'Mijozimiz';
+    const ev = findEvent(s.config.eventType);
+    const text =
+      `${'⭐'.repeat(r.rating)}\n\n` +
+      (r.text ? `«${esc(r.text)}»\n\n` : '') +
+      `— <b>${esc(owner)}</b>, ${esc(ev.title.replace(/\s*\(.*\)/, '').toLowerCase())} taklifnomasi\n\n` +
+      `✨ O‘zingiz uchun: ${BOT_USERNAME ? `@${BOT_USERNAME}` : ''}`;
+    try {
+      await tg('sendMessage', { chat_id: REVIEWS_CHANNEL(), text, parse_mode: 'HTML', disable_web_page_preview: true });
+      note = `✅ Kanalga joylandi (${REVIEWS_CHANNEL()})`;
+    } catch (err) {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id, text: `Joylanmadi: bot ${REVIEWS_CHANNEL()} kanalida admin emas`, show_alert: true }).catch(() => {});
+      return;
+    }
+  }
+  updateMeta(slug, (m) => ({ ...m, review: { ...m.review, status: ok ? 'posted' : 'rejected', decidedAt: new Date().toISOString() } }));
+  await tg('answerCallbackQuery', { callback_query_id: cb.id, text: note }).catch(() => {});
+  if (cb.message) {
+    await tg('editMessageText', { chat_id: cb.message.chat.id, message_id: cb.message.message_id, text: `${cb.message.text}\n\n${note}` }).catch(() => {});
+  }
+}
+
 /* ------------------------------------ Tozalash ------------------------------------ */
 function cleanup(st) {
   if (Date.now() - (st.lastCleanup || 0) < 3600e3) return;
@@ -638,6 +755,27 @@ function cleanup(st) {
 }
 
 /* ------------------------------------ Admin ------------------------------------ */
+/** Reklama manbalari (oxirgi 30 kun): botga kelganlar → taklifnoma boshlaganlar → to'laganlar */
+function sourceStats(all) {
+  const since = Date.now() - 30 * 86400e3;
+  const rows = {};
+  const row = (k) => (rows[k] ||= { leads: 0, sites: 0, paid: 0 });
+  for (const l of Object.values(readLeads())) if (new Date(l.at).getTime() >= since) row(l.src).leads++;
+  for (const s of all) {
+    if (new Date(s.meta.createdAt || 0).getTime() < since) continue;
+    const r = row(s.meta.source || 'organik');
+    r.sites++;
+    if (s.meta.status === STATUS.paid) r.paid++;
+  }
+  const list = Object.entries(rows).sort((a, b) => b[1].leads - a[1].leads || b[1].paid - a[1].paid);
+  if (!list.length) return '';
+  return (
+    `📈 <b>Manbalar (30 kun)</b> — keldi → boshladi → to‘ladi:\n` +
+    list.slice(0, 12).map(([k, r]) => `• ${esc(k)}: ${r.leads} → ${r.sites} → <b>${r.paid}</b>`).join('\n') +
+    `\n<i>Reklama havolasi: t.me/${BOT_USERNAME || 'bot'}?start=ig_volume2</i>\n\n`
+  );
+}
+
 async function adminStats(msg) {
   const all = listSites();
   const by = (st) => all.filter((s) => s.meta.status === st);
@@ -650,6 +788,7 @@ async function adminStats(msg) {
       `✅ Faol: ${by(STATUS.paid).length}\n🧾 Chek tekshiruvda: ${receipts.length}\n💳 To‘lov kutilmoqda: ${by(STATUS.awaiting).length}\n` +
       `📝 Qoralama: ${by(STATUS.draft).length}\n⚠️ Rad etilgan: ${by(STATUS.rejected).length}\n` +
       `🎬 Video: ${all.filter((s) => s.meta.video?.status === 'done').length} tayyor, ${vWork} navbatda, ${vReceipts.length} chek tekshiruvda\n\n` +
+      sourceStats(all) +
       `Barcha imkoniyatlar — boshqaruv panelida: https://boshqaruv.${siteDomain()}`,
     receipts.length || vReceipts.length
       ? {
@@ -668,9 +807,22 @@ async function adminStats(msg) {
 async function onUpdate(u) {
   if (u.callback_query) {
     const cb = u.callback_query;
+    if (await onWizardCallback(cb)) return;
     const [kind, slug] = String(cb.data || '').split(':');
+    if (kind === 'new') {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+      return startWizard(cb.from.id, cb.from, slug || '');
+    }
     if ((kind === 'ok' || kind === 'no') && isAdmin(cb.from.id)) return onAdminDecision(cb, kind === 'ok', slug);
     if ((kind === 'vok' || kind === 'vno') && isAdmin(cb.from.id)) return onVideoDecision(cb, kind === 'vok', slug);
+    if (kind === 'rv') return onReviewRating(cb, slug, String(cb.data).split(':')[2]);
+    if (kind === 'rvskip') {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+      const s = readSite(slug);
+      if (s && String(s.meta.owner?.id) === String(cb.from.id)) return submitReview(cb.from.id, slug, '');
+      return;
+    }
+    if ((kind === 'rvok' || kind === 'rvno') && isAdmin(cb.from.id)) return onReviewDecision(cb, kind === 'rvok', slug);
     if (kind === 'vbuy' || kind === 'vget') {
       await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
       const s = readSite(slug);
@@ -680,8 +832,10 @@ async function onUpdate(u) {
     if (kind === 'pay') {
       await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
       const s = readSite(slug);
-      if (s && String(s.meta.owner?.id) === String(cb.from.id)) return payInstructions(cb.from.id, slug);
-      return;
+      if (!s || String(s.meta.owner?.id) !== String(cb.from.id)) return;
+      const errors = s.meta.status === STATUS.paid ? [] : validateConfig(s.config);
+      if (errors.length) return send(cb.from.id, `⚠️ Avval to‘ldiring: ${esc(errors[0])}\n«✏️ O‘zgartirish» tugmasidan foydalaning.`);
+      return payInstructions(cb.from.id, slug);
     }
     if (kind === 'rsvp') {
       await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
@@ -703,12 +857,22 @@ async function onUpdate(u) {
     }
     return;
   }
-  if (text === '/start' || text.startsWith('/start ')) return start(msg);
+  if (text === '/start' || text.startsWith('/start ')) {
+    cancelWizard(msg.from.id);
+    return start(msg);
+  }
   if (text === BTN.mine || text === '/mine') return mine(msg);
   if (text === BTN.demos || text === '/demos') return demos(msg);
   if (text === BTN.help || text === '/help') return help(msg);
   if (text === '/admin' && isAdmin(msg.from.id)) return adminStats(msg);
-  if (text === BTN.create && !appUrl()) return send(msg.chat.id, 'Mini App manzili sozlanmagan (BOT_APP_URL).');
+  if (text === BTN.create || text === '/new') return startWizard(msg.chat.id, msg.from);
+  // Savollarga javob (taklifnoma yaratish/o'zgartirish suhbati)
+  if (await onWizardMessage(msg)) return;
+  // Otziv matni (baho qo'yilgandan keyin)
+  if (text) {
+    const rv = sitesOf(msg.from.id).find((s) => s.meta.review?.status === 'rated');
+    if (rv) return submitReview(msg.chat.id, rv.slug, text);
+  }
   // Boshqa matn — adminlarga yuboriladi (mijoz savoli)
   if (text && !isAdmin(msg.from.id)) {
     await toAdmins(`💬 <b>${esc(msg.from.first_name || '')}</b>${msg.from.username ? ` (@${esc(msg.from.username)})` : ''} · <code>${msg.from.id}</code>:\n${esc(text.slice(0, 1500))}`);
@@ -745,17 +909,20 @@ async function main() {
   fs.rmSync(path.join(DATA_DIR(), 'tmp'), { recursive: true, force: true }); // to'xtab qolgan video qoldiqlari
   const st = loadState();
   const me = await tg('getMe');
-  log(`Bot: @${me.username} · ma'lumotlar: ${DATA_DIR()} · Mini App: ${appUrl() || '(yo‘q)'} · adminlar: ${adminIds().join(', ') || '(yo‘q!)'}`);
+  BOT_USERNAME = me.username || '';
+  log(`Bot: @${me.username} · ma'lumotlar: ${DATA_DIR()} · adminlar: ${adminIds().join(', ') || '(yo‘q!)'}`);
   await tg('deleteWebhook', {}).catch(() => {});
   await tg('setMyCommands', {
     commands: [
       { command: 'start', description: 'Bosh menyu' },
+      { command: 'new', description: 'Taklifnoma yaratish' },
       { command: 'mine', description: 'Mening taklifnomalarim' },
       { command: 'demos', description: 'Namunalar' },
       { command: 'help', description: 'Yordam' },
     ],
   }).catch(() => {});
-  if (appUrl()) await tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Taklifnoma', web_app: { url: appUrl() } } }).catch((e) => log('! menu tugmasi:', e.message));
+  // Menyu tugmasi — buyruqlar ro'yxati (Mini App ishlatilmaydi)
+  await tg('setChatMenuButton', { menu_button: { type: 'commands' } }).catch((e) => log('! menu tugmasi:', e.message));
 
   // Navbat: API yozgan hodisalar (har 2 soniyada)
   setInterval(() => processQueue().catch((e) => log('! navbat:', e.message)), 2000);
@@ -779,6 +946,7 @@ async function main() {
       }
       if (updates.length) saveState(st);
       cleanup(st);
+      await askReviews(st).catch((e) => log('! otziv:', e.message));
     } catch (err) {
       if (stop) break;
       log(`! getUpdates: ${err.message}`);
@@ -797,4 +965,4 @@ const isMain = () => {
 };
 if (process.argv[1] && isMain()) main();
 
-export { onUpdate, processQueue };
+export { onUpdate, processQueue, askReviews };

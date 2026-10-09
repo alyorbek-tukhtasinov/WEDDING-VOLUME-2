@@ -173,8 +173,8 @@ function confirmBox(text) {
 }
 
 /* ------------------------------------ Tahrirlash ------------------------------------ */
-function startNew() {
-  state.ed = { slug: null, config: defaultConfig('volume3', 'nikoh'), status: 'draft', step: 0, textTouched: false };
+function startNew(template = 'volume3') {
+  state.ed = { slug: null, config: defaultConfig(template, 'nikoh'), status: 'draft', step: 0, textTouched: false };
   state.ed.config.couple = { groom: '', bride: '', initials: '' };
   renderStep();
 }
@@ -748,8 +748,12 @@ async function boot() {
       <p class="tg-lead">${err.message}. Taklifnomani bot menyusidagi «✨ Taklifnoma yaratish» tugmasi orqali oching.</p></main>`);
     return;
   }
-  const slug = new URLSearchParams(location.search).get('slug');
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('slug');
   if (slug && state.me.sites.some((s) => s.slug === slug)) return openSite(slug);
+  // Reklamadan kelgan: bot shu dizayn bilan ochadi (?template=volume2)
+  const tpl = params.get('template');
+  if (tpl && DESIGNS[tpl] && state.me.templates.includes(tpl)) return startNew(tpl);
   showHome();
 }
 boot();

@@ -18,8 +18,8 @@ import { EVENT_IDS, eventTexts } from '../src/lib/events.js';
 import { MUSIC_LIBRARY, findTrack } from '../src/lib/music.js';
 import { suggestProgramPreset, buildProgram } from '../src/lib/presets.js';
 import { defaultConfig, addDays } from '../src/lib/starter.js';
-import { verifyInitData, BOT_TOKEN, PRICE, VIDEO_PRICE, siteUrlOf, siteDomain } from './telegram.js';
-import { readSite, writeSite, sitesOf, removeSite, enqueue, STATUS, mediaFiles, isSlug } from './data.js';
+import { verifyInitData, BOT_TOKEN, PRICE, VIDEO_PRICE, siteUrlOf, siteDomain, draftKey } from './telegram.js';
+import { readSite, writeSite, sitesOf, removeSite, enqueue, STATUS, mediaFiles, isSlug, leadSource } from './data.js';
 import { takenSlugs } from './panel.js';
 import { findSlot, getField, setField, usedMedia } from '../src/lib/photo-slots.js';
 import fs from 'node:fs';
@@ -191,7 +191,8 @@ function ownSite(user, slug) {
   return s;
 }
 
-async function save(user, body) {
+/** Saqlash (Mini App va bot suhbati — bir xil qoidalar). */
+export async function save(user, body) {
   const input = body?.config;
   if (!input || typeof input !== 'object') throw new UserError('bad_request', 'Ma’lumot yo‘q');
   let slug = body.slug;
@@ -227,6 +228,7 @@ async function save(user, body) {
     status: STATUS.draft,
     createdAt: now,
     price: PRICE(),
+    source: leadSource(user.id) || 'organik', // qaysi reklama/havoladan kelgan (bot /start)
   };
   writeSite(slug, { config, meta });
   pruneMedia(slug, config);
@@ -346,8 +348,29 @@ function remove(user, body) {
   return { slug: s.slug };
 }
 
+/** Qoralamani ko'rish (bot yuborgan imzoli havola: korinish.html?s=…&k=…) — Telegram kirishisiz. */
+function draftPreview(url) {
+  const slug = url.searchParams.get('s') || '';
+  const key = url.searchParams.get('k') || '';
+  const want = isSlug(slug) ? draftKey(slug) : '';
+  if (!want || key.length !== want.length || !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(want))) throw new UserError('not_found', 'Havola eskirgan yoki noto‘g‘ri');
+  const s = readSite(slug);
+  if (!s) throw new UserError('not_found', 'Taklifnoma topilmadi');
+  // To'lanmagan bo'lsa — "NAMUNA" belgisi bilan
+  const config = { ...s.config, watermark: s.meta.status !== STATUS.paid };
+  delete config.paused;
+  return { slug, template: config.template || 'volume2', config, paid: s.meta.status === STATUS.paid, url: s.meta.status === STATUS.paid ? siteUrlOf(slug) : '' };
+}
+
 export async function appHandler(req, res, name) {
   if (!BOT_TOKEN()) return send(res, 503, { ok: false, error: 'no_bot', message: 'Bot sozlanmagan' });
+  if (req.method === 'GET' && name === 'draft') {
+    try {
+      return send(res, 200, { ok: true, ...draftPreview(new URL(req.url, 'http://localhost')) });
+    } catch (err) {
+      return send(res, 404, { ok: false, error: 'not_found', message: err.message });
+    }
+  }
   const auth = verifyInitData(String(req.headers['x-telegram-init-data'] || ''));
   if (!auth) return send(res, 401, { ok: false, error: 'unauthorized', message: 'Iltimos, taklifnomani Telegram bot orqali oching' });
   const { user } = auth;

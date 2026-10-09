@@ -103,6 +103,24 @@ export const mediaFiles = (slug) => {
 /* ----------------------------------- Navbat (API → bot) ----------------------------------- */
 /** Hodisa: { type: 'build' | 'pay' | 'notify' | …, slug, … } */
 let seq = 0;
+/* ----------------------------------- Mijoz qayerdan keldi (reklama manbasi) ----------------------------------- */
+// <DATA_DIR>/leads.json: { [telegramId]: { src, at } } — birinchi kelgan manba saqlanadi (keyingi /start uni almashtirmaydi)
+const leadsFile = () => path.join(DATA_DIR(), 'leads.json');
+export function readLeads() {
+  return readJson(leadsFile()) || {};
+}
+/** Manba: "/start <payload>" dagi qiymat (faqat a-z, 0-9, _ -). Yangi foydalanuvchi bo'lsa — true. */
+export function recordLead(userId, src = '') {
+  const leads = readLeads();
+  const id = String(userId);
+  if (leads[id]) return false;
+  leads[id] = { src: String(src || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) || 'organik', at: new Date().toISOString() };
+  fs.mkdirSync(DATA_DIR(), { recursive: true });
+  writeAtomic(leadsFile(), JSON.stringify(leads));
+  return true;
+}
+export const leadSource = (userId) => readLeads()[String(userId)]?.src || '';
+
 export function enqueue(event) {
   fs.mkdirSync(queueDir(), { recursive: true });
   // Bir millisekundda bir nechta hodisa bo'lsa ham tartib saqlanadi (vaqt + tartib raqami)

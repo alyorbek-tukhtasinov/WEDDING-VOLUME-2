@@ -27,6 +27,8 @@ export default defineConfig({
         panel: path.join(root, 'panel', 'index.html'),
         // Telegram bot Mini App (mijozlar o'zi yaratadi) — boshqaruv.<domen>/app
         app: path.join(root, 'panel', 'app.html'),
+        // Bot suhbatida yaratilgan qoralamani ko'rish (imzoli havola) — boshqaruv.<domen>/korinish.html
+        korinish: path.join(root, 'panel', 'korinish.html'),
         'preview-v2': path.join(root, 'panel', 'preview-v2.html'),
         'preview-yz': path.join(root, 'panel', 'preview-yz.html'),
         'preview-osmon': path.join(root, 'panel', 'preview-osmon.html'),
