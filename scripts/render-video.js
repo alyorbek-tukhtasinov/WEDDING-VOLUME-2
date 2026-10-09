@@ -94,22 +94,13 @@ export async function renderVideo(slug, { out, siteDir, onProgress = () => {}, f
   fs.mkdirSync(tmpRoot, { recursive: true });
   const work = fs.mkdtempSync(path.join(tmpRoot, `video-${slug}-`));
   const target = path.resolve(out || path.join(work, `${slug}.mp4`));
-  // Kadrlar diskka yozilmaydi — to'g'ridan-to'g'ri ffmpeg'ga (150 s video ham ~20–45 MB, vaqtinchalik fayl yo'q)
+  // Kadrlar avval diskka (JPEG) yoziladi, brauzer yopilgach ffmpeg ularni videoga yig'adi: Chromium va ffmpeg
+  // bir vaqtda ishlamaydi — 1 GB RAMli serverda ikkalasi birga sig'maydi (ffmpeg o'ldirilardi).
+  // Vaqtinchalik joy: ~150–250 KB/kadr (70 s video ≈ 0,4–0,5 GB), video tayyor bo'lishi bilan o'chiriladi.
   const silent = path.join(work, 'silent.mp4');
-  const enc = spawn(process.env.FFMPEG || 'ffmpeg', [
-    '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
-    '-c:v', 'libx264', '-preset', process.env.VIDEO_PRESET || 'veryfast', '-crf', '21', '-maxrate', '4500k', '-bufsize', '9000k',
-    // Kam xotira (1 GB RAMli server): bitta oqim, qisqa oldindan ko'rish
-    '-threads', '1', '-x264-params', 'rc-lookahead=8:sync-lookahead=0',
-    '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', String(fps), '-an', silent,
-  ], { stdio: ['pipe', 'ignore', 'pipe'] });
-  let encErr = '';
-  enc.stderr.on('data', (d) => (encErr = (encErr + d).slice(-2000)));
-  const encDone = new Promise((resolve, reject) => {
-    enc.on('error', reject);
-    enc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg: ${encErr.trim().split('\n').slice(-2).join(' | ') || code}`))));
-  });
-  const writeFrame = (buf) => new Promise((r) => (enc.stdin.write(buf) ? r() : enc.stdin.once('drain', r)));
+  const framesDir = path.join(work, 'frames');
+  fs.mkdirSync(framesDir);
+  const writeFrame = (buf) => fs.promises.writeFile(path.join(framesDir, `${String(frames).padStart(6, '0')}.jpg`), buf);
   const srv = await serve(dir);
   const { chromium } = await import('playwright-core');
   const browser = await chromium.launch({ chromiumSandbox: false, args: ['--disable-dev-shm-usage', '--autoplay-policy=no-user-gesture-required'] });
@@ -236,15 +227,28 @@ export async function renderVideo(slug, { out, siteDir, onProgress = () => {}, f
     }
     await hold(2.5);
   } catch (err) {
-    enc.kill('SIGKILL');
     fs.rmSync(work, { recursive: true, force: true });
     throw err;
   } finally {
     await browser.close().catch(() => {});
     srv.close();
   }
-  enc.stdin.end();
-  await encDone;
+
+  // 2b) Kadrlar → video (brauzer yopilgan, xotira bo'sh)
+  log(`kadrlar videoga yig'ilmoqda (${frames} ta)…`);
+  try {
+    await run(process.env.FFMPEG || 'ffmpeg', [
+      '-y', '-loglevel', 'error', '-framerate', String(fps), '-i', path.join(framesDir, '%06d.jpg'),
+      '-c:v', 'libx264', '-preset', process.env.VIDEO_PRESET || 'veryfast', '-crf', '21', '-maxrate', '4500k', '-bufsize', '9000k',
+      // Kam xotira (1 GB RAMli server): bitta oqim, qisqa oldindan ko'rish
+      '-threads', '1', '-x264-params', 'rc-lookahead=8:sync-lookahead=0',
+      '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', String(fps), '-an', silent,
+    ], 40 * 60e3);
+  } catch (err) {
+    fs.rmSync(work, { recursive: true, force: true });
+    throw err;
+  }
+  fs.rmSync(framesDir, { recursive: true, force: true });
 
   // 3) Musiqa qo'shiladi (oxirida sekin pasayadi); video qayta kodlanmaydi
   const seconds = frames / fps;
