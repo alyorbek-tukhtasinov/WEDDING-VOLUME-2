@@ -91,7 +91,7 @@ function followupMessage(s, stage) {
     return [
       `💌 <b>${hi}taklifnomangiz tayyor turibdi!</b>\n\n${what}\n\n` +
         `Mehmonlaringiz havolani ochishi bilan taklifnoma jonlanadi — bunday taklifni ular uzoq eslab qolishadi ✨\n\n` +
-        `Faqat <b>bitta qadam</b> qoldi: to‘lovdan keyin sayt havolasi <b>1 daqiqada</b> keladi va uni darhol Telegram yoki WhatsApp orqali yuborasiz.` +
+        `Faqat <b>bitta qadam</b> qoldi: to‘lovdan keyin sayt havolasi <b>1 daqiqada</b> keladi va uni darhol Telegram, WhatsApp, Instagram yoki SMS orqali mehmonlaringizga yuborasiz 📲` +
         urgency(c),
       kb(btnView, btnPay),
     ];

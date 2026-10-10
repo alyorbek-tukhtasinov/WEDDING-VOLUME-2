@@ -639,7 +639,7 @@ async function handleBuild(evt) {
       }
       await send(
         s.meta.owner.id,
-        `🎉 <b>Taklifnomangiz tayyor!</b>\n\n🔗 ${url}\n\nHavolani mehmonlaringizga Telegram yoki WhatsApp orqali yuboring.\n` +
+        `🎉 <b>Taklifnomangiz tayyor!</b>\n\n🔗 ${url}\n\nHavolani mehmonlaringizga Telegram, WhatsApp, Instagram yoki SMS orqali yuboring 📲\n` +
           `O‘zgartirish kerak bo‘lsa — «${BTN.mine}» → «✏️ O‘zgartirish». Mehmonlar javoblari — «📊 Javoblar».`,
         { reply_markup: siteButtons(readSite(evt.slug) || s) },
       );
@@ -736,7 +736,7 @@ async function sendVideoTo(chatId, slug, { admin = false, file = path.join(VIDEO
   const names = site ? namesOf(site.config) : slug;
   const caption = admin
     ? `🎬 ${esc(names)} — video tayyor (${slug})`
-    : `🎬 <b>${esc(names)}</b> — taklifnomangiz videosi tayyor!\n\nInstagram Reels/Stories, Telegram yoki WhatsApp’da ulashing. Havola: ${siteUrlOf(slug)}`;
+    : `🎬 <b>${esc(names)}</b> — taklifnomangiz videosi tayyor!\n\nInstagram Reels/Stories, Telegram, WhatsApp yoki SMS orqali ulashing. Havola: ${siteUrlOf(slug)}`;
   const fileId = knownId || (admin ? '' : site?.meta.video?.fileId);
   try {
     if (fileId) {

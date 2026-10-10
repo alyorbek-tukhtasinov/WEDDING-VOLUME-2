@@ -69,7 +69,7 @@ function seedPosts() {
         `Sana, to‘y dasturi va xarita — bitta sahifada. «Kelaman» degan har bir mehmonni esa siz telefoningizda ko‘rib turasiz.\n\n` +
         `✨ <b>Nega aynan onlayn taklifnoma?</b>\n` +
         `• Bosmaxona, navbat va tarqatish yo‘q — <b>3 daqiqada tayyor</b>\n` +
-        `• Yuzlab nusxa emas — bitta havola, Telegram va WhatsApp’da hammaga\n` +
+        `• Yuzlab nusxa emas — bitta havola — Telegram, WhatsApp, Instagram yoki SMS orqali hammaga\n` +
         `• Sana yoki to‘yxona o‘zgarsa — bir zumda tuzatasiz, qayta chop etish shart emas\n` +
         `• Avval o‘z ismlaringiz bilan <b>bepul ko‘rasiz</b> — yoqsagina to‘laysiz\n\n` +
         `Qog‘oz taklifnoma stol ustida qoladi. Bizniki — har bir mehmonning cho‘ntagida 📲\n\n` +
@@ -83,7 +83,7 @@ function seedPosts() {
         `💌 <b>Taklifim.uz — onlayn taklifnomalar</b>\n\n` +
         `To‘y, fotiha, nahorgi osh, qiz uzatish, kelin salom va tug‘ilgan kun uchun — <b>chiroyli sayt ko‘rinishidagi taklifnoma</b>.\n\n` +
         `🎵 Musiqa bilan ochiladi\n📅 Sana, vaqt va to‘y dasturi\n📍 Bir bosishda xarita (Google / Yandex)\n✅ Mehmonlar «Kelaman» deb javob beradi — siz ro‘yxatni botda ko‘rasiz\n💬 Tilaklar bo‘limi\n\n` +
-        `Bir havola — Telegram, WhatsApp va Instagram’da hammaga yuborasiz.\n\n👉 ${bot}`,
+        `Bir havola — Telegram, WhatsApp, Instagram yoki SMS orqali hammaga yuborasiz.\n\n👉 ${bot}`,
     },
     {
       id: 'seed-how',
