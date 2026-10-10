@@ -1,8 +1,16 @@
 {
   "template": "suzani",
   "autoScroll": "auto",
-  "couple": { "groom": "Yusuf", "bride": "Zulayho" },
-  "event": { "date": "2026-11-21", "time": "18:00", "timezone": "+05:00", "durationHours": 5 },
+  "couple": {
+    "groom": "Yusuf",
+    "bride": "Zulayho"
+  },
+  "event": {
+    "date": "2026-11-21",
+    "time": "18:00",
+    "timezone": "+05:00",
+    "durationHours": 5
+  },
   "hosts": "Karimovlar va Rahimovlar oilasi",
   "texts": {
     "heroCaption": "Nikoh to‘yiga taklifnoma",
@@ -17,16 +25,38 @@
     "yandexMaps": "https://yandex.uz/maps/?pt=66.959700,39.654200&z=16&l=map"
   },
   "program": [
-    { "time": "18:00", "title": "Mehmonlarni kutib olish" },
-    { "time": "18:30", "title": "Kelin-kuyovning kirib kelishi" },
-    { "time": "19:00", "title": "Tantanali ziyofat" },
-    { "time": "21:30", "title": "To‘y tortini kesish" }
+    {
+      "time": "18:00",
+      "title": "Mehmonlarni kutib olish"
+    },
+    {
+      "time": "18:30",
+      "title": "Kelin-kuyovning kirib kelishi"
+    },
+    {
+      "time": "19:00",
+      "title": "Tantanali ziyofat"
+    },
+    {
+      "time": "21:30",
+      "title": "To‘y tortini kesish"
+    }
   ],
   "dressCode": {
     "text": "Bayramona libos. Suzani ranglari — qirmizi, nil, tilla va yashil — ayniqsa mos tushadi.",
-    "colors": ["#a3192e", "#233f7a", "#d19a2e", "#2f6b4f"]
+    "colors": [
+      "#a3192e",
+      "#233f7a",
+      "#d19a2e",
+      "#2f6b4f"
+    ]
   },
-  "musicTrack": "musiqa-5",
-  "rsvp": { "enabled": true, "deadline": "2026-11-19", "maxGuests": 5, "showWishes": true },
+  "musicTrack": "musiqa-17",
+  "rsvp": {
+    "enabled": true,
+    "deadline": "2026-11-19",
+    "maxGuests": 5,
+    "showWishes": true
+  },
   "contacts": []
 }
