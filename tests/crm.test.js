@@ -21,11 +21,17 @@ before(async () => {
     req.on('data', (c) => (b += c));
     req.on('end', () => {
       const method = req.url.split('/').pop();
-      const body = b ? JSON.parse(b) : {};
+      let body = {};
+      try {
+        body = b ? JSON.parse(b) : {};
+      } catch {
+        body = { multipart: true, chat_id: /name="chat_id"\r\n\r\n(\d+)/.exec(b)?.[1] }; // fayl yuklash (sendAudio)
+      }
       calls.push({ method, body });
       res.setHeader('Content-Type', 'application/json');
       if (blockedIds.has(Number(body.chat_id))) return res.end(JSON.stringify({ ok: false, error_code: 403, description: 'Forbidden: bot was blocked by the user' }));
       if (method === 'getChatMember') return res.end(JSON.stringify({ ok: true, result: { status: 'left' } }));
+      if (method === 'sendAudio') return res.end(JSON.stringify({ ok: true, result: { message_id: calls.length, audio: { file_id: 'AUD-1' } } }));
       res.end(JSON.stringify({ ok: true, result: { message_id: calls.length } }));
     });
   });
@@ -210,4 +216,40 @@ test('/xabar: guruh tanlash, ko‘rib tasdiqlash, bloklaganlar hisobga olinadi',
   assert.match(lastTo(ADMIN.id).text, /3 kishiga/);
   await onUpdate(msg(ADMIN, '/bekor'));
   assert.match(lastTo(ADMIN.id).text, /Bekor qilindi/);
+});
+
+test('Admin yuborilgan eslatma matnini ko‘radi; mijoz musiqani eshitib tanlaydi', async () => {
+  const { onUpdate } = await import('../server/bot.js');
+  const { writeSite, readSite, STATUS } = await import('../server/data.js');
+  const { defaultConfig } = await import('../src/lib/starter.js');
+
+  // dil-sar ga 1- va 2-eslatma yuborilgan (1-testda)
+  calls.length = 0;
+  await onUpdate(cb(ADMIN, 'm:t:dil-sar'));
+  const shown = lastTo(ADMIN.id);
+  assert.match(shown.text, /2-eslatma/);
+  assert.match(shown.text, /maxsus sovg‘a/);
+  assert.match(shown.text, /Tugmalari: .*to‘lash/);
+
+  // Musiqa
+  const base = defaultConfig('volume3');
+  const cfg = { ...base, couple: { ...base.couple, groom: 'Aziz', bride: 'Kamola' }, venue: { ...base.venue, name: 'Navruz', address: 'Toshkent' }, event: { ...base.event, date: '2099-06-01' } };
+  writeSite('aziz-kamola', { config: cfg, meta: { owner: { id: C.id, name: 'Kamola' }, status: STATUS.draft, price: 70000, createdAt: ago(1) } });
+  calls.length = 0;
+  await onUpdate(cb(C, 'wz:menu:aziz-kamola'));
+  assert.ok(JSON.stringify(lastTo(C.id).reply_markup).includes('wz:edit:aziz-kamola:music'));
+  await onUpdate(cb(C, 'wz:edit:aziz-kamola:music'));
+  const list = lastTo(C.id);
+  assert.match(list.text, /Fon musiqasi/);
+  assert.ok(JSON.stringify(list.reply_markup).includes('wz:music:p:musiqa-2'));
+  // Eshitib ko'rish — audio yuklanadi, keyingi safar file_id bilan
+  await onUpdate(cb(C, 'wz:music:p:musiqa-2'));
+  assert.ok(calls.some((c) => c.method === 'sendAudio' && c.body.multipart && c.body.chat_id === String(C.id)));
+  calls.length = 0;
+  await onUpdate(cb(C, 'wz:music:p:musiqa-2'));
+  assert.equal(calls.find((c) => c.method === 'sendAudio').body.audio, 'AUD-1');
+  // Tanlash — saqlanadi
+  await onUpdate(cb(C, 'wz:music:musiqa-2'));
+  assert.equal(readSite('aziz-kamola').config.musicTrack, 'musiqa-2');
+  assert.match(lastTo(C.id).text, /🎵 Musiqa: Shohruhxon — Men seni sevaman/);
 });

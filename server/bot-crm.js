@@ -126,9 +126,17 @@ async function sendFollowup(s, stage, { manual = false } = {}) {
   }
   const [text, extra] = followupMessage(s, stage);
   const r = await tryTg('sendMessage', { chat_id: s.meta.owner.id, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra });
+  // Adminga ko'rsatish uchun yuborilgan matn ham saqlanadi
+  const buttons = extra.reply_markup.inline_keyboard.flat().map((b) => b.text);
   updateMeta(s.slug, (m) => ({
     ...m,
-    followup: { ...(m.followup || {}), stage: Math.max(m.followup?.stage || 0, stage), at: new Date().toISOString(), ...(r.blocked ? { blocked: true } : {}) },
+    followup: {
+      ...(m.followup || {}),
+      stage: Math.max(m.followup?.stage || 0, stage),
+      at: new Date().toISOString(),
+      ...(r.ok ? { text, buttons, sentStage: stage } : {}),
+      ...(r.blocked ? { blocked: true } : {}),
+    },
   }));
   if (r.blocked) markLeadBlocked(s.meta.owner.id);
   return r;
@@ -152,6 +160,7 @@ export async function runFollowups(st, { now = Date.now(), force = false } = {})
     if (!prev || String(s.meta.createdAt) > String(prev.meta.createdAt)) latest.set(id, s);
   }
   const sent = [];
+  const sentSlugs = [];
   for (const s of latest.values()) {
     const f = s.meta.followup || {};
     if (f.blocked || (f.stage || 0) >= 3) continue;
@@ -159,12 +168,20 @@ export async function runFollowups(st, { now = Date.now(), force = false } = {})
     const since = Date.parse(stage === 1 ? s.meta.updatedAt || s.meta.createdAt : f.at);
     if (!(now - since >= STAGE_AFTER[stage - 1])) continue;
     const r = await sendFollowup(s, stage);
-    if (r.ok) sent.push(`${stage}) ${esc(D.namesOf(s.config))}`);
+    if (r.ok) {
+      sent.push(`${stage}-eslatma → ${esc(D.namesOf(s.config))} (${esc(firstName(s.meta.owner))})`);
+      sentSlugs.push(s);
+    }
     else D.log(`! eslatma yuborilmadi (${s.slug}): ${r.err?.message}`);
   }
   if (sent.length) {
     for (const id of adminIds()) {
-      await tryTg('sendMessage', { chat_id: id, text: `📨 <b>Eslatmalar yuborildi (${sent.length})</b>\n${sent.join('\n')}\n\nBatafsil: /mijozlar`, parse_mode: 'HTML' });
+      await tryTg('sendMessage', {
+        chat_id: id,
+        text: `📨 <b>Eslatmalar yuborildi (${sent.length})</b>\n${sent.join('\n')}\n\nNima yuborilganini ko‘rish uchun bosing 👇`,
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: sentSlugs.slice(0, 20).map((x) => [{ text: `📄 ${D.namesOf(x.config)}`.slice(0, 60), callback_data: `m:t:${x.slug}` }]) },
+      });
     }
   }
 }
@@ -311,6 +328,7 @@ async function crmCard(chatId, slug, cb) {
     (s.meta.status === STATUS.paid ? `\n🔗 ${siteUrlOf(slug)}` : '');
   const view = s.meta.status === STATUS.paid ? siteUrlOf(slug) : previewUrl(slug);
   const rows = [[{ text: '✍️ Xabar yozish', callback_data: `m:w:${o.id}` }]];
+  if (f.stage) rows.push([{ text: `📄 Yuborilgan eslatma (${f.sentStage || f.stage}-chi)`, callback_data: `m:t:${slug}` }]);
   if (s.meta.status !== STATUS.paid && s.meta.status !== STATUS.receipt) {
     rows[0].push({ text: '⏰ Eslatma yuborish', callback_data: `m:r:${slug}` });
     rows.push([
@@ -417,6 +435,23 @@ export async function onCrmCallback(cb) {
     if (!s || !isUnpaid(s)) return (await answer('To‘lov kutilmaydi', true)), true;
     await D.payInstructions(s.meta.owner.id, a);
     await answer('To‘lov ma’lumoti mijozga yuborildi ✓');
+    return true;
+  }
+  if (act === 't') {
+    await answer();
+    const s = readSite(a);
+    if (!s?.meta.followup?.stage) return (await tryTg('sendMessage', { chat_id: chatId, text: 'Bu mijozga hali eslatma yuborilmagan.' })), true;
+    const f = s.meta.followup;
+    // Eski eslatmalarda matn saqlanmagan — shu bosqich matni qayta tuziladi
+    const [text, extra] = f.text ? [f.text, null] : followupMessage(s, f.stage);
+    const buttons = f.buttons || extra.reply_markup.inline_keyboard.flat().map((x) => x.text);
+    await tryTg('sendMessage', {
+      chat_id: chatId,
+      text: `📄 <b>${esc(s.meta.owner?.name || '')}</b> ga ${f.sentStage || f.stage}-eslatma (${String(f.at).slice(0, 16).replace('T', ' ')} UTC):\n<i>Tugmalari: ${esc(buttons.join(' · '))}</i>\n\n——————\n${text}`,
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
+      reply_markup: { inline_keyboard: [[{ text: '👤 Mijoz kartasi', callback_data: `m:c:${a}` }]] },
+    });
     return true;
   }
   if (act === 'b') return (await answer(), await broadcastMenu(chatId, cb)), true;

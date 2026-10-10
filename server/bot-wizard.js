@@ -5,8 +5,9 @@
 // Holat: <DATA_DIR>/wizard.json — { [userId]: { slug, step, data, edit } } (bot qayta ishga tushsa ham saqlanadi).
 import fs from 'node:fs';
 import path from 'node:path';
-import { DATA_DIR, readSite, STATUS, promoAmount } from './data.js';
-import { tg, tgDownload, previewUrl, siteUrlOf, siteDomain, fmtSum, PRICE } from './telegram.js';
+import { DATA_DIR, ROOT, readSite, STATUS, promoAmount } from './data.js';
+import { MUSIC_LIBRARY, findTrack } from '../src/lib/music.js';
+import { tg, tgUpload, tgDownload, previewUrl, siteUrlOf, siteDomain, fmtSum, PRICE } from './telegram.js';
 import { save, saveBirthday, saveBotPhoto, APP_TEMPLATES, BDAY_TEMPLATES, BDAY_SLOTS, MAX_BDAY_PHOTOS } from './app-api.js';
 import { EVENTS, findEvent } from '../src/lib/events.js';
 import { parseMapInput, googleLink, yandexLink } from '../src/lib/maps.js';
@@ -270,6 +271,49 @@ Object.assign(STEPS, {
   },
 });
 
+// Musiqa (faqat "✏️ O'zgartirish" orqali): qo‘shiqni bossa — eshitib ko'radi, «✅ Tanlash» — saqlanadi
+const trackTitle = (id) => (id === 'none' ? '🔇 Musiqasiz' : findTrack(id)?.title || '—');
+Object.assign(STEPS, {
+  music: {
+    ask: (w) => [
+      `🎵 <b>Fon musiqasi</b>\n\nHozir: <i>${esc(trackTitle(w.data.musicTrack))}</i>\n\nQo‘shiqni bosing — <b>eshitib ko‘rasiz</b>, yoqsa «✅ Tanlash» ni bosing:`,
+      kb([
+        ...MUSIC_LIBRARY.map((t) => [{ text: `${w.data.musicTrack === t.id ? '✅' : '▶️'} ${t.title}`.slice(0, 60), callback_data: `wz:music:p:${t.id}` }]),
+        [{ text: `${w.data.musicTrack === 'none' ? '✅ ' : ''}🔇 Musiqasiz`, callback_data: 'wz:music:none' }],
+      ]),
+    ],
+    cb: (w, v) => (v === 'none' || findTrack(v) ? ((w.data.musicTrack = v), true) : 'Qo‘shiqni ro‘yxatdan tanlang'),
+  },
+});
+
+// Qo'shiqni eshittirish: fayl serverdan bir marta yuklanadi, keyin Telegram'dagi nusxasi (file_id) ishlatiladi
+const musicIdsFile = () => path.join(DATA_DIR(), 'music-ids.json');
+async function sendTrackPreview(chatId, id) {
+  const t = findTrack(id);
+  if (!t) return;
+  let ids = {};
+  try {
+    ids = JSON.parse(fs.readFileSync(musicIdsFile(), 'utf8'));
+  } catch {
+    /* birinchi marta */
+  }
+  const caption = `🎵 <b>${esc(t.title)}</b>`;
+  const markup = kb([[{ text: '✅ Shu qo‘shiqni tanlash', callback_data: `wz:music:${t.id}` }]]).reply_markup;
+  try {
+    if (ids[t.id]) return await tg('sendAudio', { chat_id: chatId, audio: ids[t.id], caption, parse_mode: 'HTML', reply_markup: markup });
+    const file = path.join(ROOT, 'public', t.file);
+    const r = await tgUpload('sendAudio', { chat_id: chatId, caption, parse_mode: 'HTML', title: t.title.split(' — ').at(-1), performer: t.title.includes(' — ') ? t.title.split(' — ')[0] : '', reply_markup: markup }, { field: 'audio', path: file, name: path.basename(file) });
+    const fid = r?.audio?.file_id || r?.document?.file_id;
+    if (fid) {
+      ids[t.id] = fid;
+      fs.mkdirSync(DATA_DIR(), { recursive: true });
+      fs.writeFileSync(musicIdsFile(), JSON.stringify(ids));
+    }
+  } catch (err) {
+    await send(chatId, `${caption}\n\n(Qo‘shiqni yuborib bo‘lmadi — baribir tanlashingiz mumkin)`, kb([[{ text: '✅ Shu qo‘shiqni tanlash', callback_data: `wz:music:${t.id}` }]]));
+  }
+}
+
 // Boshlanish: to'y yoki tug'ilgan kun
 Object.assign(STEPS, {
   kind: {
@@ -352,6 +396,7 @@ function dataOf(c) {
     hosts: c.hosts || '',
     dressText: c.dressCode?.text || '',
     programList: (c.program || []).map((p) => ({ time: p.time, title: p.title })),
+    musicTrack: c.musicTrack || '',
   };
 }
 function bdataOf(c) {
@@ -371,6 +416,7 @@ function bdataOf(c) {
     photos: [...slots.map((k) => c.photos?.[k]).filter(Boolean), ...(c.memories || []).map((m) => m.photo).filter(Boolean)],
     dressText: c.dressCode?.text || '',
     programList: (c.program || []).map((p) => ({ time: p.time, title: p.title })),
+    musicTrack: c.musicTrack || '',
   };
 }
 function binputOf(d) {
@@ -385,6 +431,7 @@ function binputOf(d) {
     input.from = d.from || '';
   }
   if (Array.isArray(d.photos)) input.photos = d.photos;
+  if (d.musicTrack) input.musicTrack = d.musicTrack;
   return input;
 }
 
@@ -402,6 +449,7 @@ function inputOf(d) {
     // Faqat shu bandlar o'zgartirilganda yuboriladi
     ...(d.dress !== undefined ? { dressCode: d.dress } : {}),
     ...(d.program !== undefined ? { program: d.program } : {}),
+    ...(d.musicTrack ? { musicTrack: d.musicTrack } : {}),
   };
 }
 
@@ -511,6 +559,7 @@ export async function showSummary(chatId, user, slug, title = '') {
     `👗 Kiyinish uslubi: ${d.dressText ? esc(d.dressText.length > 60 ? `${d.dressText.slice(0, 60)}…` : d.dressText) : 'yo‘q'}`,
     `🗓 Dastur: ${d.programList.length ? d.programList.map((p) => `${p.time} ${esc(p.title)}`).join(' · ') : 'yo‘q'}`,
       ];
+  if (c.musicTrack) lines.push(`🎵 Musiqa: ${esc(trackTitle(c.musicTrack))}`);
   const errors = validateConfig(c);
   if (errors.length && !paid) lines.push('', `⚠️ To‘ldirilmagan: ${esc(errors[0])}`);
   const disc = Math.max(0, Number(String(process.env.CHANNEL_DISCOUNT ?? '5000').replace(/\D/g, '')) || 0);
@@ -541,6 +590,7 @@ const EDITABLE = [
   ['voice', '💌 Kimning nomidan'],
   ['program', '🗓 To‘y dasturi'],
   ['dress', '👗 Kiyinish uslubi'],
+  ['music', '🎵 Musiqa'],
 ];
 const BEDITABLE = {
   klassik: [
@@ -555,6 +605,7 @@ const BEDITABLE = {
     ['program', '🗓 Bazm dasturi'],
     ['dress', '👗 Kiyinish uslubi'],
     ['photos', '📷 Surat'],
+    ['music', '🎵 Musiqa'],
   ],
   gift: [
     ['btemplate', '🎨 Dizayn', true],
@@ -563,6 +614,7 @@ const BEDITABLE = {
     ['date', '📅 Sana'],
     ['from', '✍️ Kimdan'],
     ['photos', '📷 Suratlar'],
+    ['music', '🎵 Musiqa'],
   ],
 };
 async function editMenu(chatId, user, slug) {
@@ -598,6 +650,8 @@ export async function onWizardCallback(cb) {
     await ask(chatId, w);
     return true;
   }
+  // Qo'shiqni eshitib ko'rish (ro'yxat tugmalari o'z joyida qoladi)
+  if (kind === 'music' && a === 'p') return (await sendTrackPreview(chatId, b), true);
   // Savolga tugma bilan javob
   const w = getW(user.id);
   if (!w || w.step !== kind || !STEPS[kind]?.cb) return true;

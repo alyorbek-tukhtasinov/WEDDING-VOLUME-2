@@ -286,6 +286,7 @@ export async function saveBirthday(user, { slug, input = {} }) {
     slots.forEach((k, i) => files[i] && (c.photos[k] = files[i]));
     if (!party) c.memories = files.slice(slots.length).map((photo) => ({ photo }));
   }
+  if (input.musicTrack === 'none' || findTrack(input.musicTrack)) c.musicTrack = input.musicTrack;
   cleanBirthday(c);
   if (isNew) {
     const taken = await takenSlugs();
