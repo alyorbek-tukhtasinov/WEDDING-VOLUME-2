@@ -119,15 +119,41 @@ export function readLeads() {
   return readJson(leadsFile()) || {};
 }
 /** Manba: "/start <payload>" dagi qiymat (faqat a-z, 0-9, _ -). Yangi foydalanuvchi bo'lsa — true. */
-export function recordLead(userId, src = '') {
+export function recordLead(userId, src = '', user = null) {
   const leads = readLeads();
   const id = String(userId);
   if (leads[id]) return false;
-  leads[id] = { src: String(src || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) || 'organik', at: new Date().toISOString() };
+  leads[id] = { src: String(src || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) || 'organik', at: new Date().toISOString(), ...leadUser(user) };
   fs.mkdirSync(DATA_DIR(), { recursive: true });
   writeAtomic(leadsFile(), JSON.stringify(leads));
   return true;
 }
+const leadUser = (u) => (u ? { name: [u.first_name, u.last_name].filter(Boolean).join(' ').slice(0, 80), username: u.username || '' } : {});
+/** Mijoz ismi va oxirgi faolligi (ro'yxat va ommaviy xabarlar uchun); faylga kamdan-kam yoziladi */
+export function touchLead(user) {
+  if (!user?.id) return;
+  const leads = readLeads();
+  const id = String(user.id);
+  const cur = leads[id];
+  if (!cur) return;
+  const u = leadUser(user);
+  if (cur.name === u.name && cur.username === u.username && !cur.blocked && Date.now() - Date.parse(cur.lastAt || 0) < 3600e3) return;
+  leads[id] = { ...cur, ...u, lastAt: new Date().toISOString(), blocked: undefined };
+  writeAtomic(leadsFile(), JSON.stringify(leads));
+}
+/** Botni bloklaganlar — ommaviy xabarlardan chiqariladi */
+export function markLeadBlocked(userId) {
+  const leads = readLeads();
+  const id = String(userId);
+  leads[id] = { ...(leads[id] || { src: 'organik', at: new Date().toISOString() }), blocked: true };
+  writeAtomic(leadsFile(), JSON.stringify(leads));
+}
+/** Vaqtinchalik chegirma (eslatma yoki admin bergan): muddati ichida yoki to'lov sahifasi shu muddatda ochilgan bo'lsa (locked) */
+export const promoAmount = (meta) => {
+  const p = meta?.promo;
+  if (!p?.amount) return 0;
+  return p.locked || Date.now() < Date.parse(p.until) ? p.amount : 0;
+};
 export const leadSource = (userId) => readLeads()[String(userId)]?.src || '';
 
 export function enqueue(event) {

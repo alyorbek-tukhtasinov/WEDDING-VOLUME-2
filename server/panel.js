@@ -26,7 +26,7 @@ import { safeEqual, hashPassword } from '../api/_lib/http.js';
 import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, setFinance, slugsWithData, getSettings, saveSettings } from '../api/_lib/store.js';
 import { SLUG_RE } from '../api/_lib/slug.js';
 import { validateConfig, applyOverrides } from '../src/lib/config.js';
-import { listSites as listDataSites, readSite as readDataSite, writeSite as writeDataSite, removeSite as removeDataSite, enqueue, STATUS as BOT_STATUS, siteDir as dataSiteDir, mediaFiles as dataMediaFiles } from './data.js';
+import { listSites as listDataSites, readSite as readDataSite, writeSite as writeDataSite, removeSite as removeDataSite, enqueue, STATUS as BOT_STATUS, siteDir as dataSiteDir, mediaFiles as dataMediaFiles, promoAmount } from './data.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -262,8 +262,10 @@ async function approveBot(body) {
   if (storeConfigured()) {
     await withFinanceStore(async () => {
       const cur = (await getFinance())?.items || {};
-      const amount = (s.meta.price || 0) - (s.meta.discount?.amount || 0); // kanalga obuna chegirmasi
-      const items = { ...cur, [slug]: { ...(cur[slug] || {}), amount, paid: true, note: cur[slug]?.note || (s.meta.discount?.amount ? `Telegram bot (kanal chegirmasi −${s.meta.discount.amount})` : 'Telegram bot') } };
+      const promo = promoAmount(s.meta);
+      const amount = (s.meta.price || 0) - (s.meta.discount?.amount || 0) - promo; // kanalga obuna va maxsus chegirmalar
+      const extra = [s.meta.discount?.amount ? `kanal chegirmasi −${s.meta.discount.amount}` : '', promo ? `maxsus chegirma −${promo}` : ''].filter(Boolean).join(', ');
+      const items = { ...cur, [slug]: { ...(cur[slug] || {}), amount, paid: true, note: cur[slug]?.note || (extra ? `Telegram bot (${extra})` : 'Telegram bot') } };
       await setFinance({ items, updatedAt: new Date().toISOString() });
     }).catch((err) => console.error('Daromad yozilmadi:', err.message));
   }

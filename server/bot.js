@@ -14,10 +14,11 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { tg, tgUpload, BOT_TOKEN, adminIds, isAdmin, appUrl, siteUrlOf, siteDomain, PRICE, VIDEO_PRICE, fmtSum } from './telegram.js';
-import { DATA_DIR, ensureDirs, listSites, readSite, writeSite, updateMeta, removeSite, takeQueue, sitesOf, STATUS, enqueue, recordLead, readLeads } from './data.js';
+import { DATA_DIR, ensureDirs, listSites, readSite, writeSite, updateMeta, removeSite, takeQueue, sitesOf, STATUS, enqueue, recordLead, readLeads, touchLead, promoAmount } from './data.js';
 import { startWizard, onWizardCallback, onWizardMessage, cancelWizard, showSummary } from './bot-wizard.js';
 import { validateConfig } from '../src/lib/config.js';
 import { channelMenu, onChannelCallback, maybeAutoDraft, setBotName } from './channel.js';
+import { setupCrm, onCrmCallback, onCrmAdminMessage, runFollowups } from './bot-crm.js';
 import { requestContext } from '../api/_lib/context.js';
 import { storeConfigured, storeReady, getFinance, setFinance, listEntries } from '../api/_lib/store.js';
 import { findEvent } from '../src/lib/events.js';
@@ -169,7 +170,7 @@ async function channelMember(userId) {
 
 async function start(msg) {
   const payload = String(msg.text || '').split(/\s+/)[1] || '';
-  if (recordLead(msg.from.id, payload) && payload) log(`➕ yangi mijoz: ${msg.from.id} (${payload})`);
+  if (recordLead(msg.from.id, payload, msg.from) && payload) log(`➕ yangi mijoz: ${msg.from.id} (${payload})`);
   const name = esc(msg.from?.first_name || '');
   await send(
     msg.chat.id,
@@ -262,9 +263,9 @@ async function mine(msg) {
 /* ------------------------------------ To'lov ------------------------------------ */
 // Kanalga obuna uchun chegirma (so'm); 0 — o'chirilgan
 const CHANNEL_DISCOUNT = () => Math.max(0, Number(env('CHANNEL_DISCOUNT', '5000').replace(/\D/g, '')) || 0);
-/** To'lanadigan summa: sayt + (video) − chegirma */
+/** To'lanadigan summa: sayt + (video) − kanal chegirmasi − maxsus chegirma (eslatma/admin) */
 const siteTotal = (s) =>
-  (s.meta.price || PRICE()) + (s.meta.video?.status === 'with-site' ? s.meta.video.price || VIDEO_PRICE() : 0) - (s.meta.discount?.amount || 0);
+  (s.meta.price || PRICE()) + (s.meta.video?.status === 'with-site' ? s.meta.video.price || VIDEO_PRICE() : 0) - (s.meta.discount?.amount || 0) - promoAmount(s.meta);
 
 async function payInstructions(chatId, slug) {
   let s = readSite(slug);
@@ -281,6 +282,12 @@ async function payInstructions(chatId, slug) {
     if (member === false && s.meta.discount?.reason === 'kanal') updateMeta(slug, (m) => ({ ...m, discount: undefined }));
     s = readSite(slug);
   }
+  // Maxsus chegirma muddati ichida to'lov sahifasi ochilsa — keyin ham amal qiladi (mijoz kechroq to'lasa ham)
+  if (promoAmount(s.meta) && !s.meta.promo.locked && s.meta.status !== STATUS.receipt) {
+    updateMeta(slug, (m) => ({ ...m, promo: { ...m.promo, locked: true } }));
+    s = readSite(slug);
+  }
+  const promo = promoAmount(s.meta);
   const card = env('PAY_CARD');
   const holder = env('PAY_CARD_HOLDER');
   const note = env('PAY_NOTE');
@@ -292,9 +299,10 @@ async function payInstructions(chatId, slug) {
   await send(
     chatId,
     `💳 <b>To‘lov</b> — ${esc(namesOf(s.config))}\n\n` +
-      (withVideo || disc ? `Taklifnoma: ${fmtSum(price)}\n` : '') +
+      (withVideo || disc || promo ? `Taklifnoma: ${fmtSum(price)}\n` : '') +
       (withVideo ? `🎬 Instagram video: ${fmtSum(s.meta.video.price || VIDEO_PRICE())}\n` : '') +
       (disc ? `📢 Kanalimizga obuna bo‘lganingiz uchun chegirma: <b>−${fmtSum(disc)}</b> 🎁\n` : '') +
+      (promo ? `🎁 Maxsus chegirma: <b>−${fmtSum(promo)}</b>\n` : '') +
       `Summa: <b>${fmtSum(total)}</b>\n` +
       (offer
         ? `\n🎁 <b>${fmtSum(CHANNEL_DISCOUNT())} chegirma oling!</b> ${esc(MAIN_CHANNEL())} kanalimizga obuna bo‘ling — summa <b>${fmtSum(total - CHANNEL_DISCOUNT())}</b> bo‘ladi. ` +
@@ -363,7 +371,9 @@ async function onReceipt(msg) {
     `📅 ${prettyDate(s.config.event?.date)} · ${esc(s.config.venue?.name || '')}\n` +
     `💰 ${fmtSum(siteTotal(s))}` +
     (s.meta.video?.status === 'with-site' ? ' (sayt + 🎬 video)' : '') +
-    (s.meta.discount?.amount ? `\n📢 Kanalga obuna bo‘lgani uchun <b>${fmtSum(s.meta.discount.amount)}</b> chegirma berilgan (to‘liq narx: ${fmtSum(siteTotal(s) + s.meta.discount.amount)})` : '') +
+    (s.meta.discount?.amount ? `\n📢 Kanalga obuna bo‘lgani uchun <b>${fmtSum(s.meta.discount.amount)}</b> chegirma berilgan` : '') +
+    (promoAmount(s.meta) ? `\n🎁 Maxsus chegirma <b>${fmtSum(promoAmount(s.meta))}</b> berilgan` : '') +
+    (s.meta.discount?.amount || promoAmount(s.meta) ? ` (to‘liq narx: ${fmtSum(siteTotal(s) + (s.meta.discount?.amount || 0) + promoAmount(s.meta))})` : '') +
     `\n👤 ${esc(owner.name || '')}${owner.username ? ` (@${esc(owner.username)})` : ''} · ID <code>${owner.id}</code>\n` +
     `🔗 ${s.slug}.${siteDomain()}`;
   const keyboard = { inline_keyboard: [[{ text: '✅ Tasdiqlash', callback_data: `ok:${s.slug}` }, { text: '❌ Rad etish', callback_data: `no:${s.slug}` }]] };
@@ -464,7 +474,7 @@ async function onAdminDecision(cb, ok, slug) {
       approvedBy: cb.from.id,
       ...(withVideo ? { video: { ...m.video, status: 'paid', paidAt: new Date().toISOString() } } : {}),
     }));
-    await recordFinance(slug, siteTotal(s), [withVideo ? '+ video' : '', s.meta.discount?.amount ? `(kanal chegirmasi −${s.meta.discount.amount})` : ''].filter(Boolean).join(' '));
+    await recordFinance(slug, siteTotal(s), [withVideo ? '+ video' : '', s.meta.discount?.amount ? `(kanal chegirmasi −${s.meta.discount.amount})` : '', promoAmount(s.meta) ? `(maxsus chegirma −${promoAmount(s.meta)})` : ''].filter(Boolean).join(' '));
     enqueue({ type: 'build', slug, reason: 'paid', notify: true });
     await mark(`✅ Tasdiqlandi — ${who}`);
     await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Tasdiqlandi — sayt yig‘ilmoqda' });
@@ -893,6 +903,7 @@ async function adminStats(msg) {
       `📝 Qoralama: ${by(STATUS.draft).length}\n⚠️ Rad etilgan: ${by(STATUS.rejected).length}\n` +
       `🎬 Video: ${all.filter((s) => s.meta.video?.status === 'done').length} tayyor, ${vWork} navbatda, ${vReceipts.length} chek tekshiruvda\n\n` +
       sourceStats(all) +
+      `👥 /mijozlar — mijozlar ro‘yxati, eslatma, chegirma, shaxsiy xabar\n📣 /xabar — ommaviy xabar\n\n` +
       `Barcha imkoniyatlar — boshqaruv panelida: https://boshqaruv.${siteDomain()}`,
     receipts.length || vReceipts.length
       ? {
@@ -913,6 +924,7 @@ async function onUpdate(u) {
     const cb = u.callback_query;
     if (await onWizardCallback(cb)) return;
     if (await onChannelCallback(cb)) return;
+    if (await onCrmCallback(cb)) return;
     if (cb.data === 'sub:check') {
       subOk.delete(String(cb.from.id));
       if (!(await isSubscribed(cb.from.id))) {
@@ -977,7 +989,10 @@ async function onUpdate(u) {
   if (!msg || msg.chat?.type !== 'private') return;
   const text = (msg.text || '').trim();
   // Reklama manbasi obunadan oldin ham yoziladi (keyin yo'qolmasin)
-  if (text === '/start' || text.startsWith('/start ')) recordLead(msg.from.id, text.split(/\s+/)[1] || '');
+  if (text === '/start' || text.startsWith('/start ')) recordLead(msg.from.id, text.split(/\s+/)[1] || '', msg.from);
+  if (!isAdmin(msg.from.id)) touchLead(msg.from);
+  // Admin: mijozlar ro'yxati, ommaviy xabar, mijozga yozish (joriy amal bo'lsa — xabar shu yerga)
+  if (await onCrmAdminMessage(msg)) return;
   if (await needsSub(msg.from)) {
     if (text.startsWith('/start')) pendingStart.set(String(msg.from.id), text);
     return askSub(msg.chat.id);
@@ -1016,7 +1031,10 @@ async function onUpdate(u) {
   }
   // Boshqa matn — adminlarga yuboriladi (mijoz savoli)
   if (text && !isAdmin(msg.from.id)) {
-    await toAdmins(`💬 <b>${esc(msg.from.first_name || '')}</b>${msg.from.username ? ` (@${esc(msg.from.username)})` : ''} · <code>${msg.from.id}</code>:\n${esc(text.slice(0, 1500))}`);
+    const own = sitesOf(msg.from.id).sort((a, b) => (String(a.meta.createdAt) < String(b.meta.createdAt) ? 1 : -1))[0];
+    await toAdmins(`💬 <b>${esc(msg.from.first_name || '')}</b>${msg.from.username ? ` (@${esc(msg.from.username)})` : ''} · <code>${msg.from.id}</code>:\n${esc(text.slice(0, 1500))}`, {
+      reply_markup: { inline_keyboard: [[{ text: '✍️ Javob yozish', callback_data: `m:w:${msg.from.id}` }, own ? { text: '👤 Mijoz kartasi', callback_data: `m:c:${own.slug}` } : { text: '👤 Mijoz', callback_data: `m:l:${msg.from.id}` }]] },
+    });
     return send(msg.chat.id, 'Xabaringiz adminga yetkazildi — tez orada javob beramiz 🙂', { reply_markup: mainKeyboard() });
   }
   // Admin javobi: xabarga "reply" qilib yozsa — mijozga yetkaziladi
@@ -1063,6 +1081,21 @@ async function main() {
       { command: 'help', description: 'Yordam' },
     ],
   }).catch(() => {});
+  // Adminlar uchun qo'shimcha buyruqlar (faqat ularning chatida ko'rinadi)
+  for (const id of adminIds()) {
+    await tg('setMyCommands', {
+      scope: { type: 'chat', chat_id: Number(id) },
+      commands: [
+        { command: 'mijozlar', description: 'Mijozlar ro‘yxati' },
+        { command: 'xabar', description: 'Ommaviy xabar' },
+        { command: 'admin', description: 'Statistika va cheklar' },
+        { command: 'kanal', description: 'Kanal postlari' },
+        { command: 'post', description: 'Yangi kanal posti' },
+        { command: 'new', description: 'Taklifnoma yaratish' },
+        { command: 'mine', description: 'Mening taklifnomalarim' },
+      ],
+    }).catch(() => {});
+  }
   // Menyu tugmasi — buyruqlar ro'yxati (Mini App ishlatilmaydi)
   await tg('setChatMenuButton', { menu_button: { type: 'commands' } }).catch((e) => log('! menu tugmasi:', e.message));
 
@@ -1094,6 +1127,7 @@ async function main() {
         await maybeAutoDraft().catch((e) => log('! kanal:', e.message));
       }
       await askReviews(st).catch((e) => log('! otziv:', e.message));
+      await runFollowups(st).catch((e) => log('! eslatma:', e.message));
     } catch (err) {
       if (stop) break;
       log(`! getUpdates: ${err.message}`);
@@ -1112,4 +1146,6 @@ const isMain = () => {
 };
 if (process.argv[1] && isMain()) main();
 
-export { onUpdate, processQueue, askReviews };
+setupCrm({ send, siteTotal, payInstructions, namesOf, log });
+
+export { onUpdate, processQueue, askReviews, runFollowups };

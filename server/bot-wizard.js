@@ -5,7 +5,7 @@
 // Holat: <DATA_DIR>/wizard.json — { [userId]: { slug, step, data, edit } } (bot qayta ishga tushsa ham saqlanadi).
 import fs from 'node:fs';
 import path from 'node:path';
-import { DATA_DIR, readSite, STATUS } from './data.js';
+import { DATA_DIR, readSite, STATUS, promoAmount } from './data.js';
 import { tg, tgDownload, previewUrl, siteUrlOf, siteDomain, fmtSum, PRICE } from './telegram.js';
 import { save, saveBirthday, saveBotPhoto, APP_TEMPLATES, BDAY_TEMPLATES, BDAY_SLOTS, MAX_BDAY_PHOTOS } from './app-api.js';
 import { EVENTS, findEvent } from '../src/lib/events.js';
@@ -517,6 +517,8 @@ export async function showSummary(chatId, user, slug, title = '') {
   if (!paid) {
     lines.push('', `💰 Narxi: <b>${fmtSum(s.meta.price || PRICE())}</b> — avval ko‘rib chiqing, yoqsa to‘lov qilasiz.`);
     if (disc) lines.push(`🎁 Kanalimizga obuna bo‘lsangiz — <b>${fmtSum((s.meta.price || PRICE()) - disc)}</b>`);
+    const promo = promoAmount(s.meta);
+    if (promo) lines.push(`🔥 Sizga maxsus chegirma: <b>−${fmtSum(promo)}</b>${s.meta.promo.locked ? '' : ' (24 soat)'}`);
   }
   const view = paid ? siteUrlOf(slug) : previewUrl(slug);
   const rows = [];
