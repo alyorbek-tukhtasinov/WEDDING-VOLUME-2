@@ -253,3 +253,25 @@ test('Admin yuborilgan eslatma matnini ko‘radi; mijoz musiqani eshitib tanlayd
   assert.equal(readSite('aziz-kamola').config.musicTrack, 'musiqa-2');
   assert.match(lastTo(C.id).text, /🎵 Musiqa: Shohruhxon — Men seni sevaman/);
 });
+
+test('Bezakli Telegram ismlari eslatmada oddiy ko‘rinishda', async () => {
+  const { runFollowups } = await import('../server/bot.js');
+  const { writeSite, recordLead, STATUS } = await import('../server/data.js');
+  const { defaultConfig } = await import('../src/lib/starter.js');
+  const base = defaultConfig('volume2');
+  const cfg = { ...base, couple: { ...base.couple, groom: 'Ruslan', bride: 'Shahnoza' }, venue: { ...base.venue, name: 'Navruz', address: 'Toshkent' }, event: { ...base.event, date: '2099-07-01' } };
+  const cases = [
+    [811, '𝓫𝓪𝓴𝓱𝓪𝓭𝓲𝓻𝓸𝓿𝓷𝓪_𝓼𝓱𝓪𝓴𝓱𝓷𝓸𝔃𝓪', /^💌 <b>Bakhadirovna, taklifnomangiz/],
+    [812, '‘°ºø•❤️•.¸Ollaberganova ¸.•❤️•øº°‘', /^💌 <b>Ollaberganova, taklifnomangiz/],
+    [813, 'ص🤍', /^💌 <b>Taklifnomangiz/],
+  ];
+  for (const [id, name] of cases) {
+    recordLead(id, 'organik', { id, first_name: name });
+    writeSite(`fancy-${id}`, { config: cfg, meta: { owner: { id, name }, status: STATUS.draft, price: 70000, createdAt: ago(5) } });
+    const f = path.join(process.env.DATA_DIR, 'sites', `fancy-${id}`, 'meta.json');
+    fs.writeFileSync(f, JSON.stringify({ ...JSON.parse(fs.readFileSync(f, 'utf8')), updatedAt: ago(3) }));
+  }
+  calls.length = 0;
+  await runFollowups({}, { force: true });
+  for (const [id, , re] of cases) assert.match(lastTo(id).text, re);
+});

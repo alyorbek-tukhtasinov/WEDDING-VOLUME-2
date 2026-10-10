@@ -35,7 +35,11 @@ const fmtWhen = (t) => {
   const d = new Date(t + 5 * HOUR); // Toshkent vaqti
   return `${d.getUTCDate()}-${MONTHS[d.getUTCMonth()]}, soat ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
 };
-const firstName = (owner) => String(owner?.name || '').split(/\s+/)[0] || '';
+// Telegram ismlari ko'pincha bezakli (𝐓𝐚𝐛𝐫𝐢𝐤 · ‘°ºø•❤️•Ism · Ism_Familiya) — oddiy harflarga keltirib, birinchi so'z olinadi
+const firstName = (owner) => {
+  const w = String(owner?.name || '').normalize('NFKC').split(/[^\p{L}]+/u).find((x) => x.length >= 3) || '';
+  return w.length <= 20 ? w.charAt(0).toUpperCase() + w.slice(1) : '';
+};
 const evOf = (c) => (c.person ? { icon: '🎂', title: 'Tug‘ilgan kun' } : findEvent(c.eventType));
 const prettyDate = (iso) => {
   const [y, m, d] = String(iso || '').split('-').map(Number);
@@ -68,7 +72,8 @@ async function tryTg(method, body) {
 function followupMessage(s, stage) {
   const c = s.config;
   const name = firstName(s.meta.owner);
-  const hi = name ? `${esc(name)}, ` : '';
+  // Ism bo'lsa — "Dilnoza, taklifnomangiz…", bo'lmasa — "Taklifnomangiz…"
+  const hi = (rest) => (name ? `${esc(name)}, ${rest}` : rest.charAt(0).toUpperCase() + rest.slice(1));
   const ready = !validateConfig(c).length;
   const ev = evOf(c);
   const names = D.namesOf(c).replace(/^\s*&\s*|\s*&\s*$/g, '').trim();
@@ -83,13 +88,13 @@ function followupMessage(s, stage) {
     if (!ready) {
       const miss = [...new Set(validateConfig(c).map((e) => /\(([^)]+)\)/.exec(e)?.[1] || ''))].filter(Boolean).slice(0, 3).join(', ');
       return [
-        `✍️ <b>${hi}taklifnomangiz deyarli tayyor!</b>\n\n${what}\n\nFaqat bir nechta ma’lumot qoldi${miss ? `: <b>${esc(miss)}</b>` : ''}. ` +
+        `✍️ <b>${hi('taklifnomangiz deyarli tayyor')}!</b>\n\n${what}\n\nFaqat bir nechta ma’lumot qoldi${miss ? `: <b>${esc(miss)}</b>` : ''}. ` +
           `1 daqiqada tugatamiz — keyin tayyor taklifnomangizni darhol ko‘rasiz 👇`,
         kb(btnGo),
       ];
     }
     return [
-      `💌 <b>${hi}taklifnomangiz tayyor turibdi!</b>\n\n${what}\n\n` +
+      `💌 <b>${hi('taklifnomangiz tayyor turibdi')}!</b>\n\n${what}\n\n` +
         `Mehmonlaringiz havolani ochishi bilan taklifnoma jonlanadi — bunday taklifni ular uzoq eslab qolishadi ✨\n\n` +
         `Faqat <b>bitta qadam</b> qoldi: to‘lovdan keyin sayt havolasi <b>1 daqiqada</b> keladi va uni darhol Telegram, WhatsApp, Instagram yoki SMS orqali mehmonlaringizga yuborasiz 📲` +
         urgency(c),
@@ -101,7 +106,7 @@ function followupMessage(s, stage) {
     if (!promo) return followupMessage(s, 3);
     const full = D.siteTotal(s) + promo;
     return [
-      `🎁 <b>${hi}siz uchun maxsus sovg‘a!</b>\n\n${what}\n\n` +
+      `🎁 <b>${hi('siz uchun maxsus sovg‘a')}!</b>\n\n${what}\n\n` +
         `Taklifnomangizga <b>${fmtSum(promo)} chegirma</b> — faqat 24 soat:\n<s>${fmtSum(full)}</s> → <b>${fmtSum(full - promo)}</b>\n\n` +
         `⏰ Taklif <b>${fmtWhen(Date.parse(s.meta.promo.until))}</b> gacha amal qiladi.` +
         urgency(c),
@@ -110,7 +115,7 @@ function followupMessage(s, stage) {
   }
   const proof = listSites().filter((x) => x.meta.status === STATUS.paid && Date.now() - Date.parse(x.meta.paidAt || 0) < 30 * 86400e3).length;
   return [
-    `🤍 <b>${hi}taklifnomangiz hali ham sizni kutyapti</b>\n\n${what}\n\n` +
+    `🤍 <b>${hi('taklifnomangiz hali ham sizni kutyapti')}</b>\n\n${what}\n\n` +
       `Biror narsa yoqmadimi yoki savolingiz bormi? <b>Shu yerga yozing</b> — admin shaxsan javob beradi va istagingizga moslab beradi.` +
       (proof >= 5 ? `\n\n💍 Shu oyda <b>${proof} ta</b> oila taklifnomasini biz bilan yaratdi.` : '') +
       urgency(c),
