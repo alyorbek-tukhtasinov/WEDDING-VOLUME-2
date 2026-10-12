@@ -1,0 +1,60 @@
+{
+  "template": "volume2",
+  "couple": {
+    "groom": "",
+    "bride": "Irodaxonim",
+    "initials": "",
+    "showGroom": false
+  },
+  "event": {
+    "date": "2026-10-19",
+    "time": "12:00",
+    "timezone": "+05:00",
+    "durationHours": 4
+  },
+  "hosts": "",
+  "texts": {
+    "heroCaption": "Bir umrlik taklif",
+    "greeting": "Bir umrlik baxtimga… ❤️",
+    "invitation": "Omonatim, hayotimga kirib kelganingdan beri qalbimda o‘zgacha bir baxt bor. Sen bilan nafaqat bugunimni, balki butun kelajagimni tasavvur qilaman.\n\nMen sen bilan quvonchli kunlarda birga kulishni, qiyin kunlarda bir-birimizga suyanch bo‘lishni, har tongni sen bilan qarshi olishni istayman.\n\nMenga bir umrga hamroh, qalbimga malham, hayotimga ma’no bo‘lasanmi? 🤩❤️\n\nMen seni bugun ham, ertaga ham, qariganimizda ham sevishni istayman. Qo‘lingni bir bor tutsam, uni bir umr qo‘yib yubormaslikni xohlayman.\n\nMening bir umrlik baxtim bo‘lishga rozimisan, Omonatim? 💍",
+    "closing": "Bir umr sen bilan, bir umr sen uchun… 🌟"
+  },
+  "venue": {
+    "name": "Aloviddin Attor ko‘chasi, 22-uy",
+    "address": "Surxondaryo viloyati, Denov tumani, Aloviddin Attor ko‘chasi, 22-uy",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=Denov%2C%20Aloviddin%20Attor%20ko%27chasi%2022",
+    "yandexMaps": "https://yandex.uz/maps/?text=Denov%2C%20Aloviddin%20Attor%20ko%27chasi%2022",
+    "image": ""
+  },
+  "program": [],
+  "dressCode": {
+    "text": "",
+    "colors": []
+  },
+  "gallery": [],
+  "musicTrack": "musiqa-1",
+  "rsvp": {
+    "enabled": false,
+    "deadline": "2026-10-18",
+    "maxGuests": 1,
+    "showWishes": false
+  },
+  "contacts": [
+    {
+      "name": "Aloqa uchun",
+      "phone": "+998 94 513 72 22"
+    }
+  ],
+  "seo": {
+    "title": "",
+    "description": "",
+    "ogImage": ""
+  },
+  "effects": {
+    "envelope": true,
+    "petals": true,
+    "typing": true,
+    "countdown": true
+  },
+  "eventType": "nikoh-kunduzgi"
+}

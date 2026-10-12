@@ -69,7 +69,8 @@ export function validateConfig(c, mediaFiles = null) {
     // Qiz uzatishda kuyov ismi ko'rsatilmasligi mumkin (couple.showGroom: false) — unda ism shart emas
     const solo = c.couple?.showGroom === false;
     need(c.couple?.showGroom == null || typeof c.couple.showGroom === 'boolean', 'couple.showGroom faqat true yoki false bo\'lishi mumkin');
-    need(!solo || c.eventType === 'qiz-uzatish', 'Kuyov ismini yashirish faqat qiz uzatish to‘yida mumkin');
+    // Boshqa marosimda — faqat taklif matni o'zi yozilgan bo'lsa (masalan, kuyovning kelinga shaxsiy taklifi)
+    need(!solo || c.eventType === 'qiz-uzatish' || c.texts?.invitation?.trim(), 'Kuyov ismini yashirish faqat qiz uzatish to‘yida (yoki o‘z taklif matni bilan) mumkin');
     need(solo || c.couple?.groom?.trim(), 'couple.groom (kuyov ismi) kiritilmagan');
     need(c.couple?.bride?.trim(), 'couple.bride (kelin ismi) kiritilmagan');
   }

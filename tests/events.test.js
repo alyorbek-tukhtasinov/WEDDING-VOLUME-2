@@ -78,8 +78,10 @@ test('qiz uzatish: kuyov ismi ko‘rsatilmasa — faqat kelin ismi, matn moslash
   assert.equal(d.names, 'Gulasal');
   assert.equal(d.initials, 'G');
   assert.ok(!d.description.includes(' va '));
-  // Faqat qiz uzatishda ruxsat; boshqa marosimda kuyov ismi shart
-  assert.equal(validateConfig({ ...solo, eventType: 'nikoh' }).length >= 1, true);
+  // Qiz uzatishda ruxsat; boshqa marosimda — faqat o'z taklif matni bilan (kuyovning kelinga shaxsiy taklifi)
+  const noText = { ...solo, eventType: 'nikoh', texts: { ...solo.texts, invitation: '' } };
+  assert.equal(validateConfig(noText).length >= 1, true);
+  assert.deepEqual(validateConfig({ ...noText, texts: { ...noText.texts, invitation: 'Bir umrlik taklif…' } }), []);
   assert.equal(validateConfig({ ...base, couple: { groom: '', bride: 'B' } }).length, 1);
   for (const lang of ['uz', 'ru']) {
     for (const voice of ['parents', 'couple']) {
