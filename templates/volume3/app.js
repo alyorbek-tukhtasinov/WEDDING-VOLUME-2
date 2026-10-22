@@ -7,7 +7,7 @@ import './fonts/fonts.css';
 import './styles.css';
 import { deriveConfig, musicUrlOf, mediaUrl, MONTHS } from '../../src/lib/config.js';
 import { html, raw } from '../../src/lib/dom.js';
-import { LANGS, siteLangs, pickLang, rememberLang, localize, cyr } from '../../src/lib/i18n.js';
+import { LANG_INFO, siteLangs, pickLang, rememberLang, localize, cyr } from '../../src/lib/i18n.js';
 import brand from '@brand-config';
 import { isNikoh, phrases, voiceOf } from '../../src/lib/events.js';
 import { initAutoScroll } from '../../src/lib/autoscroll.js';
@@ -21,6 +21,8 @@ const RU_MONTHS = ['январь', 'февраль', 'март', 'апрель',
 const RU_MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 const UZ_WEEKDAYS = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'];
 const RU_WEEKDAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+const EN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const EN_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const T = {
   uz: {
@@ -133,6 +135,61 @@ const T = {
     musicOn: 'Включить музыку',
     musicOff: 'Выключить музыку',
   },
+  en: {
+    gateInvite: 'WE JOYFULLY INVITE YOU TO SHARE THE HAPPIEST DAY OF OUR LIVES AND TO CELEBRATE OUR WEDDING WITH US',
+    open: 'Open',
+    ceremonyLabel: 'The ceremony',
+    ceremonyInvite: 'WE SINCERELY INVITE YOU TO THE CELEBRATION OF THE WEDDING OF OUR CHILDREN',
+    willHold: 'THE WEDDING CEREMONY WILL TAKE PLACE',
+    at: 'At',
+    dearGuests: 'Dear Guests',
+    dearText: ['We are delighted to invite you', 'to our wedding celebration —', 'an evening of love and joy'],
+    withRespect: 'With respect,',
+    timeRemaining: 'Time until the wedding',
+    units: ['DAYS', 'HOURS', 'MINUTES', 'SECONDS'],
+    today: 'The day has come!',
+    weekdays: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+    program: 'Wedding programme',
+    dress: 'Dress code',
+    locationLabel: 'Venue',
+    yandex: 'Yandex Maps',
+    google: 'Google Maps',
+    rsvpLabel: 'R.S.V.P.',
+    rsvpTitle: 'Kindly confirm your attendance',
+    yourName: 'Your name',
+    namePh: 'First and last name',
+    yes: 'Joyfully accept',
+    no: 'Regretfully decline',
+    guests: 'Number of guests',
+    person: 'guest(s)',
+    confirm: 'Confirm',
+    deadline: (d, m) => `Please reply by ${EN_MONTHS[m - 1]} ${d}`,
+    gbLabel: 'Guest Book',
+    gbTitle: 'Guest Book',
+    gbName: 'Enter your name',
+    gbMsg: 'Write your wishes',
+    gbSend: 'Send message',
+    closingLabel: 'We are waiting for you',
+    seeYou: 'See you soon',
+    withLove: 'With love',
+    sending: 'Sending…',
+    needName: 'Please enter your name.',
+    needAnswer: 'Please let us know whether you can come.',
+    needMsg: 'Please write your message.',
+    gbFirst: 'Your message is saved — confirm your attendance above to send it.',
+    gbThanks: 'Thank you! Your wishes have been added to the book.',
+    thanksYes: (n) => `Thank you, ${n}! We look forward to seeing you at the wedding.`,
+    thanksNo: (n) => `Thank you for letting us know, ${n}!`,
+    change: 'Change my reply',
+    closed: 'Replies are no longer being accepted. Thank you!',
+    error: 'Something went wrong. Please try again.',
+    offline: 'Please check your internet connection and try again.',
+    preview: 'Preview mode — the reply is not sent.',
+    ctaTitle: 'Order your wedding invitation',
+    ctaSub: 'Create your own beautiful wedding website',
+    musicOn: 'Turn music on',
+    musicOff: 'Turn music off',
+  },
 };
 // Marosim turi (config.eventType, src/lib/events.js): nikoh to'yida asosiy matnlar, boshqalarida — quyidagilar
 const EVENTS = {
@@ -204,11 +261,16 @@ const PARENTS_NIKOH = {
     gateInvite: 'ОТ ВСЕЙ ДУШИ ПРИГЛАШАЕМ ВАС РАЗДЕЛИТЬ С НАМИ РАДОСТЬ СЧАСТЛИВОГО ДНЯ НАШИХ ДЕТЕЙ И ПОЧТИТЬ СВОИМ ПРИСУТСТВИЕМ ИХ БРАКОСОЧЕТАНИЕ',
     dearText: ['По случаю бракосочетания', 'наших детей приглашаем Вас', 'на торжественный свадебный вечер'],
   },
+  en: {
+    gateInvite: 'WE JOYFULLY INVITE YOU TO SHARE THE HAPPY DAY OF OUR CHILDREN AND TO CELEBRATE THEIR WEDDING WITH US',
+    dearText: ['We are delighted to invite you', 'to the wedding celebration', 'of our children'],
+  },
 };
 // Kelin-kuyov nomidan: "biz", "to‘yimiz"
 const COUPLE_NIKOH = {
   uz: { ceremonyInvite: 'SIZNI NIKOH TO‘YIMIZ MUNOSABATI BILAN O‘TKAZILADIGAN TANTANAGA CHIN QALBDAN TAKLIF ETAMIZ' },
   ru: { ceremonyInvite: 'С РАДОСТЬЮ ПРИГЛАШАЕМ ВАС НА НАШЕ СВАДЕБНОЕ ТОРЖЕСТВО' },
+  en: { ceremonyInvite: 'WE SINCERELY INVITE YOU TO THE CELEBRATION OF OUR WEDDING' },
 };
 const COUPLE = {
   nikoh: COUPLE_NIKOH,
@@ -275,6 +337,8 @@ const texts = (lang, c) => {
         : { ctaTitle: 'Taklifnomangizni buyurtma bering', ctaSub: 'O‘zingizning go‘zal taklifnoma saytingizni yarating' }),
   });
   const vo = voiceText(c);
+  // Inglizcha — nikoh to'yi matnlari (boshqa marosimlar uchun alohida tarjima yo'q)
+  if (lang === 'en') return { ...T.en, ...vo.en };
   if (lang === 'ru') return { ...T.ru, ...common(T.ru), ...ev.ru, ...vo.ru };
   const uz = { ...T.uz, ...common(T.uz), ...ev.uz, ...vo.uz };
   return lang === 'uzc' ? { ...cyr(uz), google: 'Google Maps', rsvpLabel: 'R.S.V.P.' } : uz;
@@ -350,12 +414,16 @@ const ICON = {
 /* ------------------------------------ Sana ------------------------------------ */
 function dates(d, lang) {
   const ru = lang === 'ru';
+  const en = lang === 'en';
   // Oy taqvimi (dushanbadan): bo'sh kataklar null
   const first = (new Date(Date.UTC(d.year, d.month - 1, 1)).getUTCDay() + 6) % 7;
   const days = new Date(Date.UTC(d.year, d.month, 0)).getUTCDate();
   const cells = Array(first).fill(null);
   for (let n = 1; n <= days; n++) cells.push(n);
   while (cells.length % 7) cells.push(null);
+  if (en) {
+    return { full: `${EN_MONTHS[d.month - 1]} ${d.day}, ${d.year}`, weekday: EN_WEEKDAYS[d.weekday], month: EN_MONTHS[d.month - 1], monthYear: `${EN_MONTHS[d.month - 1]} ${d.year}`, cells };
+  }
   return {
     full: ru ? `${d.day} ${RU_MONTHS_GEN[d.month - 1]} ${d.year}` : `${d.day} ${d.monthName} ${d.year}`,
     weekday: (ru ? RU_WEEKDAYS : UZ_WEEKDAYS)[d.weekday],
@@ -388,7 +456,7 @@ function renderPage(c, d, L, lang, langs) {
       <button class="gdn-music" id="music-toggle" type="button" aria-label="${L.musicOn}" aria-pressed="false" hidden>${raw(ICON.play)}</button>
       ${langs.length > 1 ? html`
       <div class="gdn-langs">
-        ${langs.map((l) => html`<button type="button" class="${l === lang ? 'is-active' : ''}" data-lang="${l}" aria-pressed="${l === lang}">${{ uz: 'UZ', uzc: 'ЎЗ', ru: 'RU' }[l]}</button>`)}
+        ${langs.map((l) => html`<button type="button" class="${l === lang ? 'is-active' : ''}" data-lang="${l}" aria-pressed="${l === lang}">${{ uz: 'UZ', uzc: 'ЎЗ', ru: 'RU', en: 'EN' }[l]}</button>`)}
       </div>` : ''}
 
       <div class="gdn-gate" id="gate">
@@ -807,12 +875,12 @@ function initRsvp(c, d, L, preview) {
 /* ------------------------------------ Ishga tushirish ------------------------------------ */
 export async function mountVolume3(config, { preview = false } = {}) {
   newScope();
-  const langs = siteLangs(config);
+  const langs = siteLangs(config, ['en']);
   const lang = preview ? langs[0] : pickLang(langs);
   const c = localize(config, lang, RU_DEFAULTS);
   const L = texts(lang, config);
   const d = deriveConfig(c);
-  document.documentElement.lang = LANGS[lang]?.html || 'uz';
+  document.documentElement.lang = LANG_INFO[lang]?.html || 'uz';
   // Rang va fon: config.palette ("pink" — pushti), config.backgroundImage (media/ dagi fon rasmi).
   // Volume 4 — shu shablonning pushti ko'rinishi: asli pushti rang va gulli fon (config'da almashtirsa bo'ladi).
   const v4 = config.template === 'volume4';

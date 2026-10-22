@@ -13,8 +13,11 @@ export const LANGS = {
   ru: { label: 'Русский', short: 'РУ', html: 'ru' },
 };
 
-export function siteLangs(c) {
-  const list = (Array.isArray(c.languages) ? c.languages : []).filter((l) => LANGS[l]);
+// Qo'shimcha tillar — faqat shu tilni qo'llaydigan shablonlarda (siteLangs(c, ['en'])); panel ro'yxatida yo'q
+export const LANG_INFO = { ...LANGS, en: { label: 'English', short: 'EN', html: 'en' } };
+
+export function siteLangs(c, extra = []) {
+  const list = (Array.isArray(c.languages) ? c.languages : []).filter((l) => LANGS[l] || (extra.includes(l) && LANG_INFO[l]));
   return list.length ? [...new Set(list)] : ['uz'];
 }
 
@@ -103,6 +106,17 @@ const RU_PROGRAM = {
   'Nahorgi osh tortilishi': 'Подача утреннего плова',
 };
 
+// Inglizcha tarjima berilmagan to'y dasturi bandlari uchun
+const EN_PROGRAM = {
+  'Mehmonlarni kutib olish': 'Welcome of guests',
+  'Kelin-kuyovning kirib kelishi': 'Entrance of the bride and groom',
+  'Tantanali ziyofat': 'Wedding reception',
+  'Kechki ziyofat': 'Evening reception',
+  'To‘y tortini kesish': 'Cutting of the wedding cake',
+  'Dasturxon atrofida ziyofat': 'Festive feast',
+  'Nahorgi osh tortilishi': 'Morning plov',
+};
+
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
 function merge(base, over) {
   if (!isObj(over)) return base;
@@ -135,6 +149,17 @@ export function localize(c, lang, ruDefaults = {}) {
     };
     for (const k of ['texts', 'hosts', 'islamic', 'giftNote', 'specialGuest']) if (out[k]) out[k] = swap(out[k]);
     return out;
+  }
+  if (lang === 'en') {
+    // Ismlar lotinda qoladi; matnlar — config.i18n.en (berilmasa — shablonning inglizcha matnlari)
+    const r = c.i18n?.en || {};
+    const base = structuredClone(c);
+    base.texts = {};
+    base.program = (c.program || []).map((p, i) => ({ ...p, title: r.program?.[i] || EN_PROGRAM[p.title?.replace(/'/g, '‘')] || p.title }));
+    if (c.dressCode?.text) base.dressCode = { ...base.dressCode, text: 'Evening attire.' };
+    delete base.islamic;
+    const { program, ...rest } = r;
+    return merge(base, rest);
   }
   if (lang !== 'ru') return c;
   // Nikoh to'yidan boshqa marosim — ruscha tayyor matnlar shu marosimniki

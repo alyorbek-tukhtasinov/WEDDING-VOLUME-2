@@ -69,5 +69,26 @@
   },
   "eventType": "nikoh",
   "autoScroll": "auto",
-  "invitedBy": "couple"
+  "invitedBy": "couple",
+  "languages": [
+    "uz",
+    "en"
+  ],
+  "i18n": {
+    "en": {
+      "texts": {
+        "heroCaption": "Wedding Invitation",
+        "greeting": "Dear Guest!",
+        "invitation": "Praise be to the Almighty who has united two hearts into one destiny! We — Suxrob and Sabrina — sincerely wish to see you among us on the brightest day of our lives, our wedding day. Your blessings and smiles will make this day even more beautiful.",
+        "closing": "Your presence is the most beautiful gift of our wedding!"
+      },
+      "venue": {
+        "name": "“Sofinur” Restaurant",
+        "address": "Bukhara city"
+      },
+      "dressCode": {
+        "text": "Evening attire. Kindly avoid wearing white."
+      }
+    }
+  }
 }
