@@ -213,6 +213,24 @@ await Promise.all(Array.from({ length: Math.min(jobs, toBuild.length) }, worker)
   dedupeFresh('boshqaruv');
 }
 
+// Tayyor (boshqa loyihada yig'ilgan) statik saytlar: static/<nom>/ — o'zgarishsiz nusxalanadi
+// (masalan, Vercel'dan ko'chirilgan alohida loyihalar). Nomi clients/ dagi sayt bilan bir xil bo'lmasin.
+{
+  const staticDir = path.join(ROOT, 'static');
+  for (const slug of fs.existsSync(staticDir) ? fs.readdirSync(staticDir).sort() : []) {
+    const src = path.join(staticDir, slug);
+    if (!fs.statSync(src).isDirectory() || !fs.existsSync(path.join(src, 'index.html'))) continue;
+    if (clients.includes(slug)) {
+      console.warn(`  ! static/${slug}: clients/ da shu nomli sayt bor — o'tkazib yuborildi`);
+      continue;
+    }
+    fs.rmSync(path.join(out, slug), { recursive: true, force: true });
+    fs.cpSync(src, path.join(out, slug), { recursive: true });
+    clients.push(slug);
+    console.log(`  statik sayt: ${slug}`);
+  }
+}
+
 // Umumiy fayllar (musiqa, dizayn rasmlari) har saytda bir xil — diskda bir marta turishi uchun hardlink
 if (saved) console.log(`  umumiy fayllar birlashtirildi: ${(saved / 1048576).toFixed(0)} MB tejaldi`);
 

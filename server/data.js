@@ -181,7 +181,7 @@ export function takeQueue() {
  * Nom bandmi: tizim nomlari, repo'dagi mijozlar (clientsDirs) va bot saytlari.
  * Eski Vercel loyihalari/daromad yozuvlari server/panel.js takenSlugs() da qo'shimcha tekshiriladi.
  */
-export function slugTaken(slug, { clientsDirs = [path.join(ROOT, 'clients')], reserved = [] } = {}) {
+export function slugTaken(slug, { clientsDirs = [path.join(ROOT, 'clients'), path.join(ROOT, 'static')], reserved = [] } = {}) {
   if (!isSlug(slug)) return 'noto‘g‘ri nom';
   if (reserved.includes(slug)) return 'tizim nomi';
   for (const d of clientsDirs) if (d && fs.existsSync(path.join(d, slug))) return 'mavjud sayt';

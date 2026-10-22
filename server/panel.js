@@ -339,6 +339,8 @@ export async function takenSlugs() {
   // Repo nusxasi hali yo'q bo'lsa (bot birinchi so'rov) — ishlab turgan versiyadagi mijozlar
   const live = path.join(ROOT, 'clients');
   for (const s of fs.existsSync(live) ? fs.readdirSync(live) : []) add(s, 'mavjud sayt');
+  // Tayyor statik saytlar (static/<nom>)
+  for (const d of [path.join(WORK(), 'static'), path.join(ROOT, 'static')]) for (const s of fs.existsSync(d) ? fs.readdirSync(d) : []) add(s, 'mavjud sayt (statik)');
   for (const s of listDataSites()) add(s.slug, 'mavjud sayt (bot)');
   try {
     const out = await git(['log', '--diff-filter=D', '--name-only', '--pretty=format:', '--', 'clients/']);
