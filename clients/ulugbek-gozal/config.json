@@ -52,13 +52,17 @@
       "#7a1f3d"
     ]
   },
-  "gallery": [],
-  "musicTrack": "musiqa-1",
+  "gallery": [
+    "rasm-mvn8eaosgi5.jpg",
+    "rasm-mvn8eas9q4c.jpg",
+    "rasm-mvn8eauxqco.jpg"
+  ],
+  "musicTrack": "musiqa-11",
   "rsvp": {
-    "enabled": true,
+    "enabled": false,
     "deadline": "2026-10-29",
     "maxGuests": 5,
-    "showWishes": true
+    "showWishes": false
   },
   "contacts": [],
   "seo": {
