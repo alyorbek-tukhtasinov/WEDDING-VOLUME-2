@@ -63,6 +63,5 @@
     "typing": true,
     "countdown": true
   },
-  "autoScroll": "auto",
-  "watermark": true
+  "autoScroll": "auto"
 }
