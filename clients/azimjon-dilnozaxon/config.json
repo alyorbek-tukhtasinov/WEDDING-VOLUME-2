@@ -21,8 +21,8 @@
   "venue": {
     "name": "“Rahim ota” to‘yxonasi",
     "address": "Qashqadaryo viloyati, Kasbi tumani",
-    "googleMaps": "https://www.google.com/maps/search/?api=1&query=Rahim%20ota%20to%27yxonasi%20Kasbi",
-    "yandexMaps": "https://yandex.uz/maps/?text=Rahim%20ota%20to%27yxonasi%20Kasbi",
+    "googleMaps": "https://www.google.com/maps/search/?api=1&query=38.926581%2C65.42747",
+    "yandexMaps": "https://yandex.uz/maps/?pt=65.42747,38.926581&z=17&l=map",
     "image": ""
   },
   "program": [
@@ -62,5 +62,6 @@
     "petals": true,
     "typing": true,
     "countdown": true
-  }
+  },
+  "autoScroll": "auto"
 }
