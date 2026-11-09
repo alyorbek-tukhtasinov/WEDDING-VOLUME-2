@@ -341,3 +341,67 @@ test('Mijoz /admin’da vaqtni o‘zgartirgan bo‘lsa: panel saytdagi qiymatni 
     fake.close();
   }
 });
+
+test('Mijoz /admin’da vaqtni o‘zgartirsa — config ham yangilanadi (Telegram ko‘rinishi uchun sayt qayta yig‘iladi)', async () => {
+  const http = await import('node:http');
+  const mem = new Map();
+  const fake = http.createServer((req, res) => {
+    let b = '';
+    req.on('data', (c) => (b += c));
+    req.on('end', () => {
+      const [cmd, key, val] = JSON.parse(b);
+      let result = null;
+      if (cmd === 'GET') result = mem.get(key) ?? null;
+      if (cmd === 'SET') {
+        mem.set(key, val);
+        result = 'OK';
+      }
+      if (cmd === 'DEL') result = mem.delete(key) ? 1 : 0;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ result }));
+    });
+  });
+  await new Promise((r) => fake.listen(0, '127.0.0.1', r));
+  process.env.KV_REST_API_URL = `http://127.0.0.1:${fake.address().port}`;
+  process.env.KV_REST_API_TOKEN = 'soxta-token';
+  process.env.ADMIN_PASSWORD__VAQT_ADMIN = 'mijoz-parol';
+  try {
+    const cfg = newConfig({ program: [{ time: '18:00', title: 'Kutib olish' }, { time: '19:00', title: 'Ziyofat' }] });
+    assert.equal((await api('save', { method: 'POST', body: { slug: 'vaqt-admin', isNew: true, config: cfg } })).status, 200);
+    fs.mkdirSync(path.join(sites, 'vaqt-admin'), { recursive: true });
+    fs.writeFileSync(path.join(sites, 'vaqt-admin', 'index.html'), 'sayt');
+    const trigger = process.env.DEPLOY_TRIGGER;
+    fs.rmSync(trigger, { force: true });
+
+    const r = await fetch(`${base}/api/admin`, {
+      method: 'POST',
+      headers: { 'X-Wedding-Slug': 'vaqt-admin', Authorization: 'Bearer mijoz-parol', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'settings', date: '2026-11-20', time: '17:30' }),
+    });
+    assert.equal(r.status, 200);
+
+    // Fonda GitHub'ga yoziladi — kutamiz
+    let saved = null;
+    for (let i = 0; i < 50 && !saved; i++) {
+      await new Promise((ok) => setTimeout(ok, 200));
+      try {
+        const c = JSON.parse(git(['--git-dir', origin, 'show', 'main:clients/vaqt-admin/config.json']));
+        if (c.event.time === '17:30') saved = c;
+      } catch {
+        /* hali yo'q */
+      }
+    }
+    assert.ok(saved, 'config GitHub’da yangilanmadi');
+    assert.deepEqual(saved.program.map((p) => p.time), ['17:30', '18:30']);
+    assert.equal(saved.event.date, '2026-11-20');
+    assert.equal(saved.event.originalDate, undefined);
+    assert.equal(saved.rsvp.deadline, '2026-11-19');
+    assert.ok(fs.existsSync(trigger), 'deploy boshlanmadi');
+    assert.match(git(['--git-dir', origin, 'log', '-1', '--format=%s', 'main']), /Mijoz \/admin: sana\/vaqt — vaqt-admin/);
+  } finally {
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+    delete process.env.ADMIN_PASSWORD__VAQT_ADMIN;
+    fake.close();
+  }
+});

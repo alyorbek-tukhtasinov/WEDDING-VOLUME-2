@@ -7,7 +7,7 @@
   },
   "event": {
     "date": "2026-11-17",
-    "time": "18:00",
+    "time": "17:30",
     "timezone": "+05:00",
     "durationHours": 4
   },
@@ -27,15 +27,15 @@
   },
   "program": [
     {
-      "time": "18:00",
+      "time": "17:30",
       "title": "Mehmonlarni kutib olish"
     },
     {
-      "time": "18:30",
+      "time": "18:00",
       "title": "Kelin-kuyovning kirib kelishi"
     },
     {
-      "time": "19:00",
+      "time": "18:30",
       "title": "Tantanali ziyofat"
     }
   ],

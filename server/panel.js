@@ -392,6 +392,43 @@ async function clearLiveDateTime(slug) {
   await requestContext.run({ slug, adminPassword: '' }, () => saveSettings(next));
 }
 
+/**
+ * Mijoz /admin'da sana/vaqtni o'zgartirgach — o'zgarish sayt sozlamasiga ham yoziladi va sayt qayta yig'iladi.
+ * Aks holda HTML ichidagi statik meta (Telegram/Instagram havola ko'rinishi) eski vaqtni ko'rsatib qoladi.
+ * /admin'dagi qiymat o'chirilmaydi: yangi versiya yig'ilguncha saytda u ko'rinib turadi, keyin config bilan bir xil bo'ladi.
+ */
+export async function persistLiveDateTime(slug) {
+  const st = await liveDateTime(slug);
+  if (!st) return;
+  const bs = botSite(slug);
+  if (bs) {
+    const config = withLive(bs.config, st);
+    if (JSON.stringify(config) === JSON.stringify(bs.config)) return;
+    writeDataSite(slug, { config });
+    if (bs.meta.status === BOT_STATUS.paid) enqueue({ type: 'build', slug, reason: 'admin-time' });
+    return;
+  }
+  return serial(async () => {
+    await syncWork(true);
+    const file = path.join(clientDir(slug), 'config.json');
+    if (!fs.existsSync(file)) return; // eski config.js saytlar — o'zgarish faqat brauzerda qo'llanadi
+    const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const next = withLive(config, st);
+    if (JSON.stringify(next) === JSON.stringify(config)) return;
+    fs.writeFileSync(file, JSON.stringify(next, null, 2) + '\n');
+    await git(['add', '--', `clients/${slug}/config.json`]);
+    await git(['-c', 'user.name=Taklifnoma panel', '-c', 'user.email=panel@taklifnoma.local', 'commit', '-q', '-m', `Mijoz /admin: sana/vaqt — ${slug} (${next.event.date} ${next.event.time})`]);
+    try {
+      await git(['push', '-q', 'origin', `HEAD:${BRANCH()}`]);
+    } catch (err) {
+      lastFetch = 0;
+      await git(['reset', '-q', '--hard', `origin/${BRANCH()}`]).catch(() => {});
+      throw err;
+    }
+    triggerDeploy();
+  });
+}
+
 async function save(body) {
   const { slug, isNew } = body;
   const config = body.config;

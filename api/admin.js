@@ -48,6 +48,14 @@ export default async function handler(req, res) {
         delete next.updatedAt;
         const settings = Object.keys(next).length ? { ...next, updatedAt: new Date().toISOString() } : null;
         await saveSettings(settings);
+        // O'z serverimizda (boshqaruv paneli bor joyda): yangi sana/vaqt sayt sozlamasiga ham yoziladi —
+        // shunda Telegram/Instagram havola ko'rinishidagi matn ham yangilanadi
+        if (('date' in body || 'time' in body) && settings?.date && process.env.PANEL_WORK_DIR) {
+          const slug = weddingSlug();
+          import('../server/panel.js')
+            .then((m) => m.persistLiveDateTime(slug))
+            .catch((err) => console.error(`/admin sana/vaqtini saqlab bo‘lmadi (${slug}):`, err.message));
+        }
         return send(res, 200, { ok: true, settings });
       }
       if (body.action === 'resetSettings') {
