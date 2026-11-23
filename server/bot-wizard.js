@@ -13,6 +13,7 @@ import { EVENTS, findEvent } from '../src/lib/events.js';
 import { parseMapInput, googleLink, yandexLink } from '../src/lib/maps.js';
 import { MONTHS, validateConfig, isValidDate, ageOf } from '../src/lib/config.js';
 import { todayIso } from '../src/lib/starter.js';
+import { track } from './funnel.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 
@@ -455,6 +456,8 @@ function inputOf(d) {
 
 /* ------------------------------------ Oqim ------------------------------------ */
 async function ask(chatId, w) {
+  // Voronka: qaysi savolgacha yetib kelgani (shaxsiy chat — chatId foydalanuvchi ID si bilan bir xil)
+  if (!w.edit) track(chatId, 'wz_step', { s: w.step });
   const [text, extra = {}] = STEPS[w.step].ask(w);
   await send(chatId, text, extra);
 }
@@ -477,11 +480,15 @@ export async function startWizard(chatId, user, template = '') {
     await send(chatId, '✨ Bir necha savolga javob bering — taklifnomangiz tayyor bo‘ladi (2–3 daqiqa).\nIstalgan payt keyinroq o‘zgartirish mumkin.');
   }
   setW(user.id, w);
+  track(user.id, 'wz_start', { tpl: template || '' });
   await ask(chatId, w);
 }
 
 async function advance(chatId, user, w, res) {
-  if (res !== true) return send(chatId, res);
+  if (res !== true) {
+    if (!w.edit) track(user.id, 'wz_err', { s: w.step });
+    return send(chatId, res);
+  }
   // Bitta maydonni o'zgartirish — darhol saqlanadi
   let next;
   if (w.step === 'kind') next = w.data.kind === 'bday' ? 'btemplate' : 'template';
@@ -492,6 +499,7 @@ async function advance(chatId, user, w, res) {
       const r = await saveBirthday(user, { input: binputOf({ ...w.data, photos: undefined }) });
       w.slug = r.slug;
     } catch (err) {
+      track(user.id, 'wz_fail', { s: w.step, err: String(err.message).slice(0, 80) });
       setW(user.id, null);
       return send(chatId, `⚠️ ${esc(err.message)}`);
     }
@@ -513,10 +521,12 @@ async function finish(chatId, user, w) {
         ? await saveBirthday(user, { ...(w.slug ? { slug: w.slug } : {}), input: binputOf(w.data) })
         : await save(user, { ...(w.slug ? { slug: w.slug } : {}), config: inputOf(w.data) });
   } catch (err) {
+    if (!w.edit) track(user.id, 'wz_fail', { s: w.step, err: String(err.message).slice(0, 80) });
     setW(user.id, null);
     return send(chatId, `⚠️ ${esc(err.message)}`);
   }
   setW(user.id, null);
+  if (!w.edit) track(user.id, 'wz_done', { slug: r.slug, kind: w.data.kind || 'wedding', tpl: w.data.template || '' });
   return showSummary(chatId, user, r.slug, w.edit ? '✅ Saqlandi.' : '🎉 Taklifnomangiz tayyor! Ko‘rib chiqing:');
 }
 
@@ -667,6 +677,7 @@ export async function onWizardMessage(msg) {
   if (!w || !STEPS[w.step]) return false;
   // Eskirgan suhbat (2 kundan ortiq) — unutiladi
   if (Date.now() - (w.at || 0) > 2 * 86400e3) {
+    if (!w.edit) track(msg.from.id, 'wz_stale', { s: w.step });
     setW(msg.from.id, null);
     return false;
   }
@@ -679,6 +690,7 @@ export async function onWizardMessage(msg) {
   const text = String(msg.text || '').trim();
   if (!text) return false;
   if (!step.text) {
+    if (!w.edit) track(msg.from.id, 'wz_err', { s: w.step, btn: 1 });
     await send(msg.chat.id, 'Iltimos, yuqoridagi tugmalardan birini tanlang 👆');
     return true;
   }
@@ -713,5 +725,10 @@ async function addPhoto(msg, w) {
   }
 }
 
-export const cancelWizard = (userId) => setW(userId, null);
+/** /start bosilganda — savollar to'xtatiladi (voronka uchun qaysi savolda qolgani yoziladi) */
+export const cancelWizard = (userId) => {
+  const w = getW(userId);
+  if (w && !w.edit) track(userId, 'wz_reset', { s: w.step });
+  setW(userId, null);
+};
 export { prettyDate };

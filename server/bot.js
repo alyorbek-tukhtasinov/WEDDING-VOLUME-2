@@ -22,6 +22,7 @@ import { setupCrm, onCrmCallback, onCrmAdminMessage, runFollowups } from './bot-
 import { requestContext } from '../api/_lib/context.js';
 import { storeConfigured, storeReady, getFinance, setFinance, listEntries } from '../api/_lib/store.js';
 import { findEvent } from '../src/lib/events.js';
+import { track, buildFunnel, funnelText, splitText } from './funnel.js';
 import { MONTHS } from '../src/lib/config.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -271,6 +272,7 @@ async function payInstructions(chatId, slug) {
   let s = readSite(slug);
   if (!s) return;
   if (s.meta.status === STATUS.paid) return send(chatId, `Bu taklifnoma allaqachon faol ✅\n🔗 ${siteUrlOf(slug)}`);
+  track(s.meta.owner?.id || chatId, 'pay', { slug });
   if (s.meta.status !== STATUS.receipt) updateMeta(slug, (m) => ({ ...m, status: STATUS.awaiting, awaitingAt: new Date().toISOString() }));
   // Kanalga obuna bo'lsa — chegirma; obunani bekor qilgan bo'lsa — olib tashlanadi (chek yuborilgach o'zgarmaydi)
   let member = null;
@@ -361,6 +363,7 @@ async function onReceipt(msg) {
   const receipt = { fileId: photo || doc, kind: photo ? 'photo' : 'document', at: new Date().toISOString(), messageId: msg.message_id };
   if (kind === 'video') return onVideoReceipt(msg, s, receipt);
   updateMeta(s.slug, (m) => ({ ...m, status: STATUS.receipt, receipt }));
+  track(userId, 'receipt', { slug: s.slug });
   await send(msg.chat.id, '🧾 Chek qabul qilindi! Tekshirib, tez orada tasdiqlaymiz. Odatda bu bir necha daqiqa oladi ⏳', { reply_markup: mainKeyboard() });
 
   const ev = s.config.person ? { icon: '🎂', title: 'Tug‘ilgan kun' } : findEvent(s.config.eventType);
@@ -476,11 +479,13 @@ async function onAdminDecision(cb, ok, slug) {
     }));
     await recordFinance(slug, siteTotal(s), [withVideo ? '+ video' : '', s.meta.discount?.amount ? `(kanal chegirmasi −${s.meta.discount.amount})` : '', promoAmount(s.meta) ? `(maxsus chegirma −${promoAmount(s.meta)})` : ''].filter(Boolean).join(' '));
     enqueue({ type: 'build', slug, reason: 'paid', notify: true });
+    track(s.meta.owner?.id, 'paid', { slug });
     await mark(`✅ Tasdiqlandi — ${who}`);
     await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Tasdiqlandi — sayt yig‘ilmoqda' });
     await send(s.meta.owner.id, '✅ To‘lovingiz tasdiqlandi! Saytingiz tayyorlanmoqda — 1–2 daqiqada havolani yuboramiz 🎉');
   } else {
     updateMeta(slug, (m) => ({ ...m, status: STATUS.rejected, rejectedAt: new Date().toISOString() }));
+    track(s.meta.owner?.id, 'rejected', { slug });
     await mark(`❌ Rad etildi — ${who}`);
     await tg('answerCallbackQuery', { callback_query_id: cb.id, text: 'Rad etildi' });
     const contact = env('SUPPORT_CONTACT');
@@ -903,7 +908,7 @@ async function adminStats(msg) {
       `📝 Qoralama: ${by(STATUS.draft).length}\n⚠️ Rad etilgan: ${by(STATUS.rejected).length}\n` +
       `🎬 Video: ${all.filter((s) => s.meta.video?.status === 'done').length} tayyor, ${vWork} navbatda, ${vReceipts.length} chek tekshiruvda\n\n` +
       sourceStats(all) +
-      `👥 /mijozlar — mijozlar ro‘yxati, eslatma, chegirma, shaxsiy xabar\n📣 /xabar — ommaviy xabar\n\n` +
+      `📊 /voronka — mijozlar qayergacha yetib, qayerda to‘xtayapti\n👥 /mijozlar — mijozlar ro‘yxati, eslatma, chegirma, shaxsiy xabar\n📣 /xabar — ommaviy xabar\n\n` +
       `Barcha imkoniyatlar — boshqaruv panelida: https://boshqaruv.${siteDomain()}`,
     receipts.length || vReceipts.length
       ? {
@@ -916,6 +921,11 @@ async function adminStats(msg) {
         }
       : {},
   );
+}
+
+/** /voronka [kun] — botga kelganlar qaysi bosqichgacha yetgani va qayerda to'xtagani (server/funnel.js) */
+async function funnelReport(msg, days = 30) {
+  for (const part of splitText(funnelText(buildFunnel({ days })))) await send(msg.chat.id, part);
 }
 
 /* ------------------------------------ Yangilanishlar ------------------------------------ */
@@ -989,7 +999,11 @@ async function onUpdate(u) {
   if (!msg || msg.chat?.type !== 'private') return;
   const text = (msg.text || '').trim();
   // Reklama manbasi obunadan oldin ham yoziladi (keyin yo'qolmasin)
-  if (text === '/start' || text.startsWith('/start ')) recordLead(msg.from.id, text.split(/\s+/)[1] || '', msg.from);
+  if (text === '/start' || text.startsWith('/start ')) {
+    const src = text.split(/\s+/)[1] || '';
+    const isNew = recordLead(msg.from.id, src, msg.from);
+    track(msg.from.id, 'start', { src: src.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40), new: isNew });
+  }
   if (!isAdmin(msg.from.id)) touchLead(msg.from);
   // Admin: mijozlar ro'yxati, ommaviy xabar, mijozga yozish (joriy amal bo'lsa — xabar shu yerga)
   if (await onCrmAdminMessage(msg)) return;
@@ -1014,10 +1028,11 @@ async function onUpdate(u) {
     cancelWizard(msg.from.id);
     return start(msg);
   }
-  if (text === BTN.mine || text === '/mine') return mine(msg);
-  if (text === BTN.demos || text === '/demos') return demos(msg);
-  if (text === BTN.help || text === '/help') return help(msg);
+  if (text === BTN.mine || text === '/mine') return track(msg.from.id, 'mine'), mine(msg);
+  if (text === BTN.demos || text === '/demos') return track(msg.from.id, 'demos'), demos(msg);
+  if (text === BTN.help || text === '/help') return track(msg.from.id, 'help'), help(msg);
   if (text === '/admin' && isAdmin(msg.from.id)) return adminStats(msg);
+  if (/^\/voronka(\s+\d+)?$/.test(text) && isAdmin(msg.from.id)) return funnelReport(msg, Number(text.split(/\s+/)[1] ?? 30));
   // Asosiy kanal: boshlang'ich postlar va yangi post qoralamasi (faqat admin)
   if (text === '/kanal' && isAdmin(msg.from.id)) return channelMenu(msg.chat.id);
   if (text === '/post' && isAdmin(msg.from.id)) return onChannelCallback({ id: '', from: msg.from, data: 'ch:new:-', message: null });
@@ -1089,6 +1104,7 @@ async function main() {
         { command: 'mijozlar', description: 'Mijozlar ro‘yxati' },
         { command: 'xabar', description: 'Ommaviy xabar' },
         { command: 'admin', description: 'Statistika va cheklar' },
+        { command: 'voronka', description: 'Voronka: qayerda to‘xtashyapti' },
         { command: 'kanal', description: 'Kanal postlari' },
         { command: 'post', description: 'Yangi kanal posti' },
         { command: 'new', description: 'Taklifnoma yaratish' },

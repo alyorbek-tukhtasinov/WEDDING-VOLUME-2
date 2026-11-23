@@ -27,6 +27,7 @@ import { storeReady, listEntries, setAdminHash, storeConfigured, getFinance, set
 import { SLUG_RE } from '../api/_lib/slug.js';
 import { validateConfig, applyOverrides } from '../src/lib/config.js';
 import { listSites as listDataSites, readSite as readDataSite, writeSite as writeDataSite, removeSite as removeDataSite, enqueue, STATUS as BOT_STATUS, siteDir as dataSiteDir, mediaFiles as dataMediaFiles, promoAmount } from './data.js';
+import { track } from './funnel.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -259,6 +260,7 @@ async function approveBot(body) {
   if (!s) throw new UserError('not_found', `"${slug}" topilmadi`);
   if (s.meta.status === BOT_STATUS.paid) return { slug, status: s.meta.status };
   writeDataSite(slug, { meta: { ...s.meta, status: BOT_STATUS.paid, paidAt: new Date().toISOString(), approvedBy: 'panel' } });
+  track(s.meta.owner?.id, 'paid', { slug, by: 'panel' });
   if (storeConfigured()) {
     await withFinanceStore(async () => {
       const cur = (await getFinance())?.items || {};
