@@ -69,7 +69,9 @@ test('Reklama havolasi → dizayn → savollar → ko‘rinish → to‘lov → 
   // 2) Savollar
   await onUpdate(cb('new:volume2'));
   assert.match(last().text, /Qanday marosim/);
+  assert.match(last().text, /Savol 2\/8/);
   await onUpdate(cb('wz:eventType:nikoh'));
+  assert.match(last().text, /Savol 3\/8[\s\S]*Kuyovning ismini[\s\S]*Yana 5 ta qisqa savol/);
   await onUpdate(msg('j'));
   assert.match(last().text, /2–40/);
   await onUpdate(msg('jasur'));
@@ -80,11 +82,9 @@ test('Reklama havolasi → dizayn → savollar → ko‘rinish → to‘lov → 
   assert.match(last().text, /Boshlanish vaqti/);
   await onUpdate(cb('wz:time:1800'));
   await onUpdate(msg('Bahor to‘yxonasi'));
+  assert.match(last().text, /Savol 8\/8/);
   await onUpdate(msg('Toshkent, Chilonzor'));
-  await onUpdate(msg('', { text: undefined, location: { latitude: 41.2856781, longitude: 69.2034417 } }));
-  assert.match(last().text, /kimning nomidan/);
-  await onUpdate(cb('wz:voice:parents'));
-  await onUpdate(msg('Karimovlar oilasi'));
+  // Xarita va «kimning nomidan» yaratishda so'ralmaydi — standart qiymat (manzil bo'yicha qidiruv, ota-ona nomidan)
 
   const [s] = sitesOf(USER.id);
   assert.ok(s, 'sayt yaratildi');
@@ -93,13 +93,15 @@ test('Reklama havolasi → dizayn → savollar → ko‘rinish → to‘lov → 
   assert.equal(s.config.couple.bride, 'Madina');
   assert.equal(s.config.event.date, '2027-11-16');
   assert.equal(s.config.event.time, '18:00');
-  assert.equal(s.config.hosts, 'Karimovlar oilasi');
-  assert.match(s.config.venue.googleMaps, /41\.285678/);
+  assert.equal(s.config.hosts, '');
+  assert.equal(s.config.invitedBy ?? 'parents', 'parents');
+  assert.match(s.config.venue.googleMaps, /maps\/search\/.*Bahor/);
   assert.equal(s.meta.source, 'ig_volume2');
   assert.equal(s.meta.status, STATUS.draft);
   assert.deepEqual(validateConfig(s.config), []);
   const summary = last();
   assert.match(summary.text, /tayyor/);
+  assert.match(summary.text, /Xarita: manzil bo‘yicha/);
   const view = summary.reply_markup.inline_keyboard.flat().find((b) => b.url)?.url;
   assert.match(view, /^https:\/\/boshqaruv\.documen\.uz\/korinish\.html\?s=jasur-madina&k=[0-9a-f]{20}$/);
 
@@ -113,6 +115,18 @@ test('Reklama havolasi → dizayn → savollar → ko‘rinish → to‘lov → 
   assert.equal(ok.statusCode, 200);
   assert.equal(ok.body.config.watermark, true);
   assert.equal((await call('/api/panel/app/draft?s=jasur-madina&k=00000000000000000000')).statusCode, 404);
+
+  // 4a) Xarita va oila nomi — «✏️ O'zgartirish» orqali
+  await onUpdate(cb(`wz:edit:${s.slug}:map`));
+  await onUpdate(msg('', { text: undefined, location: { latitude: 41.2856781, longitude: 69.2034417 } }));
+  assert.match(readSite(s.slug).config.venue.googleMaps, /41\.285678/);
+  assert.match(last().text, /Xarita: aniq joy belgilangan/);
+  await onUpdate(cb(`wz:edit:${s.slug}:voice`));
+  await onUpdate(cb('wz:voice:parents'));
+  assert.match(last().text, /Qaysi oila nomidan/);
+  assert.doesNotMatch(last().text, /Savol/, 'o‘zgartirishda savol raqami ko‘rsatilmaydi');
+  await onUpdate(msg('Karimovlar oilasi'));
+  assert.equal(readSite(s.slug).config.hosts, 'Karimovlar oilasi');
 
   // 4) Bitta maydonni o'zgartirish
   await onUpdate(cb(`wz:edit:${s.slug}:time`));
@@ -203,7 +217,6 @@ test('Tug‘ilgan kun: klassik bazm (ism, yosh, joy, vaqt — dastur shu vaqtga)
   assert.match(last().text, /Bazm joyi/);
   await onUpdate(m('Grand Classic restorani'));
   await onUpdate(m('Toshkent, Yunusobod'));
-  await onUpdate(cb('wz:map:-', U));
   const [s] = sitesOf(U.id);
   assert.equal(s.config.template, 'klassik');
   assert.equal(s.config.person.name, 'Sardor');

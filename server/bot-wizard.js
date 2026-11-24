@@ -373,9 +373,11 @@ Object.assign(STEPS, {
   },
 });
 
-// Savollar tartibi: to'y; tug'ilgan kun — bazm (klassik) yoki suratli tabrik
-const ORDER = ['template', 'eventType', 'groom', 'bride', 'date', 'time', 'venue', 'address', 'map', 'voice', 'hosts'];
-const BORDER_PARTY = ['btemplate', 'name', 'birthDate', 'date', 'time', 'venue', 'address', 'map'];
+// Savollar tartibi: to'y; tug'ilgan kun — bazm (klassik) yoki suratli tabrik.
+// Faqat sayt uchun shart bo'lganlari so'raladi — taklifnomani tezroq ko'rsin (voronka: ko'pchilik savollar o'rtasida chiqib ketardi).
+// Xarita (standart — manzil bo'yicha qidiruv), kimning nomidan (standart — ota-ona) va oila nomi — keyin «✏️ O'zgartirish» da.
+const ORDER = ['template', 'eventType', 'groom', 'bride', 'date', 'time', 'venue', 'address'];
+const BORDER_PARTY = ['btemplate', 'name', 'birthDate', 'date', 'time', 'venue', 'address'];
 const BORDER_GIFT = ['btemplate', 'name', 'birthDate', 'date', 'from', 'photos'];
 const orderOf = (w) => (w.data.kind === 'bday' ? (isParty(w) ? BORDER_PARTY : BORDER_GIFT) : ORDER);
 
@@ -455,29 +457,51 @@ function inputOf(d) {
 }
 
 /* ------------------------------------ Oqim ------------------------------------ */
+/** Yaratishdagi savollar (o'tkazib yuboriladiganlarsiz) */
+const activeOrder = (w) => orderOf(w).filter((s) => !STEPS[s].skip?.(w));
+/** Shu savol bilan birga yana nechta savol qolgan (0 — noma'lum, masalan birinchi "to'y yoki tug'ilgan kun" savoli) */
+export function stepsLeft(w) {
+  const order = activeOrder(w);
+  const i = order.indexOf(w.step);
+  return i < 0 ? 0 : order.length - i;
+}
+/** "📝 Savol 3/8" — dizayn tanlashdan keyingi savollarda; birinchi yoziladigan savolda — qancha qolgani */
+function progressOf(w) {
+  if (w.edit || ['kind', 'template', 'btemplate'].includes(w.step)) return ['', ''];
+  const order = activeOrder(w);
+  const i = order.indexOf(w.step);
+  if (i < 0) return ['', ''];
+  const head = `📝 <i>Savol ${i + 1}/${order.length}</i>\n`;
+  const tail = ['groom', 'name'].includes(w.step) ? `\n\n<i>Yana ${order.length - i - 1} ta qisqa savol — keyin taklifnomangizni bepul ko‘rasiz 👀</i>` : '';
+  return [head, tail];
+}
 async function ask(chatId, w) {
   // Voronka: qaysi savolgacha yetib kelgani (shaxsiy chat — chatId foydalanuvchi ID si bilan bir xil)
   if (!w.edit) track(chatId, 'wz_step', { s: w.step });
   const [text, extra = {}] = STEPS[w.step].ask(w);
-  await send(chatId, text, extra);
+  const [head, tail] = progressOf(w);
+  await send(chatId, head + text + tail, extra);
 }
 function nextStep(w, from) {
   const order = orderOf(w);
-  for (let i = order.indexOf(from) + 1; i < order.length; i++) if (!STEPS[order[i]].skip?.(w)) return order[i];
+  const at = order.indexOf(from);
+  // Ro'yxatdan olib tashlangan savolda turgan bo'lsa (masalan, yangilanishdan oldin boshlangan suhbat) — yakunlanadi
+  if (at < 0) return null;
+  for (let i = at + 1; i < order.length; i++) if (!STEPS[order[i]].skip?.(w)) return order[i];
   return null;
 }
 
 /** Yangi taklifnoma (tanlangan dizayn bilan — reklamadan kelganda) */
-export async function startWizard(chatId, user, template = '') {
+export async function startWizard(chatId, user, template = '', introExtra = {}) {
   const w = { slug: null, step: 'template', data: {}, edit: false };
   if (DESIGNS.some(([id]) => id === template) || BDESIGNS.some(([id]) => id === template)) {
     w.data.template = template;
     w.data.kind = isBdayT(template) ? 'bday' : 'wedding';
     w.step = w.data.kind === 'bday' ? 'name' : 'eventType';
-    await send(chatId, `✨ Ajoyib! Dizayn: <b>${esc(designTitle(template))}</b>\nBir necha savolga javob bering — taklifnomangiz tayyor bo‘ladi (2–3 daqiqa).`);
+    await send(chatId, `✨ Ajoyib! Dizayn: <b>${esc(designTitle(template))}</b>\nBir necha savolga javob bering — taklifnomangiz tayyor bo‘ladi (2–3 daqiqa).`, introExtra);
   } else {
     w.step = 'kind';
-    await send(chatId, '✨ Bir necha savolga javob bering — taklifnomangiz tayyor bo‘ladi (2–3 daqiqa).\nIstalgan payt keyinroq o‘zgartirish mumkin.');
+    await send(chatId, '✨ Bir necha savolga javob bering — taklifnomangiz tayyor bo‘ladi (2–3 daqiqa).\nIstalgan payt keyinroq o‘zgartirish mumkin.', introExtra);
   }
   setW(user.id, w);
   track(user.id, 'wz_start', { tpl: template || '' });
@@ -530,6 +554,12 @@ async function finish(chatId, user, w) {
   return showSummary(chatId, user, r.slug, w.edit ? '✅ Saqlandi.' : '🎉 Taklifnomangiz tayyor! Ko‘rib chiqing:');
 }
 
+/** Xarita: aniq nuqta (joylashuv yoki xarita havolasi) yoki manzil bo'yicha qidiruv */
+const mapLine = (c) => {
+  const exact = c.venue?.lat != null || [c.venue?.googleMaps, c.venue?.yandexMaps].some((u) => u && !/google\.com\/maps\/search\/|yandex\.[a-z]+\/maps\/\?text=/.test(u));
+  return exact ? '🗺 Xarita: aniq joy belgilangan ✅' : '🗺 Xarita: manzil bo‘yicha (aniq joyni «✏️ O‘zgartirish → 🗺 Xarita» da qo‘shish mumkin)';
+};
+
 /** Xulosa: ma'lumotlar, ko'rish havolasi va tugmalar */
 export async function showSummary(chatId, user, slug, title = '') {
   const s = readSite(slug);
@@ -550,6 +580,7 @@ export async function showSummary(chatId, user, slug, title = '') {
           ? [
               `🏛 ${esc(d.venue)}`,
               `📍 ${esc(d.address)}`,
+              mapLine(c),
               `👗 Kiyinish uslubi: ${d.dressText ? esc(d.dressText.length > 60 ? `${d.dressText.slice(0, 60)}…` : d.dressText) : 'yo‘q'}`,
               `🗓 Dastur: ${d.programList.length ? d.programList.map((p) => `${p.time} ${esc(p.title)}`).join(' · ') : 'yo‘q'}`,
             ]
@@ -565,6 +596,7 @@ export async function showSummary(chatId, user, slug, title = '') {
     `📅 ${prettyDate(d.date)}, soat ${esc(d.time)}`,
     `🏛 ${esc(d.venue)}`,
     `📍 ${esc(d.address)}`,
+    mapLine(c),
     `💌 ${d.voice === 'couple' ? 'Kelin-kuyov nomidan' : `Ota-ona nomidan${c.hosts ? ` — ${esc(c.hosts)}` : ''}`}`,
     `👗 Kiyinish uslubi: ${d.dressText ? esc(d.dressText.length > 60 ? `${d.dressText.slice(0, 60)}…` : d.dressText) : 'yo‘q'}`,
     `🗓 Dastur: ${d.programList.length ? d.programList.map((p) => `${p.time} ${esc(p.title)}`).join(' · ') : 'yo‘q'}`,
@@ -660,6 +692,15 @@ export async function onWizardCallback(cb) {
     await ask(chatId, w);
     return true;
   }
+  // Eslatmadagi «▶️ Davom ettirish»: to'xtagan savol qayta beriladi (suhbat yo'q yoki eskirgan bo'lsa — boshidan)
+  if (kind === 'resume') {
+    track(user.id, 'resume');
+    const cur = getW(user.id);
+    if (!cur || cur.edit || !STEPS[cur.step] || Date.now() - (cur.at || 0) > 2 * 86400e3) return (await startWizard(chatId, user), true);
+    setW(user.id, cur);
+    await ask(chatId, cur);
+    return true;
+  }
   // Qo'shiqni eshitib ko'rish (ro'yxat tugmalari o'z joyida qoladi)
   if (kind === 'music' && a === 'p') return (await sendTrackPreview(chatId, b), true);
   // Savolga tugma bilan javob
@@ -724,6 +765,9 @@ async function addPhoto(msg, w) {
     await send(msg.chat.id, `⚠️ Suratni saqlab bo‘lmadi: ${esc(err.message)}. Boshqa surat yuboring.`);
   }
 }
+
+/** Barcha ochiq suhbatlar (eslatmalar uchun, faqat o'qish) */
+export const wizardStates = () => load();
 
 /** /start bosilganda — savollar to'xtatiladi (voronka uchun qaysi savolda qolgani yoziladi) */
 export const cancelWizard = (userId) => {

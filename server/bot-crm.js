@@ -8,11 +8,15 @@
 //       2) yana ~22 soatdan keyin — 24 soatlik maxsus chegirma (FOLLOWUP_DISCOUNT, standart 10 000);
 //       3) yana ~46 soatdan keyin — oxirgi, yordam taklifi bilan.
 //     To'lagan (yoki chek yuborgan) mijozga eslatma ketmaydi; bir egasining faqat oxirgi qoralamasi eslatiladi.
+//   • Qoralamasi yo'qlarga (botga kirib, yaratishni boshlamagan yoki savollar o'rtasida qolgan) — BITTA eslatma:
+//     oxirgi faolligidan 2 soat o'tgach, 24 soat ichida (leads.json → nudgedAt). Eskilarga yuborilmaydi.
 //
 // Holat: <DATA_DIR>/crm.json — adminning joriy amali (kimga yozyapti / qaysi guruhga xabar). Eslatma bosqichi — meta.followup.
 import fs from 'node:fs';
 import path from 'node:path';
-import { DATA_DIR, listSites, readSite, updateMeta, readLeads, markLeadBlocked, promoAmount, STATUS } from './data.js';
+import { DATA_DIR, listSites, readSite, updateMeta, readLeads, markLeadBlocked, updateLead, promoAmount, STATUS } from './data.js';
+import { wizardStates, stepsLeft, DESIGNS, BDESIGNS } from './bot-wizard.js';
+import { track } from './funnel.js';
 import { tg, adminIds, isAdmin, previewUrl, siteUrlOf, fmtSum } from './telegram.js';
 import { validateConfig, MONTHS } from '../src/lib/config.js';
 import { findEvent } from '../src/lib/events.js';
@@ -147,6 +151,57 @@ async function sendFollowup(s, stage, { manual = false } = {}) {
   return r;
 }
 
+/* ------------------------- Qoralamasi yo'qlarga bitta eslatma ------------------------- */
+const NUDGE_AFTER = 2 * HOUR;
+const NUDGE_WINDOW = 24 * HOUR;
+
+function nudgeMessage(lead, w) {
+  const name = firstName(lead);
+  const hi = (rest) => (name ? `${esc(name)}, ${rest}` : rest.charAt(0).toUpperCase() + rest.slice(1));
+  const kb = (...rows) => ({ reply_markup: { inline_keyboard: rows } });
+  if (w) {
+    const left = stepsLeft(w);
+    return [
+      `✍️ <b>${hi('taklifnomangiz yarim yo‘lda qoldi')}</b>\n\n` +
+        `${left ? `Yana <b>${left} ta</b> qisqa savol` : 'Bir necha qisqa savol'} — keyin tayyor taklifnomangizni <b>bepul</b> ko‘rasiz 👀\n` +
+        `Yoqmasa, hech narsa to‘lamaysiz.`,
+      kb([{ text: '▶️ Davom ettirish', callback_data: 'wz:resume' }]),
+    ];
+  }
+  // Reklamada ko'rgan dizayn (?start=ig_osmon) — shu dizaynda boshlanadi
+  const src = String(lead.src || '');
+  const tpl = [...DESIGNS, ...BDESIGNS].map(([id]) => id).find((id) => src === id || src.endsWith(`_${id}`) || src.endsWith(`-${id}`)) || '';
+  return [
+    `👋 <b>${hi('o‘z taklifnomangizni ko‘rib chiqdingizmi?')}</b>\n\n` +
+      `Ismlar va sanani yozasiz — <b>2–3 daqiqada</b> taklifnomangiz tayyor bo‘ladi va uni avval <b>bepul</b> ko‘rasiz. Yoqsa, keyin to‘laysiz 🙂`,
+    kb([{ text: '✨ Bepul yaratib ko‘rish', callback_data: `new:${tpl}` }], [{ text: '👀 Namunalar', callback_data: 'demos' }]),
+  ];
+}
+
+/** Botga kirib, taklifnoma yaratmaganlarga (boshlamagan yoki savollarda qolgan) — bir marta, 2–24 soat oralig'ida */
+export async function runNudges({ now = Date.now() } = {}) {
+  const leads = readLeads();
+  const owners = new Set(listSites().map((s) => String(s.meta.owner?.id || '')));
+  const wiz = wizardStates();
+  let sent = 0;
+  for (const [id, lead] of Object.entries(leads)) {
+    if (lead.nudgedAt || lead.blocked || owners.has(id) || isAdmin(id)) continue;
+    const w = wiz[id] && !wiz[id].edit ? wiz[id] : null;
+    const last = Math.max(Date.parse(lead.at || '') || 0, Date.parse(lead.lastAt || '') || 0, w?.at || 0);
+    if (!last || now - last < NUDGE_AFTER || now - last >= NUDGE_WINDOW) continue;
+    const [text, extra] = nudgeMessage(lead, w);
+    const r = await tryTg('sendMessage', { chat_id: id, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra });
+    updateLead(id, { nudgedAt: new Date(now).toISOString() }); // muvaffaqiyatsiz bo'lsa ham — qayta urinilmaydi
+    if (r.blocked) markLeadBlocked(id);
+    if (r.ok) {
+      sent++;
+      track(id, 'nudge', w ? { k: 'wizard', s: w.step } : { k: 'start' });
+    } else D?.log?.(`! eslatma (boshlamagan) yuborilmadi (${id}): ${r.err?.message}`);
+  }
+  if (sent) D?.log?.(`👋 boshlamaganlarga eslatma: ${sent}`);
+  return sent;
+}
+
 /** Har 10 daqiqada chaqiriladi (bot.js asosiy sikli) */
 export async function runFollowups(st, { now = Date.now(), force = false } = {}) {
   if (!FOLLOWUP() || !D) return;
@@ -154,6 +209,7 @@ export async function runFollowups(st, { now = Date.now(), force = false } = {})
   st.lastFollowup = now;
   const h = tashkentHour(now);
   if (!force && (h < 9 || h >= 21)) return;
+  await runNudges({ now }).catch((e) => D.log(`! eslatma (boshlamagan): ${e.message}`));
   const all = listSites();
   const paidOwners = new Set(all.filter((s) => [STATUS.paid, STATUS.receipt].includes(s.meta.status)).map((s) => String(s.meta.owner?.id)));
   // Har bir egasining eng oxirgi to'lanmagan taklifnomasi

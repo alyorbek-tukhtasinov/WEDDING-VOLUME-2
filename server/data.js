@@ -141,6 +141,14 @@ export function touchLead(user) {
   leads[id] = { ...cur, ...u, lastAt: new Date().toISOString(), blocked: undefined };
   writeAtomic(leadsFile(), JSON.stringify(leads));
 }
+/** Lead yozuviga qo'shimcha maydon (masalan, eslatma yuborilgan vaqti — nudgedAt) */
+export function updateLead(userId, patch) {
+  const leads = readLeads();
+  const id = String(userId);
+  if (!leads[id]) return;
+  leads[id] = { ...leads[id], ...patch };
+  writeAtomic(leadsFile(), JSON.stringify(leads));
+}
 /** Botni bloklaganlar — ommaviy xabarlardan chiqariladi */
 export function markLeadBlocked(userId) {
   const leads = readLeads();

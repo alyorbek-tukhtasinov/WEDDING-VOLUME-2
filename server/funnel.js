@@ -3,7 +3,8 @@
 //   • track(userId, e, extra) — qadamni <DATA_DIR>/funnel.jsonl ga yozadi (har qatorda bitta hodisa, faqat qo'shiladi).
 //     Hodisalar: start, demos, mine, help, wz_start, wz_step (savol berildi), wz_err (javob qabul qilinmadi),
 //     wz_reset (/start bilan to'xtatildi), wz_stale (2 kundan keyin unutildi), wz_done (qoralama tayyor),
-//     wz_fail, pay (to'lov oynasi ochildi), receipt (chek yuborildi), paid, rejected.
+//     wz_fail, pay (to'lov oynasi ochildi), receipt (chek yuborildi), paid, rejected,
+//     nudge (boshlamagan / savollarda qolganga eslatma), resume (eslatmadan «Davom ettirish»).
 //   • buildFunnel({ days }) — hisobot: leads.json + wizard.json + saytlar meta.json + funnel.jsonl dan.
 //     Jurnal bo'lmagan davr uchun ham ishlaydi (hozirgi holat bo'yicha), jurnal bo'lsa — aniqroq.
 //   • funnelText(stats) — Telegram uchun matn (/voronka). Buyruq satridan: node server/funnel.js [kun]
@@ -117,7 +118,7 @@ export function buildFunnel({ days = 30, now = Date.now(), data = null } = {}) {
   const users = new Map();
   const U = (id) => {
     id = String(id);
-    if (!users.has(id)) users.set(id, { id, first: Infinity, src: '', stage: -1, lastStep: '', lastStepAt: 0, errSteps: new Set(), demos: false, blocked: false, resets: 0, wizard: null });
+    if (!users.has(id)) users.set(id, { id, first: Infinity, src: '', stage: -1, lastStep: '', lastStepAt: 0, errSteps: new Set(), demos: false, blocked: false, resets: 0, wizard: null, nudgedAt: 0, back: false });
     return users.get(id);
   };
   const reach = (u, stage) => (u.stage = Math.max(u.stage, STAGES.findIndex(([k]) => k === stage)));
@@ -172,9 +173,14 @@ export function buildFunnel({ days = 30, now = Date.now(), data = null } = {}) {
     const u = U(ev.u);
     seen(u, t, ev.src);
     reach(u, 'start');
+    // Eslatmadan keyin qaytib, savollarga javob bergan / yaratishni boshlagan
+    if (u.nudgedAt && t > u.nudgedAt && ['wz_start', 'wz_step', 'wz_done', 'pay'].includes(ev.e)) u.back = true;
     switch (ev.e) {
       case 'demos':
         u.demos = true;
+        break;
+      case 'nudge':
+        if (!u.nudgedAt) u.nudgedAt = t;
         break;
       case 'wz_start':
         reach(u, 'wizard');
@@ -258,6 +264,8 @@ export function buildFunnel({ days = 30, now = Date.now(), data = null } = {}) {
     payNoReceipt: cohort.filter((u) => u.stage === 3).length,
     receiptWaiting: cohort.filter((u) => u.stage === 4).length,
     blocked: cohort.filter((u) => u.blocked).length,
+    nudged: cohort.filter((u) => u.nudgedAt).length,
+    nudgedBack: cohort.filter((u) => u.nudgedAt && u.back).length,
   };
 
   // Manbalar (reklama havolalari)
@@ -327,6 +335,7 @@ export function funnelText(r) {
   L.push(`• To‘lov oynasini ochgan, chek yubormagan: <b>${r.after.payNoReceipt}</b>`);
   if (r.after.receiptWaiting) L.push(`• Chek yuborgan, tasdiq kutilmoqda / rad etilgan: <b>${r.after.receiptWaiting}</b>`);
   if (r.after.blocked) L.push(`• Botni bloklagan: ${r.after.blocked}`);
+  if (r.after.nudged) L.push(`📨 Eslatma yuborilgan: ${r.after.nudged} → qaytib davom ettirgan: <b>${r.after.nudgedBack}</b>`);
 
   if (r.stuck.length) {
     L.push('');

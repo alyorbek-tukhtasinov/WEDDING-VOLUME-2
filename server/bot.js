@@ -169,23 +169,23 @@ async function channelMember(userId) {
   }
 }
 
+// Salomlashish ostidagi tugmalar (pastdagi menyu ko'p telefonda yopiq turadi — voronka: 70% yaratishni boshlamagan edi)
+const startButtons = () => ({ inline_keyboard: [[{ text: '✨ Bepul yaratib ko‘rish', callback_data: 'new:' }], [{ text: BTN.demos, callback_data: 'demos' }]] });
+
 async function start(msg) {
   const payload = String(msg.text || '').split(/\s+/)[1] || '';
   if (recordLead(msg.from.id, payload, msg.from) && payload) log(`➕ yangi mijoz: ${msg.from.id} (${payload})`);
   const name = esc(msg.from?.first_name || '');
+  const t = templateOfPayload(payload.toLowerCase());
   await send(
     msg.chat.id,
     `Assalomu alaykum${name ? `, ${name}` : ''}! 🌸\n\n` +
-      `Bu yerda <b>to‘y taklifnomangizni o‘zingiz 5 daqiqada</b> yaratasiz — chiroyli sayt ko‘rinishida, musiqa, sana, xarita va mehmonlar javobi bilan.\n\n` +
-      `1️⃣ <b>«${BTN.create}»</b> tugmasini bosing\n` +
-      `2️⃣ Savollarga javob bering: dizayn, ismlar, sana, to‘yxona — <b>bepul ko‘rib chiqasiz</b>\n` +
-      `3️⃣ Yoqsa, to‘lov qilib chekni yuborasiz — sayt havolasi shu yerga keladi\n\n` +
-      `💰 Narxi: <b>${fmtSum(PRICE())}</b>\n\n` +
-      `Avval ${BTN.demos.toLowerCase()} bilan tanishib chiqishingiz mumkin 👇\n\n` +
-      `📢 Kanalimiz: ${MAIN_CHANNEL()}\n⭐ Mijozlar fikri: ${REVIEWS_CHANNEL()}`,
-    { reply_markup: mainKeyboard() },
+      `To‘y yoki tug‘ilgan kun uchun <b>onlayn taklifnoma</b> — musiqa, sana, xarita va mehmonlar javobi bilan chiroyli sayt.\n\n` +
+      `✨ Ismlar va sanani yozasiz — <b>2–3 daqiqada</b> taklifnomangizni <b>bepul ko‘rasiz</b>. Yoqsa, to‘laysiz: <b>${fmtSum(PRICE())}</b>.\n\n` +
+      `⭐ Mijozlar fikri: ${REVIEWS_CHANNEL()}\n📢 Kanalimiz: ${MAIN_CHANNEL()}`,
+    // Reklamadagi dizayn bilan kelganda — tugma keyingi xabarda (showDesign), bu yerda menyu
+    { reply_markup: t ? mainKeyboard() : startButtons() },
   );
-  const t = templateOfPayload(payload.toLowerCase());
   if (t) await showDesign(msg.chat.id, t);
 }
 
@@ -953,7 +953,13 @@ async function onUpdate(u) {
     const [kind, slug] = String(cb.data || '').split(':');
     if (kind === 'new') {
       await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
-      return startWizard(cb.from.id, cb.from, slug || '');
+      // Pastdagi menyu ham shu xabar bilan o'rnatiladi (salomlashishda inline tugmalar bo'lgani uchun)
+      return startWizard(cb.from.id, cb.from, slug || '', { reply_markup: mainKeyboard() });
+    }
+    if (kind === 'demos') {
+      await tg('answerCallbackQuery', { callback_query_id: cb.id }).catch(() => {});
+      track(cb.from.id, 'demos');
+      return demos({ chat: { id: cb.from.id }, from: cb.from });
     }
     if ((kind === 'ok' || kind === 'no') && isAdmin(cb.from.id)) return onAdminDecision(cb, kind === 'ok', slug);
     if ((kind === 'vok' || kind === 'vno') && isAdmin(cb.from.id)) return onVideoDecision(cb, kind === 'vok', slug);
